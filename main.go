@@ -97,11 +97,11 @@ func main() {
 	// 头像上传/访问 (V15)
 	srv("/api/avatar/upload", quotaHandler(rateLimitHandler("act", handleAvatarUpload())))
 	http.HandleFunc("/avatar-file/", handleAvatarFile())
-	// 邮箱验证 (B2)
-	srv("/api/email/verify", rateLimitHandler("auth", handleRequestEmailVerify()))
-	srv("/api/email/verify/confirm", rateLimitHandler("auth", handleConfirmEmailVerify()))
-	srv("/api/email/reset", rateLimitHandler("auth", handleRequestReset()))
-	srv("/api/email/reset/confirm", rateLimitHandler("auth", handleConfirmReset()))
+	// 邮箱验证 (B2)：用独立 mail 档限流（10 次/小时），不与登录(auth 5次)共用配额
+	srv("/api/email/verify", rateLimitHandler("mail", handleRequestEmailVerify()))
+	srv("/api/email/verify/confirm", rateLimitHandler("mail", handleConfirmEmailVerify()))
+	srv("/api/email/reset", rateLimitHandler("mail", handleRequestReset()))
+	srv("/api/email/reset/confirm", rateLimitHandler("mail", handleConfirmReset()))
 
 	// 课程 API 路由
 	srv("/api/courses", handleCourses(db))

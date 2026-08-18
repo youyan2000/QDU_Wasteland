@@ -171,6 +171,8 @@ func rateLimitHandler(action string, h http.HandlerFunc) http.HandlerFunc {
 				switch action {
 				case "auth":
 					limit = 5
+				case "mail":
+					limit = 10 // 邮箱验证/找回密码：每 1 小时每指纹 ≤10 次（与登录配额分离，避免误伤）
 				case "upload":
 					limit = 15
 				}
