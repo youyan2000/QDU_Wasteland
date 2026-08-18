@@ -1,7 +1,7 @@
 # Go
 *.exe
+*.exe~
 qdu-wasteland-linux
-*.exe
 qdu-wasteland-linux~
 *.test
 *.out
