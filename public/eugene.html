@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="viewer.css">
+  <style>
+    /* 与 admin.html 一致的后台样式（独立后台专用，不随主站主题变化） */
+    .admin-body { padding: 30px 16px; background: var(--paper); }
+    .eugene-top { max-width: 1000px; margin: 0 auto 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .eugene-brand { font-size: 1.15rem; font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+    .eugene-brand span { color: var(--magenta); }
+    .eugene-actions { display: flex; align-items: center; gap: 12px; }
+    .eugene-who { color: var(--muted); font-size: .85rem; }
+    .admin-wrap { max-width: 1000px; margin: 0 auto; }
+    .admin-title { font-size: 1.8rem; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+    .admin-sub { color: var(--muted); margin-bottom: 24px; }
+    .admin-deny { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .stat-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; }
+    .stat-num { font-size: 1.9rem; font-weight: 800; color: var(--magenta); }
+    .stat-label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+    .panel { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 18px; margin-bottom: 22px; }
+    .panel h2 { font-size: 1.15rem; margin: 0 0 14px; color: var(--ink); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #f0f0f0; }
+    th { color: var(--muted); font-weight: 600; }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 0.78rem; }
+    .pill.admin { background: var(--magenta-soft); color: var(--magenta-deep); }
+    .pill.user { background: #f0f0f0; color: var(--muted); }
+    .pill.pending { background: #fff3cd; color: #8a6d1a; }
+    .btn-mini { font-size: 0.8rem; padding: 4px 10px; border: none; border-radius: 7px; cursor: pointer; background: #eee; color: var(--ink); }
+    .btn-mini:hover { background: #ddd; }
+    .btn-mini.danger { background: #ffe0e0; color: #c0392b; }
+    .btn-mini:disabled { opacity: .4; cursor: default; background: #eee; color: #999; box-shadow: none; }
+    .btn-mini:disabled:hover { background: #eee; }
+    .empty { color: var(--muted); padding: 18px 0; text-align: center; }
+    .admin-load { text-align: center; color: var(--muted); padding: 40px; }
+    .stat-btn { cursor: pointer; text-align: left; width: 100%; border: none; background: #fff; font: inherit; color: inherit; transition: transform .12s, box-shadow .12s; }
+    .stat-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.10); }
+    .stat-btn.active { outline: 2px solid var(--magenta); }
+    .open-arr { color: var(--muted); font-size: .85rem; transition: transform .15s; }
+    .stat-btn.active .open-arr { transform: rotate(180deg); color: var(--magenta); }
+    details.panel summary { cursor: pointer; font-weight: 700; font-size: 1.15rem; color: var(--ink); list-style: none; padding: 2px 0; }
+    details.panel summary::-webkit-details-marker { display: none; }
+    details.panel summary::after { content: '\25BE'; float: right; color: var(--muted); }
+    details.panel[open] summary::after { content: '\25B4'; }
+    .admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+    .admin-tab { padding: 8px 18px; border: 1px solid #eee; border-radius: 20px; background: #fff; cursor: pointer; font-size: .92rem; color: var(--muted); transition: all .15s; }
+    .admin-tab:hover { color: var(--ink); border-color: #ddd; }
+    .admin-tab.active { background: var(--magenta); color: #fff; border-color: var(--magenta); font-weight: 700; }
+    .admin-pane .pane-title { font-size: 1.1rem; font-weight: 800; color: var(--ink); margin: 0 0 12px; }
+    .pill.banned { background:#fdecea; color:#c0392b; }
+    /* 弹层（文章预览等） */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 9000; backdrop-filter: blur(2px); }
+    .modal-box { background: #fff; border-radius: 14px; padding: 1.4rem 1.6rem; width: min(520px,92vw); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .modal-head h3 { font-size: 1.15rem; margin: 0; color: var(--ink); }
+    .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
+    .modal-close:hover { color: var(--magenta); }
+  </style>
+</head>
+<body class="admin-body">
+  <!-- 独立后台：不加载主站导航，不提供返回主站的入口 -->
+  <div class="eugene-top">
+    <div class="eugene-brand">QDU Wasteland <span>· 管理后台</span></div>
+    <div class="eugene-actions">
+      <span class="eugene-who" id="eugeneWho"></span>
+      <button class="btn-mini" id="eugeneLogout">退出登录</button>
+    </div>
+  </div>
+
+  <div class="admin-wrap">
+    <!-- 鉴权占位：admin.js 根据结果渲染内容或拒绝提示 -->
+    <div id="adminApp">
+      <div class="admin-load">正在校验管理权限…</div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="viewer-mdown.js?v=20260818b"></script>
+  <script src="admin.js?v=20260818q"></script>
+  <script>
+    // 顶部显示当前管理员昵称 + 退出登录（不提供主站入口，保持后台隔离）
+    fetch('/api/me').then(function (r) { return r.json(); }).then(function (d) {
+      if (d.loggedIn && d.user) document.getElementById('eugeneWho').textContent = d.user.nickname + ' · 管理员';
+    }).catch(function () {});
+    document.getElementById('eugeneLogout').onclick = async function () {
+      await fetch('/api/logout', { method: 'POST' });
+      location.href = '/login.html';
+    };
+  </script>
+</body>
+</html>
