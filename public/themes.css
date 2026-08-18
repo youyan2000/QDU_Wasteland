@@ -196,7 +196,16 @@ body[data-nav="left"] .site-nav {
 body[data-nav="left"] .site-nav .nav-box { flex-direction:column; align-items:flex-start; width:100%; }
 body[data-nav="left"] .site-nav .nav-links { flex-direction:column; margin-left:0; margin-top:20px; width:100%; }
 body[data-nav="left"] .site-nav .nav-links a { width:100%; }
-body[data-nav="left"] .site-nav .nav-right { flex-direction:column; align-items:flex-start; margin-top:auto; width:100%; gap:12px; }
+body[data-nav="left"] .site-nav .nav-right {
+  display:grid;
+  grid-template-columns: auto auto 1fr;
+  align-items:center;
+  margin-top:auto; width:100%; gap:10px;
+}
+body[data-nav="left"] .site-nav .nav-right .nav-search { grid-column: 1 / -1; width:100%; }
+body[data-nav="left"] .site-nav .nav-right #navBell,
+body[data-nav="left"] .site-nav .nav-right #navFeedbackBtn { display:inline-flex; width:36px; height:36px; }
+body[data-nav="left"] .site-nav .nav-right #navAuth { grid-column: 1 / -1; }
 body[data-nav="left"] .nav-search input { width:100%; }
 
 /* 左侧导航悬浮：body 右内边距让出导航宽度(228+间距)，内容仍居中 */

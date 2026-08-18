@@ -15,13 +15,16 @@ async function loadMe() {
     }
     const u = d.user;
     const avatar = (u.nickname && u.nickname[0]) || '?';
+    const avatarHtml = u.avatar
+      ? `<div class="avatar"><img src="${u.avatar}" alt="头像"></div>`
+      : `<div class="avatar">${escapeHtml(avatar)}</div>`;
     const adminLink = (u.isAdmin === 1)
       ? `<a href="/admin.html" class="me-btn" style="display:inline-block;margin-top:.8rem;text-decoration:none">${ICONS.settings(15)} 管理后台</a>`
       : '';
     wrap.innerHTML = `
       <div class="profile-card">
         <div class="profile-head">
-          <div class="avatar">${escapeHtml(avatar)}</div>
+          ${avatarHtml}
           <div style="flex:1">
             <div class="profile-name">${escapeHtml(u.nickname)}</div>
             <div class="profile-email">${escapeHtml(u.email)}</div>
@@ -265,7 +268,7 @@ function fillProvinceSelect() {
 async function loadCities(prov) {
   const c = document.getElementById('epCity');
   if (!c) return;
-  c.innerHTML = '<option value="">选择城市</option>';
+  c.innerHTML = '<option value="">市/区县</option>';
   if (!prov) { c.innerHTML = '<option value="">先选省份</option>'; return; }
   try {
     const r = await (await fetch('/api/regions/cities?province=' + encodeURIComponent(prov))).json();
@@ -293,6 +296,14 @@ function bindEditProfile(u) {
     document.getElementById('epAge').value = u.age || '';
     document.getElementById('epBio').value = u.bio || '';
     document.getElementById('epErr').textContent = '';
+    // 头像预览回填
+    const avImg = document.getElementById('epAvatarPreview');
+    if (avImg) {
+      if (u.avatar) { avImg.src = u.avatar; avImg.style.display = 'block'; }
+      else { avImg.style.display = 'none'; }
+    }
+    const avFile = document.getElementById('epAvatarFile');
+    if (avFile) avFile.value = '';
     // 填省份
     if (regionData.provinces.length === 0) await loadRegions();
     fillProvinceSelect();
@@ -307,6 +318,26 @@ function bindEditProfile(u) {
     citySel.value = '';
     await loadCities(provSel.value);
   };
+  // 头像上传（选择文件即上传，成功后预览 + 更新 u.avatar）
+  const avFile = document.getElementById('epAvatarFile');
+  if (avFile) {
+    avFile.onchange = async () => {
+      const errEl = document.getElementById('epErr');
+      if (!avFile.files || !avFile.files.length) return;
+      const fd = new FormData();
+      fd.append('file', avFile.files[0]);
+      errEl.textContent = '上传中…';
+      try {
+        const r = await fetch('/api/avatar/upload', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (!r.ok) { errEl.textContent = d.error || '上传失败'; return; }
+        u.avatar = d.avatar;
+        const avImg = document.getElementById('epAvatarPreview');
+        if (avImg) { avImg.src = d.avatar; avImg.style.display = 'block'; }
+        errEl.textContent = '✅ 头像已更新';
+      } catch (e) { errEl.textContent = '网络错误，上传失败'; }
+    };
+  }
   document.getElementById('epClose').onclick = () => modal.style.display = 'none';
   modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
   document.getElementById('epSave').onclick = async () => {

@@ -77,22 +77,31 @@ async function saveArticle(mode) {
   const me = await (await fetch('/api/me')).json();
   if (!me.loggedIn) { location.href = '/login.html'; return; }
 
+  // 构造请求体（cover 为空时传空串，避免 undefined 导致序列化差异）
+  const payload = { title, category: edCat.value, content, anonymous: document.getElementById('edAnon') ? document.getElementById('edAnon').checked : false, status: mode === 'publish' ? (editId ? '正常' : '') : 'draft', cover: currentCover || '' };
+  if (editId) payload.id = editId;
+
   let res;
-  if (editId) {
-    res = await fetch('/api/articles/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editId, title, category: edCat.value, content, status: mode === 'publish' ? '正常' : 'draft', cover: currentCover })
-    });
-  } else {
-    res = await fetch('/api/articles/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, category: edCat.value, content, anonymous: document.getElementById('edAnon').checked, status: mode === 'publish' ? '' : 'draft', cover: currentCover })
-    });
+  try {
+    if (editId) {
+      res = await fetch('/api/articles/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch('/api/articles/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+  } catch (e) {
+    errEl.textContent = '网络异常，请检查连接后重试';
+    return;
   }
-  const d = await res.json();
-  if (!res.ok) { errEl.textContent = d.error || '保存失败'; window.scrollTo({top:0,behavior:'smooth'}); return; }
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { errEl.textContent = d.error || '保存失败（' + res.status + '）'; window.scrollTo({top:0,behavior:'smooth'}); return; }
   location.href = '/me.html';
 }
 document.getElementById('edPublish').addEventListener('click', () => saveArticle('publish'));

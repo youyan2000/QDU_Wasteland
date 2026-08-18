@@ -82,7 +82,8 @@
 .pf-row textarea { resize: vertical; }
 .btn-submit {
   padding: .7rem 2rem; border: none; border-radius: var(--radius-md);
-  var(--grad-magenta); color: #fff; font-weight: 700; cursor: pointer;
+  background: linear-gradient(90deg, var(--magenta), var(--sunrise));
+  color: #fff; font-weight: 700; cursor: pointer;
 }
 
 

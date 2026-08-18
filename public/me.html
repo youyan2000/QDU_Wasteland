@@ -28,6 +28,14 @@
         <button class="modal-close" id="epClose"><i class="icon-fill" data-icon="close"></i></button>
       </div>
       <div class="pf-row">
+        <label>头像</label>
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <img id="epAvatarPreview" src="" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;background:var(--track,#eee);display:none">
+          <input id="epAvatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" style="flex:1;font-size:.85rem">
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:4px;width:100%">支持 jpg/png/gif/webp，≤2MB；上传后立即生效</div>
+      </div>
+      <div class="pf-row">
         <label>性别</label>
         <div style="display:flex;gap:14px">
           <label style="display:flex;align-items:center;gap:5px"><input type="radio" name="epGender" value="男"> 男</label>
@@ -43,10 +51,10 @@
       <div class="pf-row">
         <label>籍贯</label>
         <div style="display:flex;gap:8px;width:100%">
-          <select id="epProv" style="flex:1;padding:.45rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;font-size:.85rem;background:#fff">
+          <select id="epProv" class="pf-select" style="flex:1;padding:.45rem .6rem;border:1px solid var(--border,#ddd);border-radius:8px;font-size:.85rem;background:var(--surface,#fff);color:var(--ink)">
             <option value="">选择省份</option>
           </select>
-          <select id="epCity" style="flex:1;padding:.45rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;font-size:.85rem;background:#fff">
+          <select id="epCity" class="pf-select" style="flex:1;padding:.45rem .6rem;border:1px solid var(--border,#ddd);border-radius:8px;font-size:.85rem;background:var(--surface,#fff);color:var(--ink)">
             <option value="">先选省份</option>
           </select>
         </div>
