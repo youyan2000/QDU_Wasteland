@@ -1,0 +1,55 @@
+# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
+# 说明：
+#   1. 若杀毒软件误报 qdu-wasteland.exe 为 Backdoor/W64.CobaltStrike：
+#      请把本目录加入杀毒白名单，或自查误报（源码与依赖哈希已校验，见 PLAN.md 安全说明）。
+#   2. 运行：powershell -ExecutionPolicy Bypass -File start-server.ps1
+#   3. SMTP 配置：请通过环境变量提供（见下方 MAIL_* 说明），不要把密码写死在脚本里。
+$ErrorActionPreference = 'Stop'
+Set-Location $PSScriptRoot
+
+# Go 工具链（按需修改）
+if ($env:GO_BIN) { $env:Path = $env:GO_BIN + ';' + $env:Path }
+elseif (Test-Path 'F:\Go\bin') { $env:Path = 'F:\Go\bin;' + $env:Path }
+
+$env:CSV_DIR = 'F:\My_Projects\AI_projects\_csv'
+$env:ADMIN_EMAIL = 'admin@qdu.edu.cn'
+$env:ADMIN_PASSWORD = 'admin123456'
+
+# —— SMTP 发件邮箱（邮箱验证/找回密码真实发信）——
+# 安全：不在此硬编码密码。启动前请设置环境变量，例如：
+#   $env:MAIL_HOST='smtp.qq.com'; $env:MAIL_PORT='465'
+#   $env:MAIL_USER='you@qq.com'; $env:MAIL_PASS='你的授权码'; $env:MAIL_FROM='you@qq.com'
+# 未设置时，验证码/链接会打印到日志（日志模式），功能仍可用。
+if ($env:MAIL_HOST) {
+    Write-Host "📧 SMTP 已配置: $env:MAIL_HOST"
+} else {
+    Write-Host '⚠️ 未设置 MAIL_HOST 等环境变量，邮件将走日志模式（验证码/链接打印到 server.log）'
+}
+
+# 若 exe 被误杀/缺失则重建
+if (-not (Test-Path 'qdu-wasteland.exe')) {
+    Write-Host 'qdu-wasteland.exe 缺失，重新编译...'
+    go build -o qdu-wasteland.exe .
+    if ($LASTEXITCODE -ne 0) { Write-Error '编译失败'; exit 1 }
+}
+
+# 停止旧进程
+Get-Process qdu-wasteland -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep 1
+
+# 启动服务器：用 PowerShell 重定向并强制 UTF-8 输出，避免中文日志乱码；
+# 路径含空格也能正确工作（& 调用操作符 + 引号包裹）。
+$proc = Start-Process -FilePath "$PSScriptRoot\qdu-wasteland.exe" `
+    -WorkingDirectory $PSScriptRoot `
+    -RedirectStandardOutput "$PSScriptRoot\server.log" `
+    -RedirectStandardError "$PSScriptRoot\server.err.log" `
+    -WindowStyle Hidden -PassThru
+Start-Sleep 3
+
+$running = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
+if ($running) {
+    Write-Host "✅ 服务器已启动 PID=$($proc.Id) http://localhost:3000"
+    Write-Host "   日志: server.log"
+} else {
+    Write-Host '❌ 启动失败，请查看 server.log / server.err.log（也可能是杀软拦截）'
+}

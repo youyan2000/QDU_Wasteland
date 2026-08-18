@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文章 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="articles.css">
+</head>
+<body class="articles-body">
+  <div id="site-nav"></div>
+
+  <main class="articles-main">
+    <div class="articles-head">
+      <span class="kicker">CAMPUS</span>
+      <h1 class="articles-h1">文章</h1>
+      <p class="articles-sub">比赛 · 老师 · 生活方式 · 社团 —— 属于青大人的校园记忆与经验。</p>
+      <div class="cat-bar" id="catBar">
+        <button class="cat-chip active" data-cat="">全部</button>
+        <button class="cat-chip" data-cat="竞赛"><i class="cat-ic" data-icon="trophy"></i> 竞赛</button>
+        <button class="cat-chip" data-cat="其他"><i class="cat-ic" data-icon="squares"></i> 其他</button>
+        <button class="cat-chip" data-cat="生活"><i class="cat-ic" data-icon="leaf"></i> 生活</button>
+        <button class="cat-chip" data-cat="社团"><i class="cat-ic" data-icon="mask"></i> 社团</button>
+      </div>
+    </div>
+
+    <div class="articles-toolbar">
+      <div class="sort-tabs">
+        <button class="sort-tab active" data-sort="latest">最新</button>
+        <a class="sort-tab" href="/topics.html" style="text-decoration:none"><i class="cat-ic" data-icon="bookmark"></i> 专题</a>
+      </div>
+      <button id="newArticleBtn" class="btn-newpost">＋ 写文章</button>
+    </div>
+
+    <div id="articleList" class="article-list">
+      <div class="empty">加载中…</div>
+    </div>
+  </main>
+
+  <script src="icons.js"></script>
+<script>document.querySelectorAll(".cat-ic").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(14);});</script>
+  <script src="nav.js?v=20260818s"></script>
+  <script src="report.js"></script>
+  <script src="articles.js?v=20260818p"></script>
+</body>
+</html>

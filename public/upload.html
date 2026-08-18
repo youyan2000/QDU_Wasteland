@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上传资料 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="upload.css">
+</head>
+<body class="upload-body">
+  <div id="site-nav"></div>
+
+  <main class="upload-main">
+    <div class="upload-head">
+      <span class="kicker">CONTRIBUTE</span>
+      <h1 class="upload-h1">上传资料</h1>
+    </div>
+
+    <!-- 从课程页进入：课程锁定 -->
+    <div id="lockArea" style="display:none">
+      <div class="lock-course">上传到课程：<strong id="lockName"></strong></div>
+    </div>
+
+    <!-- 独立进入：选择课程 -->
+    <div id="pickerArea" style="display:none">
+      <div class="field">
+        <label>选择课程</label>
+        <div class="course-picker">
+          <input id="uSearch" type="text" placeholder="搜索课程名称 / 编号…" autocomplete="off">
+          <div id="uSuggest" class="course-suggest"></div>
+          <div id="uSel"></div>
+        </div>
+        <div class="err" id="pickerErr" style="display:none;color:#d32f2f;margin-top:.4rem"></div>
+      </div>
+    </div>
+
+    <form id="uploadForm" class="upload-form">
+      <div class="upload-row">
+        <label>学期</label>
+        <select id="uSemester">
+          <option value="">选择学期</option>
+          <option>2025春</option>
+          <option>2025秋</option>
+          <option>2026春</option>
+        </select>
+      </div>
+
+      <div class="upload-row">
+        <label>资料分类</label>
+        <select id="uCategory">
+          <option value="">选择分类</option>
+          <option>历年试卷</option>
+          <option>课程作业</option>
+          <option>学习笔记</option>
+          <option>其他</option>
+        </select>
+      </div>
+
+      <div class="upload-row">
+        <label>资料标题</label>
+        <input id="uTitle" type="text" placeholder="例如：期末复习提纲（选填）" autocomplete="off">
+      </div>
+
+      <div class="upload-row">
+        <label>资料描述</label>
+        <textarea id="uDesc" rows="2" placeholder="补充说明这份资料的内容（选填）"></textarea>
+      </div>
+
+      <div class="upload-row">
+        <label>添加文件</label>
+        <div id="dropZone" class="drop-zone">
+          <div class="dz-icon">${ICONS.paperclip(28)}</div>
+          <p><strong>点击选择 或 拖入文件</strong></p>
+          <p class="dz-hint">单文件 ≤ 200MB</p>
+          <input type="file" id="uFile" style="display:none">
+        </div>
+        <div id="uFileChip" class="file-chip" style="display:none"></div>
+        <div class="err" id="uErr" style="display:block;color:#d32f2f;margin-top:.4rem"></div>
+      </div>
+
+      <div class="upload-actions">
+        <button id="uSubmit" class="btn-submit" type="submit">提交审核</button>
+        <span class="submit-note">资料将匿名公开</span>
+      </div>
+    </form>
+  </main>
+
+  <script src="icons.js"></script>
+  <script src="nav.js?v=20260818s"></script>
+  <script src="upload.js"></script>
+</body>
+</html>

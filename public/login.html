@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-body">
+  <div class="auth-shell">
+    <a class="auth-logo" href="/">Wasteland</a>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button id="tabLogin" class="auth-tab active">登录</button>
+        <button id="tabRegister" class="auth-tab">注册</button>
+      </div>
+
+      <!-- 登录表单 -->
+      <form id="loginForm" class="auth-form-panel" autocomplete="on">
+        <div class="field">
+          <label for="lEmail">用户名 / 邮箱</label>
+          <input id="lEmail" type="text" autocomplete="username" placeholder="用户名或邮箱" required>
+        </div>
+        <div class="field">
+          <label for="lPassword">密码</label>
+          <div class="pw-wrap">
+            <input id="lPassword" type="password" autocomplete="current-password" placeholder="请输入密码" required>
+            <button type="button" class="pw-toggle" data-target="lPassword"><i class="icon-fill" data-icon="eye"></i></button>
+          </div>
+        </div>
+        <div class="field">
+          <label>验证码</label>
+          <div class="captcha-row">
+            <img id="lCapImg" class="captcha-img" alt="验证码" onclick="loadCaptcha(&quot;l&quot;, this)">
+            <input id="lCaptcha" type="text" placeholder="输入验证码" maxlength="6" autocomplete="off">
+            <input type="hidden" id="lCaptchaId">
+            <button type="button" id="lCapRefresh" onclick="loadCaptcha(&quot;l&quot;, document.getElementById(&quot;lCapImg&quot;))">换一张</button>
+          </div>
+        </div>
+        <div class="err" id="loginErr"></div>
+        <button type="submit" class="auth-submit" id="loginSubmit">登录</button>
+        <p style="text-align:center;margin-top:.8rem;font-size:.85rem"><a href="/reset.html" style="color:var(--muted);text-decoration:none">忘记密码？</a></p>
+      </form>
+
+      <!-- 注册表单 -->
+      <form id="registerForm" class="auth-form-panel hidden" autocomplete="on">
+        <div class="field">
+          <label for="rEmail">邮箱</label>
+          <input id="rEmail" type="email" autocomplete="email" placeholder="you@qdu.edu.cn" required>
+        </div>
+        <div class="field">
+          <label for="rUsername">用户名 <span class="hint">（用于登录）</span></label>
+          <input id="rUsername" type="text" autocomplete="username" placeholder="2~20个字符，如 zhangsan" required>
+        </div>
+        <div class="field">
+          <label for="rNickname">昵称</label>
+          <input id="rNickname" type="text" autocomplete="nickname" placeholder="你希望别人怎么称呼你" required>
+        </div>
+        <div class="field">
+          <label for="rCollege">学院</label>
+          <select id="rCollege" required>
+            <option value="">请选择学院</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rMajor">专业 <span class="hint">（先选学院）</span></label>
+          <select id="rMajor" required>
+            <option value="">请先选择学院</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rPassword">密码 <span class="hint">（至少 6 位）</span></label>
+          <div class="pw-wrap">
+            <input id="rPassword" type="password" autocomplete="new-password" placeholder="设置登录密码" required>
+            <button type="button" class="pw-toggle" data-target="rPassword"><i class="icon-fill" data-icon="eye"></i></button>
+          </div>
+        </div>
+        <div class="field">
+          <label>验证码</label>
+          <div class="captcha-row">
+            <img id="rCapImg" class="captcha-img" alt="验证码" onclick="loadCaptcha(&quot;r&quot;, this)">
+            <input id="rCaptcha" type="text" placeholder="输入验证码" maxlength="6" autocomplete="off">
+            <input type="hidden" id="rCaptchaId">
+            <button type="button" id="rCapRefresh" onclick="loadCaptcha(&quot;r&quot;, document.getElementById(&quot;rCapImg&quot;))">换一张</button>
+          </div>
+        </div>
+        <div class="err" id="registerErr"></div>
+        <button type="submit" class="auth-submit" id="registerSubmit">注册并登录</button>
+      </form>
+    </div>
+
+    <p class="auth-foot" style="line-height:1.8">QDU Wasteland · 青岛大学学习互助社区（内测）<br><a href="/terms.html" style="color:var(--muted)">用户协议</a> · <a href="/privacy.html" style="color:var(--muted)">隐私政策</a></p>
+  </div>
+
+  <style>.captcha-row{display:flex;gap:8px;align-items:center}.captcha-img{width:110px;height:40px;border:1px solid rgba(26,26,46,.15);border-radius:8px;cursor:pointer}.captcha-row input{flex:1}.captcha-row button{white-space:nowrap;padding:.4rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;background:#fff;cursor:pointer;font-size:.8rem}</style>
+  <script src="auth.js"></script>
+<script src="icons.js"></script>
+<script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
+</body>
+</html>

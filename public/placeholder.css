@@ -1,0 +1,22 @@
+/* placeholder.css — "建设中"占位页 */
+.placeholder-main {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 5rem var(--space-page);
+  text-align: center;
+}
+.placeholder-main h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+.ph-sub { color: var(--muted); margin-bottom: 2rem; }
+.ph-badge {
+  display: inline-block;
+  padding: 0.3rem 1.2rem;
+  border-radius: 999px;
+  background: var(--magenta-soft);
+  color: var(--magenta-deep);
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+.ph-tip { color: var(--muted); margin-bottom: 2rem; }
+.ph-link { color: var(--magenta); text-decoration: none; font-weight: 600; }
+.ph-link:hover { text-decoration: underline; }

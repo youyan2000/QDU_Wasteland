@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>找回密码 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-body">
+  <div class="auth-shell">
+    <a class="auth-logo" href="/">Wasteland</a>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="resetTab">重置密码</button>
+      </div>
+
+      <!-- 步骤1：输入邮箱 -->
+      <div id="stepEmail" class="auth-form-panel">
+        <div class="field">
+          <label for="rpEmail">注册邮箱</label>
+          <input id="rpEmail" type="email" placeholder="you@qdu.edu.cn" required>
+        </div>
+        <div class="err" id="resetErr"></div>
+        <button class="auth-submit" id="rpSend">发送重置邮件</button>
+      </div>
+
+      <!-- 步骤2：设置新密码（带 token 时显示） -->
+      <div id="stepNew" class="auth-form-panel hidden">
+        <div class="field">
+          <label for="rpPassword">新密码</label>
+          <div class="pw-wrap">
+            <input id="rpPassword" type="password" placeholder="至少 6 位" required>
+            <button type="button" class="pw-toggle" data-target="rpPassword"><i class="icon-fill" data-icon="eye"></i></button>
+          </div>
+        </div>
+        <div class="err" id="resetErr2"></div>
+        <button class="auth-submit" id="rpConfirm">确认重置</button>
+      </div>
+    </div>
+    <p class="auth-foot">已经想起来密码了？<a href="/login.html" style="color:var(--magenta)">返回登录</a></p>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // 密码可见切换（auth.js 已处理 .pw-toggle，但本页也带上兜底）
+    document.querySelectorAll('.pw-toggle').forEach(btn => {
+      btn.onclick = () => {
+        const inp = document.getElementById(btn.dataset.target);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+      };
+    });
+
+    const token = new URLSearchParams(location.search).get('token');
+    const stepEmail = document.getElementById('stepEmail');
+    const stepNew = document.getElementById('stepNew');
+
+    if (token) {
+      stepEmail.style.display = 'none';
+      stepNew.classList.remove('hidden');
+    }
+
+    // 步骤1：请求重置邮件
+    document.getElementById('rpSend').onclick = async () => {
+      const errEl = document.getElementById('resetErr');
+      errEl.textContent = '';
+      const email = document.getElementById('rpEmail').value.trim();
+      if (!email) { errEl.textContent = '请输入邮箱'; return; }
+      const r = await fetch('/api/email/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const d = await r.json();
+      errEl.style.color = r.ok ? '#1a9e5c' : '#d32f2f';
+      errEl.textContent = d.error || d.message || (r.ok ? '如果该邮箱已注册，重置链接已发送' : '发送失败');
+    };
+
+    // 步骤2：确认重置
+    document.getElementById('rpConfirm').onclick = async () => {
+      const errEl = document.getElementById('resetErr2');
+      errEl.textContent = '';
+      const password = document.getElementById('rpPassword').value;
+      if (password.length < 6) { errEl.textContent = '密码至少 6 位'; return; }
+      const r = await fetch('/api/email/reset/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password })
+      });
+      const d = await r.json();
+      if (!r.ok) { errEl.textContent = d.error || '重置失败'; return; }
+      errEl.style.color = '#1a9e5c';
+      errEl.textContent = '密码已重置，3 秒后跳转登录…';
+      setTimeout(() => location.href = '/login.html', 3000);
+    };
+  </script>
+<script src="icons.js"></script>
+<script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
+</body>
+</html>

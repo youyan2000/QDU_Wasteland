@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专题 · 文章 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <style>
+    /* 专题页独立样式（自包含，避免与文章模块耦合导致的排版问题） */
+    .topics-body { background: var(--paper, #faf9f6); }
+    .topics-main { max-width: 860px; margin: 0 auto; padding: 2.5rem 20px; }
+    .topics-head { margin-bottom: 1.6rem; }
+    .topics-kicker { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--magenta, #ff2e88); font-weight: 600; }
+    .topics-h1 { font-size: clamp(1.8rem,4vw,2.6rem); font-weight: 800; letter-spacing: -.02em; margin: .2em 0; color: var(--ink, #1a1a2e); }
+    .topics-sub { color: var(--muted, #6b6b80); margin-bottom: 1rem; }
+    .topics-back { display: inline-block; margin-top: 6px; color: var(--magenta, #ff2e88); text-decoration: none; font-size: .92rem; }
+    .topics-back:hover { text-decoration: underline; }
+
+    .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+    .topic-card {
+      display: block; background: #fff; border: 1px solid rgba(26,26,46,.1); border-radius: 12px;
+      padding: 1.1rem 1.1rem .95rem; text-decoration: none; color: inherit;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .topic-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,26,46,.08); }
+    .topic-title { font-weight: 700; font-size: 1.05rem; color: #1a1a2e; margin-bottom: .35rem; line-height: 1.4; }
+    .topic-desc { color: #666; font-size: .85rem; line-height: 1.5; margin-bottom: .6rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .topic-meta { color: #999; font-size: .78rem; }
+
+    .topic-detail-head { background: #fff; border: 1px solid rgba(26,26,46,.1); border-radius: 12px; padding: 1.4rem; margin-bottom: 1.2rem; }
+    .topic-detail-head .td-title { font-size: 1.4rem; font-weight: 800; margin: .2rem 0 .5rem; color: #1a1a2e; }
+    .topic-detail-head .td-desc { color: #666; margin: 0 0 .4rem; }
+
+    .topic-article-list { display: flex; flex-direction: column; gap: 12px; }
+    .topic-article {
+      display: block; background: #fff; border: 1px solid rgba(26,26,46,.08); border-radius: 12px;
+      padding: 1rem 1.2rem; text-decoration: none; color: inherit; transition: border-color .18s, box-shadow .18s;
+    }
+    .topic-article:hover { border-color: var(--magenta, #ff2e88); box-shadow: 0 4px 18px rgba(255,46,136,.06); }
+    .topic-article .ta-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: .45rem; }
+    .topic-article .ta-cat { color: var(--magenta, #ff2e88); font-weight: 700; font-size: .78rem; background: rgba(255,46,136,.08); padding: .12rem .55rem; border-radius: 999px; }
+    .topic-article .ta-time { color: #999; font-size: .76rem; }
+    .topic-article .ta-title { font-weight: 800; font-size: 1.08rem; color: #1a1a2e; margin-bottom: .35rem; }
+    .topic-article .ta-author { color: #999; font-size: .8rem; }
+    .topic-empty { text-align: center; color: #999; padding: 3rem 0; }
+  </style>
+</head>
+<body class="topics-body">
+  <div id="site-nav"></div>
+
+  <main class="topics-main">
+    <div class="topics-head">
+      <div class="topics-kicker">TOPICS</div>
+      <h1 class="topics-h1">校园专题</h1>
+      <p class="topics-sub">把相关的文章收拢成一个专题，一次性看完一个主题。</p>
+      <a class="topics-back" href="/articles.html">← 返回文章</a>
+    </div>
+
+    <div id="topicView">
+      <div class="topic-empty">加载中…</div>
+    </div>
+  </main>
+
+  <script src="icons.js"></script>
+  <script src="nav.js?v=20260818s"></script>
+  <script src="report.js"></script>
+  <script src="topics.js"></script>
+</body>
+</html>

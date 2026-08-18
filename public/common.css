@@ -1,0 +1,226 @@
+/* common.css — QDU Wasteland 统一设计系统（token 地基）
+ * 审美主张：「一所当代大学的数字档案：克制、有编辑感、有人味」
+ * 原则：只允许一个强调色（品红）；圆角三档+pill；间距 base8；
+ *       阴影染背景禁纯黑；动效仅 transform/opacity、<300ms、prefers-reduced-motion。
+ * 用法：全站页面在 style.css/nav.css 之后引入。组件类统一从这里取。
+ * 注意：本文件不重定义 style.css 已有的 .btn/.btn-primary/.btn-ghost（保留首页英雄按钮），只做补充与统一。
+ */
+
+/* ================= 1. Token（变量）: 在 style.css :root 基础上补全 ================= */
+:root {
+  /* —— 中性增强（新增） —— */
+  --surface: #ffffff;                /* 卡片/面板白底 */
+  --surface-2: #faf9f7;             /* 次表面（info块/嵌套底，略深于卡片） */
+  --border: rgba(26, 26, 46, 0.10); /* 通用边框 */
+  --border-strong: rgba(26, 26, 46, 0.18);
+
+  /* —— 语义色（新增补齐，原散落 var(--error) 等收编） —— */
+  --error: #c0392b;
+  --error-soft: #fdecea;
+  --success: #1a7f37;
+  --success-soft: #e6f4ea;
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+
+  /* —— 分类色：学院马卡龙 8 色（低饱和，替代散落的蓝紫） —— */
+  --cat-1: #5b8def; --cat-2: #8b7ec8; --cat-3: #2ec4b6; --cat-4: #f2a65a;
+  --cat-5: #e2708a; --cat-6: #7fb069; --cat-7: #5cb3d9; --cat-8: #c49a5c;
+
+  /* —— 圆角三档 + pill —— */
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-pill: 999px;
+
+  /* —— 间距 base8 —— */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px;
+  --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
+
+  /* —— 阴影（染背景色，禁纯黑 hard shadow） —— */
+  --shadow-sm: 0 1px 2px rgba(26, 26, 46, 0.06);
+  --shadow-md: 0 4px 16px rgba(26, 26, 46, 0.08);
+  --shadow-lg: 0 12px 32px rgba(26, 26, 46, 0.12);
+
+  /* —— 字体分工 —— */
+  --font-sans: "Aptos", "Microsoft YaHei", -apple-system, sans-serif;
+  --font-serif: "Songti SC", "STSong", "SimSun", serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* —— 中性轨道 / 填充（由主题覆盖，浅色主题为浅灰/米白；深色主题为深灰） —— */
+  --track: #ececef;           /* 轨道灰底：btn-mini、badge/pill 底、占位 */
+  --track-hover: #dddddf;     /* 轨道 hover 加深 */
+  --fill-ghost: #f1f0f4;      /* 幽灵填充：auth 输入底、透明区 */
+  --viewer-line: #e2dfdb;     /* 预览/表格分隔线 */
+  --ann-tint: #fff5f9;        /* 公告/通知磨砂粉白底 */
+  --nb-tint: #fff9fb;         /* 通知项磨砂底（略粉） */
+  --risk-ink: #8a6d1a;        /* 待审(pending)文字 */
+  --skeleton: #ececef;        /* 骨架屏占位 */
+  --skeleton-shine: rgba(255,255,255,0.6);
+
+  /* —— 动效 —— */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --dur: 180ms;
+}
+
+/* ================= 2. 组件：小按钮（.btn-mini，后台/列表通用） ================= */
+.btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 0.8rem/1 var(--font-sans);
+  padding: 5px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--track);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.btn-mini:hover { background: var(--track-hover); transform: translateY(-1px); }
+.btn-mini.danger { background: var(--error-soft); color: var(--error); }
+.btn-mini.danger:hover { background: var(--error-soft); filter: brightness(.97); }
+
+/* ================= 3. 徽标 / pill / 分类标签 ================= */
+.badge,
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--track);
+}
+.pill.admin { background: var(--magenta-soft); color: var(--magenta-deep); }
+.pill.pending { background: var(--warning-soft); color: var(--risk-ink); }
+.pill.banned { background: var(--error-soft); color: var(--error); }
+
+/* ================= 4. 空态（K7：空态插图 + 友好文案） ================= */
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 3rem 1.5rem;
+  font-size: 0.94rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .6rem;
+}
+/* 内嵌空态插图（克制的线性 SVG，随主题色） */
+.empty::before {
+  content: "";
+  width: 56px; height: 56px;
+  background-repeat: no-repeat; background-position: center;
+  background-size: contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56' fill='none'%3E%3Crect x='14' y='18' width='28' height='22' rx='4' stroke='%238a8a93' stroke-width='1.6'/%3E%3Cpath d='M17 26h22M17 32h22M17 38h14' stroke='%238a8a93' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M27 12l-4 6h8z' fill='%23d9d9de'/%3E%3C/svg%3E");
+  opacity: .55;
+  margin: 0 auto .2rem;
+}
+.empty .empty-title { font-weight:600; font-size:1rem; color:var(--ink); }
+.empty .empty-hint { font-size:.88rem; }
+
+/* ================= 4b. 骨架屏（K7：加载占位，克制 shimmer） ================= */
+.skeleton-list { display:flex; flex-direction:column; gap:12px; padding: 8px 0; }
+.skeleton-card {
+  height: 74px; border-radius: var(--radius-md);
+  background: var(--skeleton);
+  position: relative; overflow: hidden;
+}
+.skeleton-card::after {
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(100deg, transparent 20%, var(--skeleton-shine) 50%, transparent 80%);
+  animation: skeleton-shine 1.4s infinite;
+}
+@keyframes skeleton-shine { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton-card::after { animation: none; opacity:.4; } }
+
+/* ================= 5. 表单聚焦 ================= */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--magenta);
+  box-shadow: 0 0 0 3px var(--magenta-soft);
+}
+
+/* ================= 6. 微交互（I6，遵循克制动效规范） ================= */
+/* 卡片统一 hover 反馈 */
+.card,
+.course-card,
+.article-card,
+.post-item,
+.forum-chip,
+.notif-card,
+.profile-card,
+.my-section,
+.offering-card,
+.topic-card,
+.u-card {
+  transition: transform var(--dur, 0.18s) var(--ease, ease),
+              box-shadow var(--dur, 0.18s) var(--ease, ease),
+              border-color var(--dur, 0.18s) var(--ease, ease);
+}
+/* 可点击卡片 hover 微抬起 */
+a[href].course-card:hover,
+a[href].article-card:hover,
+a[href].topic-card:hover,
+.post-item:hover,
+.forum-chip:hover,
+.topic-card:hover {
+  transform: translateY(-2px);
+}
+/* 按钮按压反馈（仅缩放，性能安全） */
+button:active,
+.btn:active,
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* ================= 7. 动效尊重 ================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================= 8. I6.4 悬浮释义（工具提示） ================= */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,32,.92); color: #fff; font-size: .72rem; font-weight: 500;
+  padding: 3px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .15s; z-index: 900; font-family: "Aptos","Microsoft YaHei",sans-serif;
+}
+[data-tip]:hover::after, [data-tip]:focus::after { opacity: 1; }
+
+/* ================= 9. I6.5 全站互动细节 ================= */
+/* 按钮按压反馈 */
+button.btn, button.btn-newpost, button.btn-submit, .btn-primary, button.btn-mini {
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+button.btn:active, button.btn-newpost:active, button.btn-submit:active,
+.btn-primary:active, button.btn-mini:active {
+  transform: translateY(1px) scale(0.98);
+}
+/* 卡片/方块悬浮提升 */
+.card, .panel, .article-card, .topic-card, .stat-card, .offering-card,
+.comment-item, .post-card, .user-card, .course-card {
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+/* 可点击卡片悬浮 */
+.clickable:hover, a.card:hover, .panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(20,20,32,.08);
+}
+/* 焦点可见（无障碍 K6） */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--magenta); outline-offset: 2px;
+}
+/* 键盘访问 skip-link（K6） */
+.skip-link {
+  position:absolute; left:-9999px; top:0;
+}
+.skip-link:focus {
+  left: 8px; top: 8px; z-index: 9999; background: var(--magenta); color:#fff;
+  padding: 8px 14px; border-radius: 8px; text-decoration:none;
+}

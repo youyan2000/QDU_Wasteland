@@ -1,0 +1,106 @@
+/* upload.css — 上传资料页（检索库风，3步向导，参考站结构） */
+.upload-body { background: var(--paper); }
+.upload-main { max-width: 860px; margin: 0 auto; padding: 2.5rem var(--space-page); }
+
+.upload-head { margin-bottom: 1.5rem; }
+.kicker { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--magenta); font-weight: 600; }
+.upload-h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; margin: .2em 0; }
+.upload-sub { color: var(--muted); }
+
+/* 步骤指示器 */
+.steps { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; }
+.step { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .9rem; font-weight: 600; }
+.step.active { color: var(--magenta); }
+.step-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700;
+}
+.step.active .step-num { background: linear-gradient(90deg, var(--magenta), var(--sunrise)); color: #fff; }
+.step-line { flex: 1; height: 2px; background: var(--surface-2); border-radius: var(--radius-sm); }
+
+/* 步骤面板 */
+.step-panel { background: var(--surface); border-radius: var(--radius-lg); padding: 1.6rem 1.8rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+.step-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.2rem; }
+.step-hint { font-size: .8rem; color: var(--muted); font-weight: 400; margin-left: 8px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.field-full { grid-column: 1 / -1; }
+.field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .4rem; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: .7rem .85rem;
+  border: 1px solid rgba(26,26,46,0.18); border-radius: var(--radius-md); font-size: .95rem;
+}
+.field textarea { resize: vertical; font-family: inherit; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--magenta-soft); border-color: var(--magenta); }
+
+/* 课程选择 */
+.course-picker { position: relative; }
+.course-suggest {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+  background: var(--surface); border: 1px solid rgba(26,26,46,0.12); border-radius: var(--radius-md);
+  max-height: 220px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  display: none;
+}
+.course-suggest div { padding: .55rem .8rem; cursor: pointer; font-size: .9rem; }
+.course-suggest div:hover { background: var(--magenta-soft); }
+.course-suggest .empty { color: var(--muted); cursor: default; }
+#uCourseSelected { margin-top: .5rem; }
+.selected-course { font-size: .9rem; color: var(--magenta-deep); background: var(--magenta-soft); padding: .3rem .8rem; border-radius: var(--radius-sm); display: inline-block; font-weight: 600; }
+
+/* 按钮 */
+.step-actions { display: flex; gap: 12px; margin-top: 1.4rem; align-items: center; }
+.btn-next, .btn-submit {
+  padding: .75rem 2rem; border: none; border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--magenta), var(--sunrise));
+  color: #fff; font-weight: 700; cursor: pointer; font-size: .95rem;
+}
+.btn-prev {
+  padding: .75rem 1.6rem; border: 1px solid rgba(26,26,46,0.18); border-radius: var(--radius-md);
+  background: var(--surface); color: var(--ink); cursor: pointer; font-weight: 600;
+}
+.btn-next:disabled { opacity: .5; cursor: not-allowed; }
+#uMsg { font-size: .85rem; color: var(--muted); }
+
+/* 拖拽区 */
+.drop-zone {
+  border: 2px dashed rgba(255,46,136,0.4);
+  border-radius: var(--radius-lg);
+  padding: 2.6rem 2rem; text-align: center; cursor: pointer;
+  transition: all .2s; background: var(--surface);
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--magenta); background: var(--magenta-soft); }
+.dz-icon { font-size: 2.4rem; margin-bottom: .6rem; }
+.dz-hint { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.file-chip {
+  display: flex; align-items: center; gap: 12px;
+  padding: .8rem 1rem; border: 1px solid var(--magenta-soft); border-radius: var(--radius-md);
+  background: var(--surface); font-weight: 600; margin-top: .8rem;
+}
+.file-chip .fc-size { color: var(--muted); font-weight: 400; margin-left: auto; }
+.file-chip .fc-remove { cursor: pointer; color: var(--error); font-weight: 700; background: none; border: none; }
+
+
+/* ---- 单页上传表单（非步骤向导） ---- */
+.lock-course {
+  background: var(--surface);
+  border: 1px solid var(--magenta-soft);
+  border-radius: var(--radius-md);
+  padding: .8rem 1rem;
+  margin-bottom: 1.2rem;
+  color: var(--ink);
+}
+.lock-course strong { color: var(--magenta-deep); }
+.upload-form { background: var(--surface); border-radius: var(--radius-lg); padding: 1.6rem 1.8rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+.upload-row { margin-bottom: 1.2rem; }
+.upload-row > label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .4rem; }
+.upload-row input[type=text], .upload-row select, .upload-row textarea {
+  width: 100%; padding: .7rem .85rem; border: 1px solid rgba(26,26,46,0.18); border-radius: var(--radius-md); font-size: .95rem;
+}
+.upload-row textarea { resize: vertical; font-family: inherit; }
+.upload-row input:focus, .upload-row select:focus, .upload-row textarea:focus { outline: 2px solid var(--magenta-soft); border-color: var(--magenta); }
+.upload-actions { display: flex; gap: 12px; align-items: center; margin-top: 1.4rem; }
+.submit-note { color: var(--muted); font-size: .82rem; }
+.muted { color: var(--muted); font-weight: 400; font-size: .8rem; }

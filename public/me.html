@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的主页 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="me.css">
+</head>
+<body class="me-body">
+  <!-- 全站统一导航 -->
+  <div id="site-nav"></div>
+
+  <main class="me-main">
+    <div id="meContent">
+      <div class="me-loading">加载中…</div>
+    </div>
+  </main>
+
+  <!-- 编辑资料弹层 -->
+  <div id="editProfileModal" class="modal" style="display:none">
+    <div class="modal-box" style="width:min(460px,92vw)">
+      <div class="modal-head">
+        <h3>编辑资料</h3>
+        <button class="modal-close" id="epClose"><i class="icon-fill" data-icon="close"></i></button>
+      </div>
+      <div class="pf-row">
+        <label>性别</label>
+        <div style="display:flex;gap:14px">
+          <label style="display:flex;align-items:center;gap:5px"><input type="radio" name="epGender" value="男"> 男</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="radio" name="epGender" value="女"> 女</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="radio" name="epGender" value="保密"> 保密</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="radio" name="epGender" value=""> 不填</label>
+        </div>
+      </div>
+      <div class="pf-row">
+        <label>年龄</label>
+        <input id="epAge" type="number" min="1" max="100" placeholder="如 20">
+      </div>
+      <div class="pf-row">
+        <label>籍贯</label>
+        <div style="display:flex;gap:8px;width:100%">
+          <select id="epProv" style="flex:1;padding:.45rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;font-size:.85rem;background:#fff">
+            <option value="">选择省份</option>
+          </select>
+          <select id="epCity" style="flex:1;padding:.45rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;font-size:.85rem;background:#fff">
+            <option value="">先选省份</option>
+          </select>
+        </div>
+      </div>
+      <div class="pf-row">
+        <label>个性签名</label>
+        <input id="epBio" type="text" maxlength="20" placeholder="一句话介绍自己">
+      </div>
+      <div class="err" id="epErr" style="color:#d32f2f;min-height:1em"></div>
+      <div class="pf-actions">
+        <button id="epSave" class="btn-submit">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 隐私设置弹层 -->
+  <div id="privacyModal" class="modal" style="display:none">
+    <div class="modal-box" style="width:min(460px,92vw)">
+      <div class="modal-head">
+        <h3>对外展示设置</h3>
+        <button class="modal-close" id="prvClose"><i class="icon-fill" data-icon="close"></i></button>
+      </div>
+      <p style="color:var(--muted);font-size:.85rem;margin:0 0 12px">控制别人看你的主页时能看到哪些信息。取消勾选 = 不对外展示。</p>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">年龄</label><input type="checkbox" id="prvAge">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">性别</label><input type="checkbox" id="prvGender">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">学院</label><input type="checkbox" id="prvCollege">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">专业</label><input type="checkbox" id="prvMajor">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">籍贯</label><input type="checkbox" id="prvNative">
+      </div>
+      <div class="pf-actions">
+        <button id="prvSave" class="btn-submit">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+<script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
+  <script src="nav.js?v=20260818s"></script>
+  <script src="me.js?v=20260818r"></script>
+</body>
+</html>

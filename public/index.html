@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wasteland · 青岛大学课程资料共享社区</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="common.css">
+
+</head>
+<body>
+  <!-- 首页保持 hero 纯粹，只在右上角留一个克制的登录入口 -->
+  <div class="home-top-actions">
+    <span id="homeAuth"></span>
+  </div>
+
+  <!-- Hero：图片 + Wasteland 大字，品红主调，朝阳大海感 -->
+  <section class="hero" id="top">
+    <div class="hero-image-wrap">
+      <!-- 主视觉图片：从 F:\WallPaper 选取（当前占位01.jpg，可更换） -->
+      <img class="hero-image" src="wallpaper.jpg" alt="朝阳与大海">
+      <div class="hero-wash"></div>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-title">Wasteland</h1>
+      <p class="hero-subtitle">课程资料 · 同学社区 · 学校记忆 —— 属于青岛大学自己的数字荒原</p>
+      <div class="hero-actions">
+        <a href="/courses.html" class="btn btn-primary">进入课程库</a>
+        <a href="/forum.html" class="btn btn-ghost">逛逛社区</a>
+      </div>
+    </div>
+    <!-- 非对称角落信息块（借鉴设计 DNA 的 location 块） -->
+    <aside class="hero-location">
+      <span class="loc-value">QDU</span>
+    </aside>
+  </section>
+
+  <!-- 简单的三个模块入口 -->
+  <section class="modules" id="courses">
+    <h2 class="section-title">从一门课开始</h2>
+    <div class="module-grid">
+      <a class="module-card" href="/courses.html">
+        <span class="module-icon" data-icon="book"></span>
+        <h3>关于课程</h3>
+        <p>检索全校 3800+ 课程，分享与获取学习资料</p>
+      </a>
+      <a class="module-card" href="/forum.html">
+        <span class="module-icon" data-icon="messages"></span>
+        <h3>关于同学</h3>
+        <p>广场论坛：交易 · 纸片 · 求助 · 友人</p>
+      </a>
+      <a class="module-card" href="/articles.html">
+        <span class="module-icon" data-icon="school"></span>
+        <h3>文章</h3>
+        <p>比赛 · 老师 · 生活方式 · 社团</p>
+      </a>
+      <a class="module-card" href="/me.html">
+        <span class="module-icon" data-icon="user"></span>
+        <h3>关于自己</h3>
+        <p>我的资料 · 我的主页 · DIY 页面</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer：深色收尾（设计 DNA 的深浅对照）-->
+  <footer class="footer">
+    <p>Wasteland © 2026 — 青岛大学学习互助社区（内测） · <a href="/terms.html" style="color:var(--muted)">用户协议</a> · <a href="/privacy.html" style="color:var(--muted)">隐私政策</a></p>
+  </footer><script>fetch("/api/me").then(r=>r.json()).then(d=>{const b=document.getElementById("homeAuth");if(!b)return;if(d.loggedIn){b.innerHTML=`<a href="/me.html" style="color:#fff;text-decoration:none;font-size:.92rem;opacity:.9">&#128100; ${(d.user.nickname||d.user.email)}</a>`}else{b.innerHTML=`<a href="/login.html" style="color:#fff;text-decoration:none;font-size:.92rem;font-weight:600">登录</a>`}}).catch(()=>{})</script><script src="icons.js"></script>
+<script>document.querySelectorAll("[data-icon]").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(22);});</script>
+</body>
+</html>

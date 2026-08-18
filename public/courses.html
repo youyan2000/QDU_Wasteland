@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课程 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="courses.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+</head>
+<body class="courses-body">
+  <!-- 全站统一导航 -->
+  <div id="site-nav"></div>
+
+  <main class="courses-main">
+    <!-- 栏目眉 + 大标题 -->
+    <div class="courses-head">
+      <span class="kicker">RESOURCE LIBRARY</span>
+      <h1 class="courses-h1">课程档案</h1>
+      <p class="courses-sub" id="subText">加载中…</p>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <input id="qInput" type="text" placeholder="搜索课程名称 / 编号 / 通选类别…" autofocus>
+      <button id="searchBtn">搜索</button>
+    </div>
+
+    <!-- 多维筛选器（高级检索） -->
+    <div class="filter-panel">
+      <button type="button" class="filter-toggle" id="filterToggle"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg> 高级检索 <span class="caret">▾</span></button>
+      <div class="filter-body" id="filterBody">
+      <div class="filter-row">
+        <span class="filter-label">类别</span>
+        <div class="filter-opts" id="catOpts"></div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">开课院系</span>
+        <input id="collegeInput" type="text" class="filter-input" placeholder="输入院系关键词">
+        <span class="filter-label" style="margin-left:14px">专业</span>
+        <input id="majorInput" type="text" class="filter-input" placeholder="如 计算机 / 软件工程">
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">任课老师</span>
+        <input id="teacherInput" type="text" class="filter-input" placeholder="输入老师姓名">
+        <span class="filter-label" style="margin-left:14px">学期</span>
+        <select id="semSelect" class="filter-input"><option value="">全部学期</option></select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">上课时间</span>
+        <select id="timeSelect" class="filter-input">
+          <option value="">不限</option>
+          <option value="周一">周一</option>
+          <option value="周二">周二</option>
+          <option value="周三">周三</option>
+          <option value="周四">周四</option>
+          <option value="周五">周五</option>
+          <option value="周六">周六</option>
+          <option value="周日">周日</option>
+        </select>
+        <span class="filter-label" style="margin-left:14px">考核</span>
+        <select id="examSelect" class="filter-input">
+          <option value="">不限</option>
+          <option value="考试">考试</option>
+          <option value="考查">考查</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">学分区间</span>
+        <input id="creditMin" type="number" min="0" max="20" step="0.5" class="filter-input" style="width:90px" placeholder="最低学分">
+        <span style="padding:0 4px">~</span>
+        <input id="creditMax" type="number" min="0" max="20" step="0.5" class="filter-input" style="width:90px" placeholder="最高学分">
+        <span class="filter-label" style="margin-left:18px">排序</span>
+        <select id="sortSelect" class="filter-input" style="width:170px">
+          <option value="name">按名称</option>
+          <option value="credit">按学分(高→低)</option>
+          <option value="college">按院系</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <button id="clearFilters" class="btn-clear">清除筛选</button>
+      </div>
+      </div>
+    </div>
+
+    <details class="tag-band">
+      <summary><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> 课程标签</summary>
+      <div class="tag-row" id="tagRow"></div>
+    </details>
+
+    <!-- 统计 -->
+    <div class="list-meta" id="listMeta"></div>
+
+    <!-- 课程列表 -->
+    <div class="course-list" id="courseList"></div>
+
+    <!-- 分页 -->
+    <div class="pager" id="pager"></div>
+  </main>
+
+  <script src="courses.js"></script>
+<script src="icons.js"></script>
+  <script src="nav.js?v=20260818s"></script></body>
+</html>

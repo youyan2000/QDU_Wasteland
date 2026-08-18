@@ -1,0 +1,181 @@
+/* articles.css — 关于学校 文章模块（列表 / 编辑器 / 阅读页）
+   模块气质：New Yorker 黑白编辑风 → 衬线标题 + 编辑感排版（学自 shucourse Noto Serif SC） */
+:root {
+  --font-editorial: "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+}/* articles.css — 关于学校 文章模块（token 收敛 + 去AI霓虹渐变，I4） */
+:root {
+  --grad-magenta: linear-gradient(90deg, var(--magenta), var(--sunrise));
+}
+
+/* articles.css — 关于学校 文章模块（列表 / 编辑器 / 阅读页） */
+.articles-body { background: var(--paper); }
+.articles-main { max-width: 860px; margin: 0 auto; padding: 2.5rem var(--space-page); }
+.kicker { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--magenta); font-weight: 600; }
+.articles-h1 { font-family: var(--font-editorial); font-size: clamp(1.8rem,4vw,2.6rem); font-weight: 800; letter-spacing: -.02em; margin: .2em 0; }
+.articles-sub { color: var(--muted); }
+
+/* 分类条 */
+.cat-bar { display: flex; gap: 10px; margin: 1.4rem 0 1.6rem; flex-wrap: wrap; }
+.cat-chip {
+  padding: .45rem 1.1rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+  background: var(--surface); cursor: pointer; color: var(--muted); font-size: .9rem;
+}
+.cat-chip:hover { border-color: var(--magenta); }
+.cat-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+
+/* 工具栏 */
+.articles-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+.sort-tabs { display: flex; gap: 4px; }
+.sort-tab {
+  padding: .45rem 1.2rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+  background: var(--surface); cursor: pointer; color: var(--muted);
+}
+.sort-tab.active { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.btn-newpost {
+  padding: 0.7rem 1.6rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--grad-magenta);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur, 0.18s) var(--ease, ease), box-shadow var(--dur, 0.18s) var(--ease, ease);
+}
+.btn-newpost:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(255, 46, 136, 0.4);
+}
+
+/* 文章列表 */
+.article-list { display: flex; flex-direction: column; gap: 12px; }
+.article-card {
+  display: block; color: inherit;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.2rem 1.4rem; transition: all .2s;
+}
+.article-card:hover { border-color: var(--magenta-soft); box-shadow: 0 4px 18px rgba(255,46,136,0.06); }
+.article-card .ac-title { font-family: var(--font-editorial);
+  display: inline-block; font-weight: 800; font-size: 1.12rem; letter-spacing: -.01em;
+  color: var(--ink); text-decoration: none;
+}
+.article-card .ac-title:hover { color: var(--magenta); }
+.article-card .ac-author { color: var(--muted); }
+.article-card .ac-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+.article-card .cat-tag {
+  color: var(--magenta); font-weight: 700; font-size: .8rem; letter-spacing: .03em;
+  background: rgba(255,46,136,.08); padding: .15rem .6rem; border-radius: var(--radius-pill);
+}
+.article-card .ac-time { color: var(--muted); font-size: .78rem; }
+.article-card .ac-title { font-family: var(--font-editorial); font-weight:800; font-size:1.12rem; letter-spacing:-.01em; color:var(--ink); text-decoration:none; display:inline-block; }
+.article-card .ac-excerpt { color: var(--muted); font-size: .9rem; line-height: 1.7; margin-top: .4rem; }
+.article-card .ac-meta { color: var(--muted); font-size: .8rem; margin-top: .7rem; }
+.empty { text-align: center; color: var(--muted); padding: 3rem 0; }
+
+/* ============ 编辑器 ============ */
+.editor-main { max-width: 1180px; margin: 0 auto; padding: 1.6rem var(--space-page) 3rem; }
+.editor-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; }
+.editor-back { color: var(--muted); text-decoration: none; font-size: .95rem; }
+.editor-back:hover { color: var(--magenta); }
+.editor-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.1rem; flex-wrap: wrap; }
+.editor-title {
+  flex: 1; min-width: 260px;
+  font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em;
+  border: none; border-bottom: 2px solid rgba(26,26,46,.15); background: transparent; padding: .4rem 0;
+  font-family: inherit; color: var(--ink);
+}
+.editor-title:focus { outline: none; border-bottom-color: var(--magenta); }
+.editor-cat {
+  padding: .5rem 1.1rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+  background: var(--surface); cursor: pointer; font-size: .9rem; color: var(--ink);
+}
+.editor-cat:hover { border-color: var(--magenta); }
+.editor-anon { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: .88rem; cursor: pointer; }
+
+.editor-body { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .editor-body { grid-template-columns: 1fr; } }
+.editor-col {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+  display: flex; flex-direction: column; min-height: 560px;
+}
+.editor-col-head {
+  padding: .6rem 1rem; font-weight: 700; font-size: .9rem; letter-spacing: .02em;
+  border-bottom: 1px solid var(--border); color: var(--ink);
+  display: flex; gap: 8px; align-items: center;
+}
+.editor-col-head .hint { font-weight: 400; color: var(--muted); font-size: .78rem; }
+.md-toolbar { display: flex; gap: 4px; padding: .45rem .7rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.md-toolbar button {
+  width: 30px; height: 30px; border: 1px solid var(--border); background: var(--surface);
+  border-radius: var(--radius-sm); cursor: pointer; font-size: .85rem; color: var(--ink);
+}
+.md-toolbar button:hover { border-color: var(--magenta); color: var(--magenta); }
+.editor-textarea {
+  flex: 1; border: none; resize: none; padding: 1rem; font-size: .95rem; line-height: 1.75;
+  font-family: inherit; color: var(--ink); background: var(--surface);
+}
+.editor-textarea:focus { outline: none; }
+.editor-foot-hint { padding: .5rem 1rem; color: var(--muted); font-size: .78rem; border-top: 1px solid var(--border); }
+.editor-preview { padding: 1rem; overflow-y: auto; flex: 1; }
+.editor-err {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 26px; z-index: 500;
+  background: var(--error); color: #fff; padding: .7rem 1.4rem; border-radius: var(--radius-md);
+  font-size: .92rem; box-shadow: 0 6px 24px rgba(0,0,0,.2); display: none;
+}
+.editor-err:not(:empty) { display: block; }
+
+/* ============ 阅读页 ============ */
+.read-main { max-width: 780px; margin: 0 auto; padding: 2rem var(--space-page) 3.5rem; }
+.read-main .editor-back { display: inline-block; margin-bottom: 1.8rem; }
+.read-head { margin-bottom: 1.6rem; }
+.read-title { font-family: var(--font-editorial); font-size: clamp(1.6rem,3.6vw,2.3rem); font-weight: 800; letter-spacing: -.02em; margin: .7rem 0 .5rem; line-height: 1.3; }
+.read-meta { display: flex; gap: 16px; color: var(--muted); font-size: .85rem; align-items: center; }
+.read-author { font-weight: 600; color: var(--ink); }
+.read-body {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 2rem 2.2rem; font-size: 1rem; line-height: 1.9;
+}
+.read-foot { margin-top: 1.6rem; display: flex; justify-content: center; }
+/* ============ F4 专题页 ============ */
+.topic-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 14px; margin-top: 1.2rem; }
+.topic-card { display:block; background: var(--surface); border:1px solid rgba(26,26,46,.1); border-radius: var(--radius-md); padding:1.1rem 1.1rem .9rem; text-decoration:none; color:inherit; transition:transform .18s ease,box-shadow .18s ease; }
+.topic-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(26,26,46,.08); }
+.topic-title { font-weight:700; font-size:1.05rem; color:var(--ink,#1a1a2e); margin-bottom:.35rem; }
+.topic-desc { color: var(--muted); font-size:.85rem; line-height:1.5; margin-bottom:.6rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.topic-meta { color: var(--muted); font-size:.78rem; }
+.topic-detail-head { background: var(--surface); border:1px solid rgba(26,26,46,.1); border-radius: var(--radius-md); padding:1.4rem; margin:1.2rem 0; }
+.topic-detail-head h2 { margin:.2rem 0 .5rem; }
+.topic-detail-head p { color: var(--muted); margin:0 0 .4rem; }
+
+
+/* 文章封面（G0文章增强） */
+.article-card { overflow: hidden; }
+.article-card .ac-cover {
+  height: 120px; display: flex; align-items: center; justify-content: center;
+  color: #fff; position: relative; margin: -1.2rem -1.4rem 1rem;
+}
+.article-card .ac-cover .ac-cover-letter { font-size: 3rem; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.3); }
+.article-card .ac-cover .ac-cover-cat {
+  position: absolute; top: 10px; left: 12px; font-size: .75rem; background: rgba(0,0,0,.3);
+  color:#fff; padding: 2px 10px; border-radius: var(--radius-pill);
+}
+.cover-default { background: linear-gradient(135deg, var(--cat-5), var(--cat-1)); }
+.cover-competition { background: linear-gradient(135deg, var(--cat-5), var(--magenta)); }
+.cover-club { background: linear-gradient(135deg, var(--cat-3), var(--cat-6)); }
+.cover-life { background: linear-gradient(135deg, var(--cat-4), var(--cat-8)); }
+.cover-teacher { background: linear-gradient(135deg, var(--cat-1), var(--cat-2)); }
+.article-card .ac-title { font-family: var(--font-editorial); display:block; margin-bottom:.4rem; }
+
+/* J7 文章封面上传 + 封面图渲染 */
+.cover-box { display:flex; align-items:center; gap:14px; margin:0 auto 14px; max-width:260px;
+  border:1px dashed rgba(26,26,46,.2); border-radius:12px; padding:12px; background:rgba(26,26,46,.02); }
+.cover-box .cover-label { font-size:.9rem; font-weight:600; color:#333; }
+.cover-preview { width:120px; height:80px; object-fit:cover; border-radius:8px; }
+.ac-cover-img { overflow:hidden; }
+.ac-cover-img img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* K3 阅读正文行宽（≤65字符） + K4 衬线编辑感 */
+.read-body, .read-body p { max-width: 65ch; margin-left: auto; margin-right: auto; }
+.read-body, .read-body .md-view { font-family: Georgia, "Songti SC", "STSong", serif; }
+.read-body h1, .read-body h2, .read-body h3 { font-family: "Aptos", "Microsoft YaHei", sans-serif; }

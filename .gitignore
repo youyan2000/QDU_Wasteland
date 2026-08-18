@@ -1,0 +1,42 @@
+# Go
+*.exe
+*.exe~
+*.test
+*.out
+dist/
+build/
+
+# Node / 前端
+node_modules/
+.vite/
+*.local
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 环境（含 SMTP 授权码等敏感信息）
+.env
+.env.local
+*.env
+
+# 临时 / 日志
+*.log
+srv_*.txt
+fore_*.txt
+
+# 数据库
+qdu-auth.db
+*.db-wal
+*.db-shm
+
+# 上传文件
+uploads/
+
+# 本地测试脚本产物
+test-*.tmp
+
+# ���ز��Խű�����Ĭ���˺ţ�����⣩
+test-v7.js

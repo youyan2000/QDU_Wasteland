@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>论坛 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="forum.css">
+</head>
+<body class="forum-body">
+  <div id="site-nav"></div>
+
+  <main class="forum-main">
+    <div class="forum-head">
+      <span class="kicker">COMMUNITY</span>
+      <div class="forum-title-row">
+        <h1 class="forum-h1">论坛</h1>
+        <button class="all-chip active" data-all="1" id="allChip">全部</button>
+      </div>
+      <p class="forum-sub">遇见别的人，而不是别的学习机器。四个广场，尽情表达与互助。</p>
+      <!-- 四个广场一排并列 -->
+      <div class="forums-bar" id="forumsBar"></div>
+    </div>
+
+    <!-- 排序 + 发帖 -->
+    <div class="forums-toolbar">
+      <div class="sort-tabs">
+        <button class="sort-tab active" data-sort="latest">最新</button>
+        <button class="sort-tab" data-sort="hot">热门</button>
+      </div>
+      <button id="newPostBtn" class="btn-newpost">＋ 发帖</button>
+    </div>
+
+    <!-- 帖子列表 -->
+    <div id="postList" class="post-list">
+      <div class="empty">加载中…</div>
+    </div>
+  </main>
+
+  <!-- 发帖弹层 -->
+  <div id="postModal" class="modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>发帖</h3>
+        <button class="modal-close" id="modalClose"><i class="icon-fill" data-icon="close"></i></button>
+      </div>
+      <div class="pf-row">
+        <label>广场</label>
+        <select id="pfForum"></select>
+      </div>
+      <div class="pf-row">
+        <label>标题</label>
+        <input id="pfTitle" type="text" placeholder="一句话标题" autocomplete="off">
+      </div>
+      <div class="pf-row">
+        <label>内容</label>
+        <textarea id="pfContent" rows="4" placeholder="详细内容…"></textarea>
+      </div>
+      <div class="pf-row">
+        <label>验证码</label>
+        <div class="captcha-row">
+          <img id="pfCapImg" class="captcha-img" alt="验证码" onclick="loadPfCaptcha(this)">
+          <input id="pfCaptcha" type="text" placeholder="输入验证码" maxlength="6" autocomplete="off">
+          <input type="hidden" id="pfCaptchaId">
+          <button type="button" onclick="loadPfCaptcha(document.getElementById(&quot;pfCapImg&quot;))">换一张</button>
+        </div>
+      </div>
+      <div class="pf-row">
+        <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="pfAnon"> 匿名发帖</label>
+      </div>
+      <div class="err" id="pfErr" style="color:#d32f2f;min-height:1em"></div>
+      <div class="pf-actions">
+        <button id="pfSubmit" class="btn-submit">发布</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+<script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
+  <script src="nav.js?v=20260818s"></script>
+  <style>.captcha-row{display:flex;gap:8px;align-items:center}.captcha-img{width:110px;height:40px;border:1px solid rgba(26,26,46,.15);border-radius:8px;cursor:pointer}.captcha-row input{flex:1}.captcha-row button{white-space:nowrap;padding:.35rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;background:#fff;cursor:pointer;font-size:.8rem}</style>
+  <script>
+    window.loadPfCaptcha = async function (img){
+      try{ const d=await (await fetch("/api/captcha")).json(); if(!d.id) return;
+        document.getElementById("pfCaptchaId").value=d.id;
+        if(img) img.src="/api/captcha/"+d.id+".svg";
+      }catch(e){}
+    };
+  </script>
+  <script src="forum.js"></script>
+</body>
+</html>

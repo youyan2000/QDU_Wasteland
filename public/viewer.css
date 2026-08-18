@@ -1,0 +1,48 @@
+/* viewer.css — 资料预览器样式 */
+.viewer-body { background: var(--paper); }
+.viewer-main { max-width: 900px; margin: 0 auto; padding: 1.5rem var(--space-page); }
+
+.viewer-head {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 1.2rem;
+}
+.viewer-back { color: var(--muted); text-decoration: none; font-size: .9rem; }
+.viewer-back:hover { color: var(--magenta); }
+.viewer-name { flex: 1; font-weight: 700; font-size: 1.05rem; }
+.viewer-download {
+  color: var(--magenta); text-decoration: none; font-weight: 600; font-size: .9rem;
+  padding: .4rem .9rem; border: 1px solid var(--magenta-soft); border-radius: 8px;
+}
+.viewer-download:hover { background: var(--magenta-soft); }
+
+.viewer-content {
+  background: var(--surface); border-radius: 14px; padding: 1.6rem; box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  min-height: 400px;
+}
+.viewer-frame {
+  width: 100%; height: 80vh; border: none; border-radius: 8px;
+}
+.img-wrap { text-align: center; }
+.img-wrap img { max-width: 100%; max-height: 80vh; border-radius: 8px; }
+.plain-view {
+  white-space: pre-wrap; font-family: Consolas, monospace; font-size: .9rem;
+  line-height: 1.6; overflow-x: auto;
+}
+
+/* Markdown 渲染样式 */
+.md-view { line-height: 1.75; font-size: .98rem; }
+.md-view h1 { font-size: 1.7rem; font-weight: 700; margin: 1rem 0 .6rem; border-bottom: 1px solid var(--track); padding-bottom: .3rem; }
+.md-view h2 { font-size: 1.4rem; font-weight: 700; margin: 1.2rem 0 .5rem; }
+.md-view h3 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 .5rem; }
+.md-view p { margin: .6rem 0; }
+.md-view ul, .md-view ol { margin: .5rem 0 .5rem 1.4rem; }
+.md-view li { margin: .2rem 0; }
+.md-view blockquote { border-left: 3px solid var(--magenta); padding-left: 1rem; color: var(--muted); margin: .6rem 0; }
+.md-view code.md-inline { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: .88em; font-family: Consolas, monospace; }
+.md-view pre.md-code { background: var(--surface-2); padding: 1rem; border-radius: 8px; overflow-x: auto; }
+.md-view pre.md-code code { font-family: Consolas, monospace; font-size: .88em; }
+.md-view hr { border: none; border-top: 1px solid var(--viewer-line); margin: 1.2rem 0; }
+.md-view a { color: var(--magenta); }
+.md-view img { max-width: 100%; border-radius: 6px; }
+.md-view table { border-collapse: collapse; width: 100%; margin: .8rem 0; }
+.md-view th, .md-view td { border: 1px solid #e5e2dd; padding: 6px 10px; text-align: left; }
+.md-view th { background: var(--surface-2); }

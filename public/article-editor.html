@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>写文章 · 文章 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="articles.css">
+</head>
+<body class="articles-body">
+  <div id="site-nav"></div>
+
+  <main class="editor-main">
+    <div class="editor-head">
+      <a href="/articles.html" class="editor-back" id="edBack">← 返回文章</a>
+      <div id="edPublishRow" style="display:flex;gap:8px;align-items:center">
+        <button id="edDraft" class="btn" style="background:#eee;border:none;border-radius:999px;padding:.6rem 1.2rem;cursor:pointer">存草稿</button>
+        <button id="edPublish" class="btn-newpost">发布文章</button>
+      </div>
+    </div>
+
+    <div class="editor-title-row">
+      <input id="edTitle" type="text" class="editor-title" placeholder="在这里写下标题…" autocomplete="off" maxlength="80">
+      <select id="edCat" class="editor-cat">
+        <option value="竞赛">竞赛</option>
+        <option value="生活" selected>生活</option>
+        <option value="社团">社团</option>
+        <option value="其他">其他</option>
+      </select>
+      <label class="editor-anon"><input type="checkbox" id="edAnon"> 匿名</label>
+    </div>
+
+    <!-- J7 封面 -->
+    <div class="cover-box">
+      <img id="edCoverPreview" class="cover-preview" style="display:none" alt="封面预览">
+      <div>
+        <div class="cover-label">封面图片（可选）</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <label class="btn-newpost" style="padding:.45rem .9rem;font-size:.85rem;cursor:pointer">上传图片<input id="edCoverFile" type="file" accept="image/*" style="display:none"></label>
+          <button id="edCoverRemove" class="btn" style="background:#eee;border:none;border-radius:999px;padding:.45rem .9rem;font-size:.85rem;cursor:pointer">移除封面</button>
+          <span id="edCoverMsg" class="hint" style="font-size:.8rem;color:#888"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-body">
+      <section class="editor-col">
+        <div class="editor-col-head">写正文 <span class="hint">支持 Markdown</span></div>
+        <div class="md-toolbar" id="mdToolbar">
+          <button data-ins="## " title="标题">H</button>
+          <button data-ins="**加粗**" title="加粗">B</button>
+          <button data-ins="*斜体*" title="斜体">I</button>
+          <button data-ins="- 列表项" title="无序列表">•</button>
+          <button data-ins="1. 列表项" title="有序列表">1.</button>
+          <button data-ins="> 引用" title="引用">&ldquo;引用&rdquo;</button>
+          <button data-ins="```&#10;代码&#10;```" title="代码块">&lt;/&gt;</button>
+          <button data-ins="[链接文字](https://)" title="链接">↗</button>
+          <button data-ins="---" title="分隔线">—</button>
+        </div>
+        <textarea id="edContent" class="editor-textarea" placeholder="写下校园的经验、故事与建议…"></textarea>
+        <div class="editor-foot-hint">已输入 <span id="edCount">0</span> 字 · 发布内容将进行敏感词自动审查</div>
+      </section>
+      <section class="editor-col preview-col">
+        <div class="editor-col-head">实时预览</div>
+        <div id="edPreview" class="md-view editor-preview"><p class="ph-tip">开始输入即可看到预览…</p></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="err editor-err" id="edErr"></div>
+
+  <script src="icons.js"></script>
+  <script src="nav.js?v=20260818s"></script>
+  <script src="viewer-mdown.js"></script>
+  <script src="article-editor.js?v=20260818p"></script>
+</body>
+</html>
