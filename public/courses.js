@@ -9,16 +9,17 @@ let currentMajor = '';
 let currentTime = '';
 let currentSem = '';
 let currentExam = '';
-let currentCreditMin = '';
-let currentCreditMax = '';
 let currentSort = '';
 let currentPage = 0;
 
-const CATS = ['专业课','公共必修课','公共选修课','通选课','体育课','实验课','实践','美育课'];
+// 新分类体系（必修/选修两级，v2：实验课入必修、体育课仅公共体育）
+const CAT_GROUPS = [
+  { name: '必修', children: ['通识教育必修课', '大类专业必修课', '专业基础课', '专业核心课', '集中实践', '实验课'] },
+  { name: '选修', children: ['通识教育选修课/核心课', '通识教育选修课/普通课', '通识教育选修课/美育课', '体育课'] }
+];
 
 const qInput = document.getElementById('qInput');
 const subText = document.getElementById('subText');
-const tagRow = document.getElementById('tagRow');
 const listMeta = document.getElementById('listMeta');
 const courseList = document.getElementById('courseList');
 const pager = document.getElementById('pager');
@@ -32,39 +33,40 @@ document.getElementById('filterToggle').onclick = () => {
 };
 document.getElementById('filterBody').style.display = 'none';
 
-// 加载类别筛选
+// 加载类别筛选（必修/选修 两级）
 function loadCats() {
   const row = document.getElementById('catOpts');
-  CATS.forEach(cat => {
-    const chip = document.createElement('button');
-    chip.className = 'cat-opt';
-    chip.textContent = cat;
-    chip.onclick = () => { currentCat = (currentCat === cat ? '' : cat); renderCats(); load(); };
-    row.appendChild(chip);
+  row.innerHTML = '';
+  CAT_GROUPS.forEach(g => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'cat-group';
+    const gBtn = document.createElement('button');
+    gBtn.className = 'cat-opt cat-group-btn';
+    gBtn.textContent = g.name;
+    gBtn.onclick = () => { currentCat = (currentCat === g.name ? '' : g.name); renderCats(); load(); };
+    groupEl.appendChild(gBtn);
+    const subRow = document.createElement('div');
+    subRow.className = 'cat-subrow';
+    g.children.forEach(sub => {
+      const full = g.name + '/' + sub;
+      const chip = document.createElement('button');
+      chip.className = 'cat-opt cat-sub';
+      chip.dataset.full = full;
+      chip.textContent = sub.split('/').pop();
+      chip.onclick = () => { currentCat = (currentCat === full ? '' : full); renderCats(); load(); };
+      subRow.appendChild(chip);
+    });
+    groupEl.appendChild(subRow);
+    row.appendChild(groupEl);
   });
 }
 function renderCats() {
-  [...document.querySelectorAll('.cat-opt')].forEach(ch => ch.classList.toggle('active', ch.textContent === currentCat));
+  [...document.querySelectorAll('.cat-opt')].forEach(ch => {
+    const full = ch.dataset.full || ch.textContent;
+    ch.classList.toggle('active', currentCat === full);
+  });
 }
 
-// 加载标签
-async function loadTags() {
-  try {
-    const r = await fetch('/api/tags');
-    const d = await r.json();
-    d.tags.forEach(t => {
-      const chip = document.createElement('button');
-      chip.className = 'tag-chip';
-      chip.textContent = t;
-      chip.onclick = () => { currentTag = (currentTag === t ? '' : t); renderChips(); load(); };
-      tagRow.appendChild(chip);
-    });
-  } catch (e) { /* 忽略 */ }
-}
-
-function renderChips() {
-  [...tagRow.children].forEach(ch => ch.classList.toggle('active', ch.textContent === currentTag));
-}
 
 // 查询 + 渲染
 async function load() {
@@ -79,16 +81,14 @@ async function load() {
   if (currentTime) url += `time=${encodeURIComponent(currentTime)}&`;
   if (currentSem) url += `semester=${encodeURIComponent(currentSem)}&`;
   if (currentExam) url += `exam=${encodeURIComponent(currentExam)}&`;
-  if (currentCreditMin) url += `creditMin=${encodeURIComponent(currentCreditMin)}&`;
-  if (currentCreditMax) url += `creditMax=${encodeURIComponent(currentCreditMax)}&`;
   if (currentSort) url += `sort=${encodeURIComponent(currentSort)}&`;
   url += `_=${Date.now()}`;
 
   const r = await fetch(url);
   const d = await r.json();
   const total = d.total;
-  subText.textContent = `从课程档案中找到 ${total} 门课`;
-  const sortLabel = ({name:'名称',credit:'学分',college:'院系'}[currentSort] || '名称');
+  subText.textContent = `从课程资料中找到 ${total} 门课`;
+  const sortLabel = ({name:'名称',files:'资料数量',hot:'热度',credit:'学分',college:'院系'}[currentSort] || '名称');
   listMeta.textContent = `共 ${total} 门 — 按${sortLabel}排序`;
 
   // 本地分页
@@ -188,16 +188,24 @@ const FILTER_TARGETS = {
   'semSelect': 'currentSem',
   'examSelect': 'currentExam',
   'sortSelect': 'currentSort',
-  'creditMin': 'currentCreditMin',
-  'creditMax': 'currentCreditMax',
 };
 function bindFilter(id, key) {
   const el = document.getElementById(id);
   if (!el) return;
-  const target = FILTER_TARGETS[id] || ('current' + cap(key));
   const apply = () => {
     currentPage = 0;
-    window[target] = el.value.trim();
+    const v = el.value.trim();
+    // 直接给模块级变量赋值（不能用 window[target]，let 变量不在 window 上）
+    switch (id) {
+      case 'collegeInput': currentCollege = v; break;
+      case 'teacherInput': currentTeacher = v; break;
+      case 'majorInput': currentMajor = v; break;
+      case 'timeSelect': currentTime = v; break;
+      case 'semSelect': currentSem = v; break;
+      case 'examSelect': currentExam = v; break;
+      case 'sortSelect': currentSort = v; break;
+      default: window['current' + cap(key)] = v;
+    }
     load();
   };
   el.addEventListener('keydown', e => { if (e.key === 'Enter') apply(); });
@@ -211,8 +219,6 @@ bindFilter('timeSelect', 'time');
 bindFilter('semSelect', 'sem');
 bindFilter('examSelect', 'exam');
 bindFilter('sortSelect', 'sort');
-bindFilter('creditMin', 'creditMin');
-bindFilter('creditMax', 'creditMax');
 
 // 学期下拉（J4）
 async function loadSemesters() {
@@ -229,8 +235,8 @@ async function loadSemesters() {
 
 // 清除筛选
 document.getElementById('clearFilters').onclick = () => {
-  currentCat=''; currentTeacher=''; currentCollege=''; currentMajor=''; currentTime=''; currentTag=''; currentQ='';
-  currentSem=''; currentExam=''; currentCreditMin=''; currentCreditMax=''; currentSort='';
+  currentCat=''; currentTeacher=''; currentCollege=''; currentMajor=''; currentTime=''; currentQ='';
+  currentSem=''; currentExam=''; currentSort='';
   qInput.value='';
   document.getElementById('collegeInput').value='';
   document.getElementById('teacherInput').value='';
@@ -239,14 +245,11 @@ document.getElementById('clearFilters').onclick = () => {
   document.getElementById('semSelect').value='';
   document.getElementById('examSelect').value='';
   document.getElementById('sortSelect').value='';
-  document.getElementById('creditMin').value='';
-  document.getElementById('creditMax').value='';
-  renderCats(); renderChips();
+  renderCats();
   currentPage = 0; load();
 };
 
 loadSemesters();
-loadTags();
 loadCats();
 courseList.innerHTML = '<div class="skeleton-list"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>';
 load();

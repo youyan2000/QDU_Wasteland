@@ -49,7 +49,7 @@
     } catch (e) {}
     authEl.innerHTML = loggedIn
       ? `<a href="/me.html" class="nav-auth" style="text-decoration:none;color:var(--ink);font-weight:600">${ICONS.user(16)} ${escapeHtml(email)}</a>`
-      : `<a href="/login.html" class="nav-auth">登录</a>`;
+      : `<a href="/login.html" class="nav-auth nav-auth-login">登录</a> <a href="/login.html#register" class="nav-auth nav-auth-register">注册</a>`;
     initBell(loggedIn);
   })();
 
@@ -194,10 +194,10 @@
 
   // 创建设置浮标
   const SAVE_THEMES = [
-    { key:'', label:'默认', d:'米白纸感' },
-    { key:'dark', label:'暗黑', d:'护眼深色' },
-    { key:'cyber', label:'赛博朋克', d:'霓虹绿' },
-    { key:'github', label:'GitHub', d:'简约蓝' }
+    { key:'', label:'默认' },
+    { key:'dark', label:'暗黑' },
+    { key:'cyber', label:'赛博朋克' },
+    { key:'github', label:'简约' }
   ];
   const COLORS = ['#ff2e88','#2ec4b6','#6366f1','#f59e0b','#10b981','#ef4444'];
 
@@ -230,7 +230,7 @@
       <div class="set-group">
         <div class="set-label">主题模式</div>
         <div class="set-row">
-          ${SAVE_THEMES.map(t => `<button class="set-theme ${curTheme===t.key?'active':''}" data-key="${t.key}">${t.label}<small>${t.d}</small></button>`).join('')}
+          ${SAVE_THEMES.map(t => `<button class="set-theme ${curTheme===t.key?'active':''}" data-key="${t.key}">${t.label}</button>`).join('')}
         </div>
       </div>
       <div class="set-group">
@@ -245,10 +245,6 @@
           <button data-navsel="top" class="${curNav!=='left'?'active':''}">顶栏</button>
           <button data-navsel="left" class="${curNav==='left'?'active':''}">左侧</button>
         </div>
-      </div>
-      <div class="set-group">
-        <div class="set-label">拉黑管理</div>
-        <button id="blockManage" class="set-theme" style="width:100%">管理黑名单 (${blacklist().length})</button>
       </div>`;
     document.body.appendChild(panel);
     panel.style.top = 'auto';
@@ -272,13 +268,7 @@
       if (n === 'left') localStorage.setItem('qwNav','left'); else localStorage.removeItem('qwNav');
       applySettings(); togglePanel();
     });
-    // 拉黑
-    panel.querySelector('#blockManage').onclick = () => manageBlock();
     panel.querySelector('#setClose').onclick = () => panel.remove();
-  }
-
-  function manageBlock() {
-    alert('拉黑功能：请在某个用户公开主页(/user.html?id=xx)点“拉黑”，即可隐藏其内容。');
   }
   window.isBlocked = isBlocked;
   // 过滤掉被拉黑用户的内容；idKey 为列表项里的作者id字段名
@@ -309,7 +299,7 @@
       m.className = 'feedback-modal';
       m.innerHTML = `
         <div class="feedback-box">
-          <div class="feedback-head"><h4>意见 / 建议</h4><button id="fbClose" style="border:none;background:none;font-size:1.1rem;cursor:pointer">${ICONS.close(16)}</button></div>
+          <div class="feedback-head"><h4>意见 / 建议</h4><button id="fbClose" style="border:none;background:none;font-size:1.1rem;cursor:pointer;color:var(--ink);opacity:.8">${ICONS.close(16)}</button></div>
           <p style="color:var(--muted);font-size:.85rem;margin:0 0 10px">告诉我们你希望这个网站做成什么样，或遇到了什么问题。</p>
           <textarea id="fbContent" placeholder="写下你的意见…" style="width:100%;min-height:90px;box-sizing:border-box;padding:8px;border:1px solid #ddd;border-radius:8px;font:inherit"></textarea>
           <div id="fbMsg" style="font-size:.85rem;color:var(--success,#2e7d32);min-height:1em"></div>
@@ -326,9 +316,15 @@
           const r = await fetch('/api/opinion', { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ content, anonymous: false }) });
           const d = await r.json();
-          if (r.ok && d.ok) { document.getElementById('fbMsg').textContent = ICONS.check(14)+' 已提交，感谢反馈！'; document.getElementById('fbMsg').style.color='#2e7d32'; document.getElementById('fbContent').value=''; }
-          else { document.getElementById('fbMsg').textContent = (ICONS.x(14)+' '+(d.error||'提交失败')); document.getElementById('fbMsg').style.color='#c0392b'; }
-        } catch(e) { document.getElementById('fbMsg').textContent = ICONS.x(14)+' 提交失败'; document.getElementById('fbMsg').style.color='#c0392b'; }
+          if (r.ok && d.ok) {
+            // 提交成功：显示成功提示后关闭弹窗
+            document.getElementById('fbMsg').innerHTML = ICONS.check(14)+' 已提交，感谢反馈！';
+            document.getElementById('fbMsg').style.color='#2e7d32';
+            document.getElementById('fbContent').value='';
+            setTimeout(() => { const fm = document.getElementById('feedbackModal'); if (fm) fm.remove(); }, 900);
+          }
+          else { document.getElementById('fbMsg').innerHTML = (ICONS.x(14)+' '+(d.error||'提交失败')); document.getElementById('fbMsg').style.color='#c0392b'; }
+        } catch(e) { document.getElementById('fbMsg').innerHTML = ICONS.x(14)+' 提交失败'; document.getElementById('fbMsg').style.color='#c0392b'; }
       };
     };
   }

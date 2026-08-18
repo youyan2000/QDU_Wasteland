@@ -25,7 +25,7 @@
 }
 .me-btn:hover { border-color: var(--magenta); color: var(--magenta); }
 
-.me-main { max-width: 860px; margin: 0 auto; padding: 3rem var(--space-page); }
+.me-main { max-width: 1120px; margin: 0 auto; padding: 3rem var(--space-page); }
 
 /* 个人资料卡 */
 .profile-card {
@@ -82,8 +82,8 @@
 .not-logged a { color: var(--magenta); text-decoration: none; font-weight: 600; }
 
 /* ===== V10 我的内容聚合 ===== */
-.stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.6rem; }
-@media (max-width: 720px) { .stat-grid { grid-template-columns: repeat(5, 1fr); overflow-x:auto; } .stat-card { min-width:86px; } }
+.stat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 1.6rem; }
+@media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(7, 1fr); overflow-x:auto; } .stat-card { min-width:86px; } }
 .stat-card {
   background: var(--surface); border: 1px solid rgba(26,26,46,0.08); border-radius: var(--radius-lg);
   padding: 1.1rem 1.2rem; text-align: center;
@@ -96,7 +96,7 @@
   padding: .5rem 1.1rem; border: 1px solid rgba(26,26,46,0.12); border-radius: var(--radius-pill);
   background: var(--surface); cursor: pointer; color: var(--muted); font-size: .9rem;
 }
-.my-tab.active { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.my-tab.active { background: linear-gradient(90deg, var(--magenta), var(--sunrise)); border-color: transparent; color: #fff; font-weight: 600; }
 
 .my-tab-body { background: var(--surface); border-radius: var(--radius-lg); padding: 1rem 1.3rem; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
 .act-list { display: flex; flex-direction: column; }
@@ -150,9 +150,10 @@
 /* 编辑弹层（复用 modal 基础样式） */
 .modal { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:300; }
 .modal-box { background: var(--surface); border-radius: var(--radius-lg); padding:1.4rem 1.6rem; }
-.modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; position:sticky; top:0; background:var(--surface,#fff); z-index:2; padding:4px 0; }
 .modal-head h3 { font-size:1.15rem; }
-.modal-close { background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--muted); }
+.modal-close { background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--ink); opacity:.75; }
+.modal-close:hover { opacity:1; color:var(--magenta); }
 .pf-row { margin-bottom:1rem; }
 .pf-row label { display:block; font-size:.85rem; font-weight:600; margin-bottom:.35rem; }
 .pf-row input[type=text], .pf-row input[type=number] { width:100%; padding:.65rem .8rem; border:1px solid rgba(26,26,46,.18); border-radius: var(--radius-md); font-size:.95rem; font-family:inherit; box-sizing:border-box; }
@@ -160,17 +161,40 @@
 .pf-actions { display:flex; justify-content:flex-end; }
 /* V14 稿件管理操作按钮（精致小按钮） */
 .mgmt-btn {
-  border:none; background:none; cursor:pointer; font-size:.78rem; padding:.25rem .6rem;
-  border-radius: var(--radius-sm); color:var(--muted); transition:all .15s;
+  border:1px solid var(--border-strong); background:var(--surface); cursor:pointer;
+  font-size:.78rem; padding:.3rem .75rem;
+  border-radius: var(--radius-pill); color:var(--muted);
+  display:inline-flex; align-items:center; gap:4px;
+  transition:all .15s;
 }
-.mgmt-btn:hover { background:var(--magenta-soft); color:var(--magenta); }
-.mgmt-btn.primary { color:var(--magenta); }
+.mgmt-btn:hover { border-color:var(--magenta); color:var(--magenta); background:var(--magenta-soft); }
+.mgmt-btn.primary { color:var(--magenta); border-color:rgba(255,46,136,.35); }
 .mgmt-btn.primary:hover { background:var(--magenta); color:#fff; }
 .mgmt-del {
-  border:none; background:none; cursor:pointer; font-size:.78rem; padding:.25rem .6rem;
-  border-radius: var(--radius-sm); color:var(--error); transition:all .15s;
+  border:1px solid rgba(211,47,47,.35); background:var(--surface); cursor:pointer;
+  font-size:.78rem; padding:.3rem .75rem;
+  border-radius: var(--radius-pill); color:var(--error);
+  display:inline-flex; align-items:center; gap:4px;
+  transition:all .15s;
 }
 .mgmt-del:hover { background:var(--error-soft); color:var(--error); }
 .stat-card.clickable { cursor:pointer; transition:all .15s; border-color:transparent; }
 .stat-card.clickable:hover { border-color:var(--magenta-soft); transform:translateY(-1px); }
 .stat-card.clickable.active { border-color:var(--magenta); box-shadow:0 0 0 1px var(--magenta); }
+
+/* 危险操作按钮（红色描边胶囊） */
+.me-btn-danger {
+  padding: 0.4rem 1.1rem;
+  border: 1px solid rgba(211,47,47,0.45);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--error, #d32f2f);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all .15s;
+}
+.me-btn-danger:hover { background: var(--error-soft, rgba(211,47,47,.12)); border-color: var(--error, #d32f2f); }

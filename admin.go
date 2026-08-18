@@ -72,13 +72,14 @@ func handleAdminDashboard(s *AuthStore, db *DB) http.HandlerFunc {
 		postCount := countRows(s, "posts")
 		fileCount := countRows(s, "files")
 		reviewCount := countRows(s, "reviews")
-		reportCount := countRows(s, "reports")
+		var reportPending int
+		s.db.QueryRow("SELECT COUNT(*) FROM reports WHERE status='待处理'").Scan(&reportPending)
 		apiJSON(w, 200, map[string]any{
 			"userCount":    userCount,
 			"postCount":    postCount,
 			"fileCount":    fileCount,
 			"reviewCount":  reviewCount,
-			"reportPending": reportCount,
+			"reportPending": reportPending,
 			"courseCount":  len(db.Courses),
 			"offeringCount": len(db.Offerings),
 			"collegeCount": len(db.CollegeSet),
@@ -129,13 +130,40 @@ func handleAdminUsers(s *AuthStore) http.HandlerFunc {
 			apiJSON(w, 200, map[string]any{"ok": true, "id": id, "isAdmin": v})
 			return
 		}
-		// GET /api/admin/users 列表
-		users, err := s.GetAllUsers()
+		// GET /api/admin/users 列表（支持分页 page/pageSize）
+		page := atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize := atoi(r.URL.Query().Get("pageSize"))
+		if pageSize < 1 || pageSize > 200 { pageSize = 50 }
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		where := ""
+		wargs := []any{}
+		if q != "" {
+			where = " WHERE email LIKE ? OR nickname LIKE ? OR college LIKE ? OR major LIKE ?"
+			wargs = append(wargs, "%"+q+"%", "%"+q+"%", "%"+q+"%", "%"+q+"%")
+		}
+		var total int
+		s.db.QueryRow("SELECT COUNT(*) FROM users"+where, wargs...).Scan(&total)
+		queryArgs := append(append([]any{}, wargs...), pageSize, (page-1)*pageSize)
+		rows, err := s.db.Query("SELECT id, email, nickname, college, major, is_admin, banned, COALESCE(muted,0), created_at FROM users"+where+" ORDER BY id DESC LIMIT ? OFFSET ?", queryArgs...)
 		if err != nil {
 			apiErr(w, 500, "读取失败")
 			return
 		}
-		apiJSON(w, 200, map[string]any{"total": len(users), "users": users})
+		defer rows.Close()
+		var out []SessionInfo
+		for rows.Next() {
+			si := SessionInfo{}
+			var created string
+			var mutedI int
+			if err := rows.Scan(&si.ID, &si.Email, &si.Nickname, &si.College, &si.Major, &si.IsAdmin, &si.Banned, &mutedI, &created); err != nil {
+				continue
+			}
+			si.Muted = mutedI
+			si.CreatedAt = created
+			out = append(out, si)
+		}
+		apiJSON(w, 200, map[string]any{"total": total, "page": page, "pageSize": pageSize, "users": out})
 	}
 }
 
@@ -179,31 +207,73 @@ func handleAdminReports(s *AuthStore) http.HandlerFunc {
 			return
 		}
 		// 未处理优先，再按时间倒序；LIMIT 500 防全量加载（举报多时性能）
-		rows, err := s.db.Query(
-			"SELECT id, target_type, target_id, reporter_id, reason, status, created_at FROM reports ORDER BY CASE status WHEN '待处理' THEN 0 ELSE 1 END, id DESC LIMIT 500")
+		// 附带目标作者昵称/ID、目标内容预览（评论附带所属帖子ID），便于后台查看/定位
+		rows, err := s.db.Query(`SELECT r.id, r.target_type, r.target_id, r.reporter_id, r.reason, r.status, r.created_at,
+			COALESCE(ra.nickname,''), COALESCE(ra.id,0),
+			CASE r.target_type
+				WHEN 'post' THEN (SELECT title FROM posts WHERE id=CAST(r.target_id AS INTEGER))
+				WHEN 'article' THEN (SELECT title FROM articles WHERE id=CAST(r.target_id AS INTEGER))
+				WHEN 'file' THEN (SELECT title FROM files WHERE id=CAST(r.target_id AS INTEGER))
+				WHEN 'review' THEN (SELECT course_code FROM reviews WHERE id=CAST(r.target_id AS INTEGER))
+				WHEN 'comment' THEN (SELECT content FROM comments WHERE id=CAST(r.target_id AS INTEGER))
+				ELSE '' END,
+			CASE r.target_type
+				WHEN 'comment' THEN (SELECT post_id FROM comments WHERE id=CAST(r.target_id AS INTEGER))
+				ELSE 0 END
+		 FROM reports r LEFT JOIN users ra ON ra.id=r.target_author_id
+		 ORDER BY CASE r.status WHEN '待处理' THEN 0 ELSE 1 END, r.id DESC LIMIT 500`)
 		if err != nil {
 			apiErr(w, 500, "读取失败")
 			return
 		}
 		defer rows.Close()
 		type item struct {
-			ID         int64  `json:"id"`
-			TargetType string `json:"targetType"`
-			TargetID   string `json:"targetId"`
-			ReporterID int64  `json:"reporterId"`
-			Reason     string `json:"reason"`
-			Status     string `json:"status"`
-			CreatedAt  string `json:"createdAt"`
+			ID             int64  `json:"id"`
+			TargetType     string `json:"targetType"`
+			TargetID       string `json:"targetId"`
+			ReporterID     int64  `json:"reporterId"`
+			Reason         string `json:"reason"`
+			Status         string `json:"status"`
+			CreatedAt      string `json:"createdAt"`
+			TargetAuthor   string `json:"targetAuthor"`
+			TargetAuthorID int64  `json:"targetAuthorId"`
+			TargetPreview  string `json:"targetPreview"`
+			CommentPostID  int64  `json:"commentPostId"`
 		}
 		out := []item{}
 		for rows.Next() {
 			it := item{}
 			var targetID string
-			rows.Scan(&it.ID, &it.TargetType, &targetID, &it.ReporterID, &it.Reason, &it.Status, &it.CreatedAt)
+			rows.Scan(&it.ID, &it.TargetType, &targetID, &it.ReporterID, &it.Reason, &it.Status, &it.CreatedAt,
+				&it.TargetAuthor, &it.TargetAuthorID, &it.TargetPreview, &it.CommentPostID)
 			it.TargetID = targetID
 			out = append(out, it)
 		}
-		apiJSON(w, 200, map[string]any{"total": len(out), "reports": out})
+		// 搜索过滤（内存过滤，最多 500 条）：匹配原因/被举报人/目标预览
+		if q := strings.TrimSpace(r.URL.Query().Get("q")); q != "" {
+			filtered := out[:0]
+			for _, it := range out {
+				if strings.Contains(it.Reason, q) || strings.Contains(it.TargetAuthor, q) || strings.Contains(it.TargetPreview, q) || strings.Contains(it.TargetID, q) {
+					filtered = append(filtered, it)
+				}
+			}
+			out = filtered
+		}
+		// 分页（内存切片）
+		total := len(out)
+		page := atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize := atoi(r.URL.Query().Get("pageSize"))
+		if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+		start := (page - 1) * pageSize
+		if start > len(out) {
+			out = []item{}
+		} else {
+			end := start + pageSize
+			if end > len(out) { end = len(out) }
+			out = out[start:end]
+		}
+		apiJSON(w, 200, map[string]any{"total": total, "page": page, "pageSize": pageSize, "reports": out})
 	}
 }
 

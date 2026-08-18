@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>相册 · QDU Wasteland</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .album-main { max-width: 1080px; margin: 0 auto; padding: 2.5rem var(--space-page); }
+    .album-head { display: flex; align-items: center; gap: 14px; margin-bottom: 1.6rem; flex-wrap: wrap; }
+    .album-head h1 { font-size: 1.6rem; font-weight: 800; margin: 0; }
+    .album-desc { color: var(--muted); font-size: .9rem; }
+    .album-upload { margin-left: auto; }
+    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .photo-item { position: relative; border-radius: var(--radius-md); overflow: hidden; aspect-ratio: 1; background: var(--track,#eee); cursor: zoom-in; }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+    .photo-item:hover img { transform: scale(1.04); }
+    .photo-del { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.6); color:#fff; border:none; border-radius:8px; padding:3px 8px; font-size:.75rem; cursor:pointer; opacity:0; transition:opacity .15s; }
+    .photo-item:hover .photo-del { opacity: 1; }
+    .empty-album { text-align:center; color:var(--muted); padding: 4rem 0; grid-column: 1 / -1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    /* 灯箱 */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 9999; display:none; align-items:center; justify-content:center; cursor: zoom-out; }
+    .lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; }
+  </style>
+</head>
+<body class="forum-body">
+  <div id="site-nav"></div>
+
+  <main class="album-main">
+    <a href="/me.html" class="courses-back" style="margin-bottom:1rem;display:inline-flex">← 返回我的风采</a>
+    <div class="album-head">
+      <div>
+        <h1 id="albumTitle">相册</h1>
+        <div id="albumMeta" class="album-desc"></div>
+      </div>
+      <button id="uploadPhotoBtn" class="btn-submit album-upload" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> 上传照片</button>
+    </div>
+    <div id="photoGrid" class="photo-grid"></div>
+  </main>
+
+  <div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt=""></div>
+
+  <script src="icons.js"></script>
+  <script src="nav.js?v=20260818s"></script>
+  <script src="album.js?v=20260818a"></script>
+</body>
+</html>

@@ -41,11 +41,24 @@ async function checkLogin() {
 }
 checkLogin();
 
-// 密码显示切换
+// 密码显示切换（保留光标位置，避免 input type 切换导致的跳动/焦点丢失）
 document.querySelectorAll('.pw-toggle').forEach(btn => {
   btn.onclick = () => {
     const inp = document.getElementById(btn.dataset.target);
-    inp.type = inp.type === 'password' ? 'text' : 'password';
+    if (!inp) return;
+    const pos = inp.selectionStart;   // 记录光标位置
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    // 切回后恢复光标位置
+    if (pos != null) { inp.setSelectionRange(pos, pos); }
+    inp.focus();
+    // 眼睛图标切换（如果有）
+    const icon = btn.querySelector('.icon-fill');
+    if (icon && icon.dataset.icon) {
+      icon.dataset.icon = show ? 'eye-off' : 'eye';
+      const f = ICONS[icon.dataset.icon];
+      if (f) icon.innerHTML = f(18);
+    }
   };
 });
 
@@ -141,7 +154,7 @@ registerForm.addEventListener('submit', async e => {
         email: rEmail.value.trim(),
         username: rUsername.value.trim(),
         password: rPassword.value,
-        nickname: rNickname.value.trim(),
+        nickname: rUsername.value.trim(), // 昵称=用户名（合并）
         college: collegeSel.value,
         major: majorSel.value,
         captcha: document.getElementById("rCaptcha").value.trim(),

@@ -5,11 +5,10 @@
 function renderMarkdown(md) {
   if (!md) return '';
   let s = escapeHtml(md);
-  s = s.replace(/&gt;/g, '>'); // 处理行首引用
 
-  // 代码块
+  // 代码块（右上角带复制按钮）
   s = s.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
-    return '<pre class="md-code"><code>' + code + '</code></pre>';
+    return '<pre class="md-code"><button class="md-copy" type="button" title="复制代码">复制</button><code>' + code + '</code></pre>';
   });
   // 行内代码
   s = s.replace(/`([^`]+)`/g, '<code class="md-inline">$1</code>');
@@ -60,3 +59,33 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+// 代码块复制按钮：全局事件委托（内容由 renderMarkdown 注入后也能生效）
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.md-copy');
+  if (!btn) return;
+  const pre = btn.closest('pre.md-code');
+  const code = pre ? pre.querySelector('code') : null;
+  if (!code) return;
+  const text = code.textContent;
+  const done = function () {
+    const label = btn.getAttribute('data-label') || '复制';
+    btn.textContent = '✅ 已复制';
+    setTimeout(function () { btn.textContent = label; }, 1600);
+  };
+  const fallback = function () {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (err) {}
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+});

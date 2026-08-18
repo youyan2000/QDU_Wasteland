@@ -12,6 +12,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -27,6 +28,7 @@ type articleDTO struct {
 	UserID      int64  `json:"userId"`
 	RejectReason string `json:"rejectReason,omitempty"`
 	Cover     string `json:"cover,omitempty"` // J7 封面URL
+	Views       int    `json:"views"`
 	CreatedAt   string `json:"createdAt"`
 }
 
@@ -42,19 +44,26 @@ func handleListArticles() http.HandlerFunc {
 		}
 		cat := r.URL.Query().Get("cat")
 		q := r.URL.Query().Get("q")
-		sqlq := `SELECT a.id, a.title, a.category, a.content, a.is_anonymous, a.status, a.user_id, a.created_at, a.cover,
-			COALESCE(u.nickname,'') FROM articles a LEFT JOIN users u ON u.id=a.user_id
-			WHERE a.status='正常' AND COALESCE(u.banned,0)=0`
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+		if page < 1 { page = 1 }
+		if pageSize < 1 || pageSize > 50 { pageSize = 20 }
+		where := `WHERE a.status='正常' AND COALESCE(u.banned,0)=0`
 		args := []any{}
 		if cat != "" {
-			sqlq += " AND a.category=?"
+			where += " AND a.category=?"
 			args = append(args, cat)
 		}
 		if q != "" {
-			sqlq += " AND (a.title LIKE ? OR a.content LIKE ?)"
+			where += " AND (a.title LIKE ? OR a.content LIKE ?)"
 			args = append(args, "%"+q+"%", "%"+q+"%")
 		}
-		sqlq += " ORDER BY a.id DESC"
+		var total int
+		authStore.db.QueryRow(`SELECT COUNT(*) FROM articles a LEFT JOIN users u ON u.id=a.user_id `+where, args...).Scan(&total)
+		args = append(args, pageSize, (page-1)*pageSize)
+		sqlq := `SELECT a.id, a.title, a.category, a.content, a.is_anonymous, a.status, a.user_id, a.created_at, a.cover, a.views,
+			COALESCE(u.nickname,'') FROM articles a LEFT JOIN users u ON u.id=a.user_id ` + where +
+			` ORDER BY a.id DESC LIMIT ? OFFSET ?`
 		rows, err := authStore.db.Query(sqlq, args...)
 		if err != nil {
 			apiErr(w, 500, "查询失败")
@@ -66,7 +75,7 @@ func handleListArticles() http.HandlerFunc {
 			var a articleDTO
 			var anonI int
 			var nick string
-			rows.Scan(&a.ID, &a.Title, &a.Category, &a.Content, &anonI, &a.Status, &a.UserID, &a.CreatedAt, &a.Cover, &nick)
+			rows.Scan(&a.ID, &a.Title, &a.Category, &a.Content, &anonI, &a.Status, &a.UserID, &a.CreatedAt, &a.Cover, &a.Views, &nick)
 			a.Anonymous = anonI == 1
 			if a.Anonymous { a.UserID = 0 }
 			if a.Anonymous || nick == "" { a.Author = "匿名" } else { a.Author = nick }
@@ -74,7 +83,7 @@ func handleListArticles() http.HandlerFunc {
 			if len(a.Content) > 120 { a.Content = a.Content[:120] + "…" }
 			out = append(out, a)
 		}
-		apiJSON(w, 200, map[string]any{"articles": out})
+		apiJSON(w, 200, map[string]any{"articles": out, "total": total})
 	}
 }
 
@@ -83,9 +92,9 @@ func getArticleDetail(w http.ResponseWriter, r *http.Request, id int64) {
 	var anonI int
 	var nick string
 	err := authStore.db.QueryRow(
-		`SELECT a.id, a.title, a.category, a.content, a.is_anonymous, a.status, a.user_id, a.created_at, a.reject_reason, a.cover, COALESCE(u.nickname,'')
+		`SELECT a.id, a.title, a.category, a.content, a.is_anonymous, a.status, a.user_id, a.created_at, a.reject_reason, a.cover, a.views, COALESCE(u.nickname,'')
 		 FROM articles a LEFT JOIN users u ON u.id=a.user_id WHERE a.id=?`, id).
-		Scan(&a.ID, &a.Title, &a.Category, &a.Content, &anonI, &a.Status, &a.UserID, &a.CreatedAt, &a.RejectReason, &a.Cover, &nick)
+		Scan(&a.ID, &a.Title, &a.Category, &a.Content, &anonI, &a.Status, &a.UserID, &a.CreatedAt, &a.RejectReason, &a.Cover, &a.Views, &nick)
 	if err != nil {
 		apiErr(w, 404, "文章不存在")
 		return
@@ -109,6 +118,11 @@ func getArticleDetail(w http.ResponseWriter, r *http.Request, id int64) {
 	}
 	a.Anonymous = anonI == 1
 	if a.Anonymous || nick == "" { a.Author = "匿名" } else { a.Author = nick }
+	// 阅读量：公开文章每被打开一次 +1
+	if a.Status == "正常" {
+		_, _ = authStore.db.Exec("UPDATE articles SET views = COALESCE(views,0) + 1 WHERE id=?", id)
+		a.Views++
+	}
 	apiJSON(w, 200, map[string]any{"article": a})
 }
 
@@ -121,6 +135,10 @@ func handleCreateArticle() http.HandlerFunc {
 		}
 		if currentUserBanned(r) {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
+			return
+		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
 			return
 		}
 
@@ -152,8 +170,8 @@ func handleCreateArticle() http.HandlerFunc {
 			return
 		}
 		if body.Category == "" { body.Category = "生活" }
-		// F3 投稿流：非草稿进"待审"，后台通过后才公开；草稿仅作者/管理员可见
-		status := "待审"
+		// 决策点1：发了就公开（+敏感词拦截）。非草稿直接"正常"公开；草稿仅作者可见
+		status := "正常"
 		if isDraft { status = "draft" }
 		_, err := authStore.db.Exec(
 			"INSERT INTO articles (title,category,content,user_id,is_anonymous,status,reject_reason,cover,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -165,7 +183,7 @@ func handleCreateArticle() http.HandlerFunc {
 		if isDraft {
 			apiJSON(w, 200, map[string]string{"message": "已保存草稿，可在个人中心继续编辑"})
 		} else {
-			apiJSON(w, 200, map[string]string{"message": "投稿成功，等待管理员审核后展示"})
+			apiJSON(w, 200, map[string]string{"message": "文章已发布"})
 		}
 	}
 }
@@ -209,10 +227,24 @@ func handleAdminListArticles(auth *AuthStore) http.HandlerFunc {
 			apiJSON(w, 200, map[string]any{"ok": true, "id": id, "status": body.Status})
 			return
 		}
-		rows, err := auth.db.Query(
-			`SELECT a.id, a.title, a.category, a.content, a.is_anonymous, a.status, a.created_at,
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		page := atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize := atoi(r.URL.Query().Get("pageSize"))
+		if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+		where := ""
+		args := []any{}
+		if q != "" {
+			where = ` WHERE a.title LIKE ? OR a.content LIKE ? OR u.nickname LIKE ? OR u.email LIKE ?`
+			args = append(args, "%"+q+"%", "%"+q+"%", "%"+q+"%", "%"+q+"%")
+		}
+		var total int
+		auth.db.QueryRow(`SELECT COUNT(*) FROM articles a LEFT JOIN users u ON u.id=a.user_id`+where, args...).Scan(&total)
+		args = append(args, pageSize, (page-1)*pageSize)
+		sqlq := `SELECT a.id, a.title, a.category, a.content, a.is_anonymous, a.status, a.created_at,
 			        a.user_id, a.reject_reason, COALESCE(u.nickname,''), COALESCE(u.email,'')
-			 FROM articles a LEFT JOIN users u ON u.id=a.user_id ORDER BY a.id DESC`)
+			 FROM articles a LEFT JOIN users u ON u.id=a.user_id` + where + ` ORDER BY a.id DESC LIMIT ? OFFSET ?`
+		rows, err := auth.db.Query(sqlq, args...)
 		if err != nil {
 			apiErr(w, 500, "查询失败")
 			return
@@ -241,11 +273,22 @@ func handleAdminListArticles(auth *AuthStore) http.HandlerFunc {
 			it.RealAuthor = nick + " (" + email + ")"
 			out = append(out, it)
 		}
-		apiJSON(w, 200, map[string]any{"total": len(out), "articles": out})
+		apiJSON(w, 200, map[string]any{"total": total, "page": page, "pageSize": pageSize, "articles": out})
 	}
 }
-// migrateArticleCategories 旧分类名迁移：老师→其他，生活方式→生活
+// migrateArticleCategories 旧分类名迁移：老师→其他，生活方式→生活 (V9.1)
 func migrateArticleCategories(db *sql.DB) {
 	_, _ = db.Exec("UPDATE articles SET category='其他' WHERE category='老师'")
 	_, _ = db.Exec("UPDATE articles SET category='生活' WHERE category='生活方式'")
+}
+
+// migrateArticleViews 确保 articles 表含 views 列（阅读量）
+func migrateArticleViews(db *sql.DB) {
+	var cnt int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('articles') WHERE name='views'`).Scan(&cnt); err != nil {
+		return
+	}
+	if cnt == 0 {
+		_, _ = db.Exec("ALTER TABLE articles ADD COLUMN views INTEGER NOT NULL DEFAULT 0")
+	}
 }

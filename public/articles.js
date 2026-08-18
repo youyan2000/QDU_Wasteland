@@ -1,17 +1,27 @@
 // articles.js — 关于学校 文章列表页（V14 排版修复：杜绝嵌套 <a> 导致的卡片断裂）
 const listEl = document.getElementById('articleList');
+const PAGE_SIZE = 10;
 let currentCat = '';
+let currentPage = 1;
+let totalPages = 1;
 
 async function loadList() {
   listEl.innerHTML = '<div class="skeleton-list"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>';
-  const url = '/api/articles' + (currentCat ? '?cat=' + encodeURIComponent(currentCat) : '');
+  const params = new URLSearchParams();
+  if (currentCat) params.set('cat', currentCat);
+  params.set('page', currentPage);
+  params.set('pageSize', PAGE_SIZE);
+  const url = '/api/articles?' + params.toString();
   try {
     const r = await fetch(url);
     const d = await r.json();
     let arts = d.articles || [];
     if (window.filterBlocked) arts = window.filterBlocked(arts, 'userId'); // 拉黑过滤
     if (arts.length === 0) {
+      if (currentPage > 1) { currentPage = 1; loadList(); return; }
       listEl.innerHTML = '<div class="empty"><span class="empty-title">还没有文章</span><span class="empty-hint">来写下第一篇校园经验吧</span></div>';
+      var pg = document.getElementById('articlePager');
+      if (pg) pg.style.display = 'none';
       return;
     }
     listEl.innerHTML = arts.map(a => `
@@ -32,9 +42,22 @@ async function loadList() {
                 ? `<a class="author-link" href="/user.html?id=${a.userId}">${ICONS.user(13)} ${escape(a.author)}</a>`
                 : `<span>${ICONS.user(13)} ${escape(a.author)}</span>`}
             </span>
+            <span class="ac-views">${ICONS.eye(13)} ${a.views || 0}</span>
           </div>
         </div>
       </article>`).join('');
+    const pager = document.getElementById('articlePager');
+    if (pager) {
+      totalPages = Math.max(1, Math.ceil((d.total || 0) / PAGE_SIZE));
+      pager.innerHTML = '<button class="art-page-btn" id="artPrev" ' + (currentPage <= 1 ? 'disabled' : '') + '>← 上一页</button>' +
+        '<span class="art-page-info">第 ' + currentPage + ' / ' + totalPages + ' 页 · 共 ' + (d.total || 0) + ' 篇</span>' +
+        '<button class="art-page-btn" id="artNext" ' + (currentPage >= totalPages ? 'disabled' : '') + '>下一页 →</button>';
+      var prev = document.getElementById('artPrev');
+      var next = document.getElementById('artNext');
+      if (prev) prev.onclick = function () { if (currentPage > 1) { currentPage--; loadList(); } };
+      if (next) next.onclick = function () { if (currentPage < totalPages) { currentPage++; loadList(); } };
+      pager.style.display = (d.total || 0) > PAGE_SIZE ? 'flex' : 'none';
+    }
   } catch (e) { listEl.innerHTML = '<div class="empty">加载失败</div>'; }
 }
 
@@ -45,6 +68,7 @@ document.getElementById('catBar').addEventListener('click', e => {
   document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
   chip.classList.add('active');
   currentCat = chip.dataset.cat;
+  currentPage = 1;
   loadList();
 });
 

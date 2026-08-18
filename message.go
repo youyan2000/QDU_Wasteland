@@ -111,6 +111,10 @@ func handleSendMessage() http.HandlerFunc {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
 			return
 		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
+			return
+		}
 
 		var body struct {
 			To      int64  `json:"to"`

@@ -21,7 +21,7 @@
   background: var(--surface); cursor: pointer; color: var(--muted); font-size: .9rem;
 }
 .cat-chip:hover { border-color: var(--magenta); }
-.cat-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.cat-chip.active { background: linear-gradient(90deg, var(--magenta), var(--sunrise)); border-color: transparent; color: #fff; font-weight: 600; }
 
 /* 工具栏 */
 .articles-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
@@ -30,7 +30,7 @@
   padding: .45rem 1.2rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
   background: var(--surface); cursor: pointer; color: var(--muted);
 }
-.sort-tab.active { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.sort-tab.active { background: linear-gradient(90deg, var(--magenta), var(--sunrise)); border-color: transparent; color: #fff; font-weight: 600; }
 .btn-newpost {
   padding: 0.7rem 1.6rem;
   border: none;
@@ -70,7 +70,9 @@
 .article-card .ac-time { color: var(--muted); font-size: .78rem; }
 .article-card .ac-title { font-family: var(--font-editorial); font-weight:800; font-size:1.12rem; letter-spacing:-.01em; color:var(--ink); text-decoration:none; display:inline-block; }
 .article-card .ac-excerpt { color: var(--muted); font-size: .9rem; line-height: 1.7; margin-top: .4rem; }
-.article-card .ac-meta { color: var(--muted); font-size: .8rem; margin-top: .7rem; }
+.article-card .ac-views { display:inline-flex; align-items:center; gap:3px; color:var(--muted); font-size:.78rem; margin-left:10px; }
+.read-views { color:var(--muted); font-size:.82rem; margin-left:4px; display:inline-flex; align-items:center; gap:3px; }
+.ac-meta { color: var(--muted); font-size: .8rem; margin-top: .7rem; }
 .empty { text-align: center; color: var(--muted); padding: 3rem 0; }
 
 /* ============ 编辑器 ============ */
@@ -167,11 +169,11 @@
 .cover-teacher { background: linear-gradient(135deg, var(--cat-1), var(--cat-2)); }
 .article-card .ac-title { font-family: var(--font-editorial); display:block; margin-bottom:.4rem; }
 
-/* J7 文章封面上传 + 封面图渲染 */
-.cover-box { display:flex; align-items:center; gap:14px; margin:0 auto 14px; max-width:260px;
-  border:1px dashed rgba(26,26,46,.2); border-radius:12px; padding:12px; background:rgba(26,26,46,.02); }
-.cover-box .cover-label { font-size:.9rem; font-weight:600; color:#333; }
-.cover-preview { width:120px; height:80px; object-fit:cover; border-radius:8px; }
+/* J7 文章封面上传 + 封面图渲染（紧凑、靠左，不再居中占位） */
+.cover-box { display:flex; align-items:center; gap:10px; margin:0 0 14px; width:fit-content; max-width:100%;
+  border:1px dashed rgba(26,26,46,.2); border-radius:10px; padding:8px 12px; background:rgba(26,26,46,.02); }
+.cover-box .cover-label { font-size:.78rem; font-weight:600; color:#666; margin-bottom:2px; }
+.cover-preview { width:76px; height:50px; object-fit:cover; border-radius:6px; }
 .ac-cover-img { overflow:hidden; }
 .ac-cover-img img { width:100%; height:100%; object-fit:cover; display:block; }
 
@@ -179,3 +181,52 @@
 .read-body, .read-body p { max-width: 65ch; margin-left: auto; margin-right: auto; }
 .read-body, .read-body .md-view { font-family: Georgia, "Songti SC", "STSong", serif; }
 .read-body h1, .read-body h2, .read-body h3 { font-family: "Aptos", "Microsoft YaHei", sans-serif; }
+
+/* 弹层（相册选择等）— 与 forum.css/me.css 保持一致 */
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(2px); }
+.modal-box { background: var(--surface); border-radius: var(--radius-lg); padding: 1.4rem 1.6rem; width: min(520px,90vw); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.modal-head h3 { font-size: 1.15rem; }
+.modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--ink); opacity: .75; }
+.modal-close:hover { opacity: 1; color: var(--magenta); }
+
+/* Markdown 排版（编辑器实时预览 + 文章阅读页）— 引用/代码/标题与正文有区分度 */
+.md-view { line-height: 1.75; font-size: .98rem; }
+.md-view h1 { font-size: 1.6rem; font-weight: 700; margin: 1.1rem 0 .6rem; border-bottom: 1px solid var(--track); padding-bottom: .3rem; }
+.md-view h2 { font-size: 1.35rem; font-weight: 700; margin: 1.2rem 0 .5rem; }
+.md-view h3 { font-size: 1.15rem; font-weight: 700; margin: 1rem 0 .5rem; }
+.md-view h4, .md-view h5, .md-view h6 { font-size: 1rem; font-weight: 700; margin: .9rem 0 .4rem; }
+.md-view p { margin: .6rem 0; }
+.md-view ul, .md-view ol { margin: .5rem 0 .5rem 1.4rem; }
+.md-view li { margin: .2rem 0; }
+.md-view blockquote {
+  border-left: 3px solid var(--magenta);
+  background: rgba(255,46,136,.06);
+  padding: .55rem .95rem; margin: .7rem 0;
+  border-radius: 0 8px 8px 0; color: var(--muted);
+}
+.md-view blockquote p { margin: .3rem 0; }
+.md-view code.md-inline { background: var(--track); padding: 2px 6px; border-radius: 4px; font-size: .88em; font-family: Consolas, "Courier New", monospace; }
+.md-view pre.md-code {
+  background: #1e1e28; color: #e8e6f0;
+  padding: 1.6rem 1rem .9rem; border-radius: 8px; overflow-x: auto;
+  font-size: .88rem; line-height: 1.6;
+}
+.md-view pre.md-code code { font-family: Consolas, "Courier New", monospace; color: inherit; background: none; padding: 0; }
+.md-view hr { border: none; border-top: 1px solid var(--track); margin: 1.2rem 0; }
+.md-view a { color: var(--magenta); }
+.md-view img { max-width: 100%; border-radius: 6px; }
+.md-view table { border-collapse: collapse; width: 100%; margin: .8rem 0; }
+.md-view th, .md-view td { border: 1px solid var(--viewer-line); padding: 6px 10px; text-align: left; }
+.md-view th { background: var(--surface-2); }
+
+
+/* 文章列表翻页 */
+.art-pager { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 1.6rem 0; }
+.art-page-btn {
+  padding: .5rem 1.2rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill);
+  background: var(--surface); color: var(--ink); cursor: pointer; font-size: .88rem; transition: all .15s;
+}
+.art-page-btn:hover:not(:disabled) { border-color: var(--magenta); color: var(--magenta); }
+.art-page-btn:disabled { opacity: .45; cursor: default; }
+.art-page-info { color: var(--muted); font-size: .85rem; }

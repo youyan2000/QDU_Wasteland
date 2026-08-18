@@ -161,21 +161,26 @@ func mailQuotaUse(uid int64) (bool, int) {
 }
 
 // rateLimitHandler 分级限流包装：action ∈ auth / act / upload
-// ⚠️ 临时测试：限流逻辑已注释，上线前需还原（解开注释即恢复限流）
 func rateLimitHandler(action string, h http.HandlerFunc) http.HandlerFunc {
-	_ = action
 	return func(w http.ResponseWriter, r *http.Request) {
-		// m := r.Method
-		// if m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions {
-		// 	skip := action == "auth" && bodyEmailIsAdmin(r)
-		// 	if !skip {
-		// 		key := fpKey(r) + "|" + action
-		// 		if ok, _ := rateLimitOK(key, limit); !ok {
-		// 			apiErr(w, 429, "操作过于频繁，本小时内已达 "+strconv.Itoa(limit)+" 次上限，请稍后再试")
-		// 			return
-		// 		}
-		// 	}
-		// }
+		m := r.Method
+		if m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions {
+			skip := action == "auth" && bodyEmailIsAdmin(r)
+			if !skip {
+				limit := 30
+				switch action {
+				case "auth":
+					limit = 5
+				case "upload":
+					limit = 15
+				}
+				key := fpKey(r) + "|" + action
+				if ok, _ := rateLimitOK(key, limit); !ok {
+					apiErr(w, 429, "操作过于频繁，本小时内已达 "+strconv.Itoa(limit)+" 次上限，请稍后再试")
+					return
+				}
+			}
+		}
 		h(w, r)
 	}
 
@@ -218,16 +223,15 @@ func requireVerifiedQuota(uid int64) (bool, string) {
 // quotaHandler 邮箱配额锁：未验证邮箱的用户做"配额动作"(发帖/评论/评价/私信/举报/上传)时，
 // 每自然小时 ≤2 次；达到验证节点则拦截并提示。验证通过后不再限制。
 func quotaHandler(h http.HandlerFunc) http.HandlerFunc {
-	// ⚠️ 临时测试：邮箱配额已注释，上线前还原
 	return func(w http.ResponseWriter, r *http.Request) {
-		// m := r.Method
-		// if m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions {
-		// 	uid := currentUserID(r)
-		// 	if ok, msg := requireVerifiedQuota(uid); !ok {
-		// 		apiErr(w, 403, msg)
-		// 		return
-		// 	}
-		// }
+		m := r.Method
+		if m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions {
+			uid := currentUserID(r)
+			if ok, msg := requireVerifiedQuota(uid); !ok {
+				apiErr(w, 403, msg)
+				return
+			}
+		}
 		h(w, r)
 	}
 }

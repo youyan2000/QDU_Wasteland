@@ -149,7 +149,13 @@ func handleAdminCensor(auth *AuthStore) http.HandlerFunc {
 			loadCensorWords(auth.db)
 			apiJSON(w, 200, map[string]any{"ok": true, "id": id})
 		default: // GET
-			rows, err := auth.db.Query(`SELECT id, word, created_at FROM censor_words ORDER BY id`)
+			page := atoi(r.URL.Query().Get("page"))
+			if page < 1 { page = 1 }
+			pageSize := atoi(r.URL.Query().Get("pageSize"))
+			if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+			var total int
+			auth.db.QueryRow(`SELECT COUNT(*) FROM censor_words`).Scan(&total)
+			rows, err := auth.db.Query(`SELECT id, word, created_at FROM censor_words ORDER BY id DESC LIMIT ? OFFSET ?`, pageSize, (page-1)*pageSize)
 			if err != nil {
 				apiErr(w, 500, "查询失败")
 				return
@@ -166,7 +172,7 @@ func handleAdminCensor(auth *AuthStore) http.HandlerFunc {
 				rows.Scan(&it.ID, &it.Word, &it.CreatedAt)
 				out = append(out, it)
 			}
-			apiJSON(w, 200, map[string]any{"total": len(out), "words": out})
+			apiJSON(w, 200, map[string]any{"total": total, "page": page, "pageSize": pageSize, "words": out})
 		}
 	}
 }

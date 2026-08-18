@@ -224,3 +224,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   left: 8px; top: 8px; z-index: 9999; background: var(--magenta); color:#fff;
   padding: 8px 14px; border-radius: 8px; text-decoration:none;
 }
+
+/* ================= Markdown 代码块：右上角复制按钮 ================= */
+pre.md-code { position: relative; }
+pre.md-code > .md-copy {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(120,120,150,.22); color: inherit;
+  border: 1px solid rgba(120,120,150,.38); border-radius: 6px;
+  padding: 2px 10px; font-size: .75rem; line-height: 1.5;
+  cursor: pointer; font-family: inherit; user-select: none;
+  opacity: .92; transition: opacity .15s, background .15s; z-index: 2;
+}
+pre.md-code > .md-copy:hover { opacity: 1; background: rgba(120,120,150,.38); }

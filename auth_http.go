@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 // ---- 服务端会话存储 ----
@@ -141,11 +143,11 @@ func handleRegister(auth *AuthStore) http.HandlerFunc {
 		req.College = strings.TrimSpace(req.College)
 		req.Major = strings.TrimSpace(req.Major)
 
-		// 图形验证码 (防脚本批量注册) ——临时注释，上线前解开
-		// if !verifyCaptchaCode(req.CaptchaID, req.Captcha) {
-		// 	apiErr(w, 400, "验证码错误，请重试")
-		// 	return
-		// }
+		// 图形验证码 (防脚本批量注册)
+		if !verifyCaptchaCode(req.CaptchaID, req.Captcha) {
+			apiErr(w, 400, "验证码错误，请重试")
+			return
+		}
 
 		if req.Email == "" || !emailRe.MatchString(req.Email) {
 			apiErr(w, 400, "请输入有效的邮箱")
@@ -155,10 +157,6 @@ func handleRegister(auth *AuthStore) http.HandlerFunc {
 			apiErr(w, 400, "密码至少 6 位")
 			return
 		}
-		if req.Nickname == "" {
-			apiErr(w, 400, "请填写昵称")
-			return
-		}
 		if req.Username == "" {
 			apiErr(w, 400, "请设置用户名（用于登录）")
 			return
@@ -166,6 +164,10 @@ func handleRegister(auth *AuthStore) http.HandlerFunc {
 		if len(req.Username) < 2 || len(req.Username) > 20 {
 			apiErr(w, 400, "用户名需 2~20 个字符")
 			return
+		}
+		// 昵称=用户名（合并为一个，全站唯一）：昵称未填时用用户名
+		if req.Nickname == "" {
+			req.Nickname = req.Username
 		}
 		// 学院和专业必填（按你的产品要求）
 		if req.College == "" || req.Major == "" {
@@ -237,11 +239,11 @@ func handleLogin(auth *AuthStore) http.HandlerFunc {
 			apiErr(w, 400, "请求格式错误")
 			return
 		}
-		// 验证码校验（防暴力破解）——临时注释，上线前解开
-		// if !verifyCaptchaCode(strings.TrimSpace(req.CaptchaID), strings.TrimSpace(req.Captcha)) {
-		// 	apiErr(w, 423, "验证码错误或已过期，请刷新后重试")
-		// 	return
-		// }
+		// 验证码校验（防暴力破解）
+		if !verifyCaptchaCode(strings.TrimSpace(req.CaptchaID), strings.TrimSpace(req.Captcha)) {
+			apiErr(w, 423, "验证码错误或已过期，请刷新后重试")
+			return
+		}
 		inp := strings.ToLower(strings.TrimSpace(req.Email))
 		if inp == "" {
 			inp = strings.ToLower(strings.TrimSpace(req.Account))
@@ -292,9 +294,16 @@ func handleUpdateProfile(auth *AuthStore) http.HandlerFunc {
 		uid := currentUserID(r)
 		if uid == 0 { apiErr(w, 401, "请先登录"); return }
 		var body struct {
+			Nickname    string         `json:"nickname"`
 			Gender      string         `json:"gender"`
 			Age         int            `json:"age"`
+			Birthday    string         `json:"birthday"`
+			Grade       string         `json:"grade"`
 			NativePlace string         `json:"nativePlace"`
+			Wechat      string         `json:"wechat"`
+			QQ          string         `json:"qq"`
+			Phone       string         `json:"phone"`
+			Social      string         `json:"social"`
 			Bio         string         `json:"bio"`
 			College     string         `json:"college"`
 			Major       string         `json:"major"`
@@ -304,12 +313,44 @@ func handleUpdateProfile(auth *AuthStore) http.HandlerFunc {
 			apiErr(w, 400, "请求格式错误"); return
 		}
 		// 后端输入校验（不可信输入必须双重校验）
+		body.Nickname = cleanUserText(body.Nickname, 20)
+		if body.Nickname != "" {
+			if n := utf8.RuneCountInString(body.Nickname); n < 2 || n > 20 {
+				apiErr(w, 400, "昵称需 2~20 个字符"); return
+			}
+			// 昵称全站唯一（注册时昵称=用户名，编辑时也保持唯一，排除自己）
+			var dup int
+			auth.db.QueryRow(`SELECT COUNT(*) FROM users WHERE nickname=? AND id<>?`, body.Nickname, uid).Scan(&dup)
+			if dup > 0 { apiErr(w, 409, "该昵称已被占用"); return }
+		}
 		if body.Age < 1 || body.Age > 100 { body.Age = 0 }
 		body.NativePlace = cleanUserText(body.NativePlace, 100)
 		body.Bio = cleanUserText(body.Bio, 20)
 		body.Gender = cleanUserText(body.Gender, 6)
 		body.College = cleanUserText(body.College, 40)
 		body.Major = cleanUserText(body.Major, 40)
+		body.Birthday = cleanUserText(body.Birthday, 20)
+		body.Grade = cleanUserText(body.Grade, 10)
+		body.Wechat = cleanUserText(body.Wechat, 40)
+		body.QQ = cleanUserText(body.QQ, 20)
+		body.Phone = cleanUserText(body.Phone, 20)
+		body.Social = cleanUserText(body.Social, 120)
+		// 格式校验（非空才校验）
+		if body.QQ != "" {
+			if !isAllDigits(body.QQ) || len(body.QQ) < 5 || len(body.QQ) > 12 {
+				apiErr(w, 400, "QQ 号应为 5~12 位数字"); return
+			}
+		}
+		if body.Phone != "" {
+			if !isAllDigits(body.Phone) || len(body.Phone) < 7 || len(body.Phone) > 15 {
+				apiErr(w, 400, "电话号码应为 7~15 位数字"); return
+			}
+		}
+		if body.Grade != "" {
+			if !isGradeFormat(body.Grade) {
+				apiErr(w, 400, "届别格式应为如 2023级（4位年份+级）"); return
+			}
+		}
 		// J5：籍贯必须是"省份 市"组合（前端下拉 + 后端校验）
 		if body.NativePlace != "" && !isValidNativePlace(body.NativePlace) {
 			apiErr(w, 400, "籍贯请从省、市下拉中选择"); return
@@ -340,8 +381,8 @@ func handleUpdateProfile(auth *AuthStore) http.HandlerFunc {
 			privacyJSON, _ := json.Marshal(body.Privacy)
 			_, _ = auth.db.Exec("UPDATE users SET privacy=? WHERE id=?", string(privacyJSON), uid)
 		}
-		_, err := auth.db.Exec("UPDATE users SET gender=?, age=?, native_place=?, bio=?, college=?, major=? WHERE id=?",
-			body.Gender, body.Age, body.NativePlace, body.Bio, body.College, body.Major, uid)
+		_, err := auth.db.Exec("UPDATE users SET nickname=?, gender=?, age=?, birthday=?, grade=?, native_place=?, wechat=?, qq=?, phone=?, social=?, bio=?, college=?, major=? WHERE id=?",
+			body.Nickname, body.Gender, body.Age, body.Birthday, body.Grade, body.NativePlace, body.Wechat, body.QQ, body.Phone, body.Social, body.Bio, body.College, body.Major, uid)
 		if err != nil { apiErr(w, 500, "保存失败"); return }
 		u, _ := auth.GetByID(uid)
 		apiJSON(w, 200, map[string]any{"message": "已保存", "user": u.ToSessionInfo()})
@@ -356,4 +397,64 @@ func cleanUserText(s string, maxLen int) string {
 	runes := []rune(strings.TrimSpace(cleaned))
 	if len(runes) > maxLen { runes = runes[:maxLen] }
 	return string(runes)
+}
+
+
+
+// isAllDigits 判断字符串是否全为数字
+func isAllDigits(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return s != ""
+}
+
+// isGradeFormat 判断届别格式：4位年份 + "级"（如 2023级）
+func isGradeFormat(s string) bool {
+	runes := []rune(s)
+	if len(runes) != 5 {
+		return false
+	}
+	for i := 0; i < 4; i++ {
+		if runes[i] < '0' || runes[i] > '9' {
+			return false
+		}
+	}
+	return runes[4] == '级'
+}
+
+// handleChangePassword 修改密码（登录状态下）
+// POST /api/me/password  body:{oldPassword, newPassword}
+func handleChangePassword(auth *AuthStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid := currentUserID(r)
+		if uid == 0 { apiErr(w, 401, "请先登录"); return }
+		var body struct {
+			OldPassword string `json:"oldPassword"`
+			NewPassword string `json:"newPassword"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			apiErr(w, 400, "请求格式错误"); return
+		}
+		if len(body.NewPassword) < 6 {
+			apiErr(w, 400, "新密码至少 6 位"); return
+		}
+		u, err := auth.GetByID(uid)
+		if err != nil || u == nil { apiErr(w, 500, "用户不存在"); return }
+		// 安全：修改密码前要求邮箱已验证（防止账号被盗后改密）
+		if u.EmailVerified != 1 {
+			apiErr(w, 403, "请先验证邮箱后再修改密码（可在个人中心发送验证码）"); return
+		}
+		if !auth.VerifyPassword(u.Password, body.OldPassword) {
+			apiErr(w, 400, "旧密码不正确"); return
+		}
+		hash, err := bcryptHash(body.NewPassword)
+		if err != nil { apiErr(w, 500, "密码处理失败"); return }
+		_, err = auth.db.Exec("UPDATE users SET password=? WHERE id=?", hash, uid)
+		if err != nil { apiErr(w, 500, "修改失败"); return }
+		logAudit(auth.db, uid, "修改密码", "用户ID="+strconv.FormatInt(uid, 10))
+		apiJSON(w, 200, map[string]string{"message": "密码已修改"})
+	}
 }

@@ -10,12 +10,12 @@ const backEl = document.getElementById('viewerBack');
 
 // 返回：优先回上一页；当无历史（如后台新标签页直接打开预览）时回退到后台
 function goBack() {
-  if (document.referrer && (document.referrer.endsWith('/admin.html') || document.referrer.includes('/admin.html'))) {
-    location.href = '/admin.html';
+  if (document.referrer && (document.referrer.endsWith('/eugene.html') || document.referrer.includes('/eugene.html'))) {
+    location.href = '/eugene.html';
     return;
   }
   if (history.length > 1) { history.back(); return; }
-  location.href = '/admin.html';
+  location.href = '/eugene.html';
 }
 if (backEl) backEl.addEventListener('click', function (e) { e.preventDefault(); goBack(); });
 

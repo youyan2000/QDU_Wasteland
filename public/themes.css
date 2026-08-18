@@ -59,6 +59,14 @@ body[data-theme="dark"] .hero-title {
 body[data-theme="dark"] .hero-wash { background: linear-gradient(to top, rgba(8,8,14,.9), rgba(8,8,14,.35) 50%, rgba(8,8,14,.25)); }
 body[data-theme="dark"] .module-card { background:#1a1a1f; border-color: var(--border); color: var(--ink); }
 body[data-theme="dark"] .module-card:hover { box-shadow: 0 12px 28px rgba(255,92,157,.14); }
+/* 暗黑：铃铛/信封等导航按钮高亮（亮图标 + 亮边框，避免太暗看不清） */
+body[data-theme="dark"] .nav-bell {
+  background: #2a2a31;
+  border-color: rgba(255,255,255,.18);
+  color: #e8e6e3;
+}
+body[data-theme="dark"] .nav-bell:hover { border-color: var(--magenta); color: var(--magenta); box-shadow: 0 0 10px rgba(255,92,157,.25); }
+body[data-theme="dark"] .bell-count { background: var(--magenta); color: #121212; }
 
 /* ---------- 主题：赛博朋克（霓虹 · 发光线条） ---------- */
 body[data-theme="cyber"] {
@@ -267,3 +275,173 @@ body[data-theme="dark"] .set-theme, body[data-theme="cyber"] .set-theme { backgr
 body[data-theme="dark"] .set-switch button, body[data-theme="cyber"] .set-switch button { background:#1c1c1c; color:inherit; }
 .set-switch button.active { background:var(--magenta); color:#fff; border-color:var(--magenta); }
 .set-close { position:absolute; top:8px; right:10px; background:none; border:none; font-size:1rem; cursor:pointer; color:var(--muted); }
+
+
+/* ================= 主题差异化 · 字体与识别性（design-dna 思路） ================= */
+
+/* 默认（米白纸感）：衬线标题 + 编辑感 */
+body[data-theme=""] h1, body[data-theme=""] h2,
+body[data-theme=""] .courses-h1, body[data-theme=""] .forum-h1,
+body[data-theme=""] .read-title, body[data-theme=""] .profile-name,
+body[data-theme=""] .post-title, body[data-theme=""] .article-card .ac-title {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
+body[data-theme=""] .hero-title {
+  font-family: var(--font-serif);
+  font-weight: 700;
+}
+body[data-theme=""] .site-nav .nav-logo { font-family: var(--font-serif); font-weight: 700; }
+
+/* 暗黑（玻璃拟态）：更柔的衬线 + 光晕标题 */
+body[data-theme="dark"] h1, body[data-theme="dark"] h2,
+body[data-theme="dark"] .courses-h1, body[data-theme="dark"] .forum-h1,
+body[data-theme="dark"] .read-title, body[data-theme="dark"] .profile-name,
+body[data-theme="dark"] .post-title {
+  font-family: var(--font-serif);
+}
+body[data-theme="dark"] .site-nav .nav-logo { font-family: var(--font-serif); }
+body[data-theme="dark"] .courses-h1, body[data-theme="dark"] .forum-h1 {
+  text-shadow: 0 0 24px rgba(255,92,157,.25);
+  font-weight: 600;
+}
+
+/* 赛博朋克（霓虹）：等宽点缀 + 发光标题（保留现状，微调强调） */
+body[data-theme="cyber"] h1, body[data-theme="cyber"] h2,
+body[data-theme="cyber"] .courses-h1, body[data-theme="cyber"] .forum-h1,
+body[data-theme="cyber"] .read-title {
+  font-family: var(--font-mono);
+  letter-spacing: .01em;
+}
+body[data-theme="cyber"] .courses-h1, body[data-theme="cyber"] .forum-h1 {
+  text-shadow: 0 0 18px rgba(0,255,200,.35), 0 0 40px rgba(0,255,200,.15);
+}
+
+/* 简约（GitHub）：骨干衬线字（有骨感的宋体/衬线）+ 加粗标题 + 硬朗边界 */
+body[data-theme="github"] h1, body[data-theme="github"] h2,
+body[data-theme="github"] .courses-h1, body[data-theme="github"] .forum-h1,
+body[data-theme="github"] .read-title, body[data-theme="github"] .profile-name,
+body[data-theme="github"] .post-title, body[data-theme="github"] .article-card .ac-title {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+body[data-theme="github"] .site-nav .nav-logo {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  font-size: 1.35rem;
+}
+body[data-theme="github"] .hero-title {
+  font-family: var(--font-serif);
+  font-weight: 900;
+}
+body[data-theme="github"] h1, body[data-theme="github"] h2,
+body[data-theme="github"] .courses-h1, body[data-theme="github"] .forum-h1 {
+  border-bottom: 2px solid var(--magenta, #0969da);
+  padding-bottom: .25em;
+}
+
+/* 暗黑：后台小按钮高对比（字色与背景拉开） */
+body[data-theme="dark"] .btn-mini {
+  background: #3a3a44;
+  color: #f2f0ee;
+  border: 1px solid rgba(255,255,255,.14);
+}
+body[data-theme="dark"] .btn-mini:hover { background: #464652; }
+body[data-theme="dark"] .btn-mini.danger { background: rgba(211,47,47,.26) !important; color: #ffb3b3 !important; border-color: rgba(255,120,120,.3); }
+body[data-theme="dark"] .btn-mini.danger:hover { background: rgba(211,47,47,.32); }
+
+/* ================= 暗黑/赛博：后台组件高对比 ================= */
+/* 后台小按钮（下架/查看/通过等） */
+body[data-theme="dark"] .btn-mini,
+body[data-theme="cyber"] .btn-mini {
+  background: #3a3a44;
+  color: #f2f0ee;
+  border: 1px solid rgba(255,255,255,.18);
+}
+body[data-theme="dark"] .btn-mini:hover,
+body[data-theme="cyber"] .btn-mini:hover { background: #484854; color:#fff; }
+body[data-theme="dark"] .btn-mini.danger,
+body[data-theme="cyber"] .btn-mini.danger {
+  background: rgba(211,47,47,.25);
+  color: #ffb0b0;
+  border-color: rgba(255,130,130,.35);
+}
+body[data-theme="dark"] .btn-mini.danger:hover,
+body[data-theme="cyber"] .btn-mini.danger:hover { background: rgba(211,47,47,.38); color:#fff; }
+
+/* 后台统计卡（用户/举报/资料那两排） */
+body[data-theme="dark"] .stat-card.stat-btn,
+body[data-theme="cyber"] .stat-card.stat-btn {
+  background: #22222c;
+  border: 1px solid rgba(255,255,255,.14);
+  color: #f0eeeb;
+}
+body[data-theme="dark"] .stat-card.stat-btn .stat-num,
+body[data-theme="cyber"] .stat-card.stat-btn .stat-num { color: var(--magenta); }
+body[data-theme="dark"] .stat-card.stat-btn .stat-label,
+body[data-theme="cyber"] .stat-card.stat-btn .stat-label { color: #c8c6c2; }
+body[data-theme="dark"] .stat-card.stat-btn:hover,
+body[data-theme="cyber"] .stat-card.stat-btn:hover { background:#2c2c38; border-color:var(--magenta); }
+body[data-theme="dark"] .stat-card.stat-btn.active,
+body[data-theme="cyber"] .stat-card.stat-btn.active { background: var(--magenta-soft); border-color: var(--magenta); }
+
+/* 后台顶部 tab（用户/举报/资料…） */
+body[data-theme="dark"] .admin-tab,
+body[data-theme="cyber"] .admin-tab {
+  background: #22222c;
+  color: #d8d6d2;
+  border: 1px solid rgba(255,255,255,.12);
+}
+body[data-theme="dark"] .admin-tab:hover,
+body[data-theme="cyber"] .admin-tab:hover { color:#fff; border-color:var(--magenta); }
+body[data-theme="dark"] .admin-tab.active,
+body[data-theme="cyber"] .admin-tab.active {
+  background: linear-gradient(90deg, var(--magenta), var(--sunrise));
+  color:#fff; font-weight:700;
+}
+
+/* 后台表格与 pill */
+body[data-theme="dark"] table th,
+body[data-theme="cyber"] table th { color:#e0deda; border-bottom:1px solid var(--border-strong); }
+body[data-theme="dark"] table td,
+body[data-theme="cyber"] table td { color:#e8e6e3; border-bottom:1px solid var(--border); }
+body[data-theme="dark"] .pill,
+body[data-theme="cyber"] .pill {
+  background: #33333e;
+  color: #e8e6e3;
+  border: 1px solid rgba(255,255,255,.16);
+}
+body[data-theme="dark"] .pill.pending,
+body[data-theme="cyber"] .pill.pending { background: rgba(240,184,90,.2) !important; color: #ffdf9e !important; }
+body[data-theme="dark"] .pill.banned,
+body[data-theme="cyber"] .pill.banned { background: rgba(211,47,47,.26) !important; color: #ffb3b3 !important; }
+body[data-theme="dark"] .pill.admin,
+body[data-theme="cyber"] .pill.admin { background: rgba(0,255,200,.12); color: #7ff5dd; }
+
+/* 后台面板标题与容器 */
+body[data-theme="dark"] .pane-title,
+body[data-theme="cyber"] .pane-title { color:#f0eeeb; }
+body[data-theme="dark"] .admin-pane,
+body[data-theme="cyber"] .admin-pane { background: var(--surface); border-color: var(--border); color: var(--ink); }
+
+/* ===== 覆盖 admin.html 内联硬编码（.admin-tab 白底等）===== */
+body[data-theme="dark"] .admin-tab,
+body[data-theme="cyber"] .admin-tab {
+  background: #22222c !important;
+  border-color: rgba(255,255,255,.16) !important;
+  color: #d8d6d2 !important;
+}
+body[data-theme="dark"] .admin-tab:hover,
+body[data-theme="cyber"] .admin-tab:hover {
+  color: #fff !important;
+  border-color: var(--magenta) !important;
+}
+body[data-theme="dark"] .admin-tab.active,
+body[data-theme="cyber"] .admin-tab.active {
+  background: linear-gradient(90deg, var(--magenta), var(--sunrise)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}

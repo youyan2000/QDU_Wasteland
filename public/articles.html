@@ -17,7 +17,7 @@
     <div class="articles-head">
       <span class="kicker">CAMPUS</span>
       <h1 class="articles-h1">文章</h1>
-      <p class="articles-sub">比赛 · 老师 · 生活方式 · 社团 —— 属于青大人的校园记忆与经验。</p>
+      <p class="articles-sub">竞赛 · 社团 · 生活 · 未来</p>
       <div class="cat-bar" id="catBar">
         <button class="cat-chip active" data-cat="">全部</button>
         <button class="cat-chip" data-cat="竞赛"><i class="cat-ic" data-icon="trophy"></i> 竞赛</button>
@@ -35,6 +35,7 @@
       <button id="newArticleBtn" class="btn-newpost">＋ 写文章</button>
     </div>
 
+    <div id="articlePager" class="art-pager" style="display:flex;justify-content:center;align-items:center;gap:10px;margin:1.6rem 0"></div>
     <div id="articleList" class="article-list">
       <div class="empty">加载中…</div>
     </div>
@@ -44,6 +45,6 @@
 <script>document.querySelectorAll(".cat-ic").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(14);});</script>
   <script src="nav.js?v=20260818s"></script>
   <script src="report.js"></script>
-  <script src="articles.js?v=20260818p"></script>
+  <script src="articles.js?v=20260818r"></script>
 </body>
 </html>

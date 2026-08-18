@@ -20,7 +20,13 @@ document.getElementById('mdToolbar').addEventListener('click', e => {
   if (!btn) return;
   const s = ta.selectionStart, t = ta.selectionEnd;
   const ins = btn.dataset.ins.replace(/&#10;/g, '\n');
-  if (s === t) {
+  if (s !== t && ins.startsWith('> ')) {
+    // 引用：给选中的每一行加 > 前缀，而不是把选中的内容夹在中间
+    const sel = ta.value.slice(s, t);
+    const prefixed = sel.split('\n').map(l => '> ' + l).join('\n');
+    ta.value = ta.value.slice(0, s) + prefixed + ta.value.slice(t);
+    ta.selectionStart = s; ta.selectionEnd = s + prefixed.length;
+  } else if (s === t) {
     ta.value = ta.value.slice(0, s) + ins + ta.value.slice(s);
     ta.selectionStart = ta.selectionEnd = s + ins.length;
   } else {
@@ -138,4 +144,75 @@ async function initEditMode() {
   const me = await (await fetch('/api/me')).json();
   if (!me.loggedIn) { location.href = '/login.html'; return; }
   initEditMode();
+})();
+
+// ---- 相册选图（正文插入 & 封面共用）----
+async function loadMyAlbumPhotos() {
+  const photos = [];
+  const albs = await (await fetch('/api/albums?mine=1')).json();
+  for (const a of (albs.albums || [])) {
+    const items = await (await fetch('/api/albums/items?album_id=' + a.id)).json();
+    (items.items || []).filter(i => i.targetType === 'photo').forEach(p => photos.push({ url: p.photoUrl, album: a.title }));
+  }
+  return photos;
+}
+
+function openAlbumPicker(photos, onPick) {
+  if (!photos.length) { alert('相册里还没有照片，请先上传或保存图片到相册'); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'modal';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = '<div class="modal-box" style="width:min(640px,94vw);max-height:86vh;overflow:auto">' +
+    '<div class="modal-head"><h3>从相册选择图片</h3><button class="modal-close" id="apClose"><i class="icon-fill" data-icon="close"></i></button></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 0">' +
+    photos.map((p, i) => '<div style="cursor:pointer;border:1px solid var(--border,#eee);border-radius:8px;overflow:hidden" data-albumpick="' + i + '" title="' + p.album + '"><img src="' + p.url + '" style="width:100%;height:110px;object-fit:cover;display:block"></div>').join('') +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#apClose').onclick = () => overlay.remove();
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelectorAll('[data-albumpick]').forEach(el => {
+    el.onclick = () => {
+      const url = photos[Number(el.dataset.albumpick)].url;
+      overlay.remove();
+      onPick(url);
+    };
+  });
+}
+
+// 从相册选图插入正文
+(function () {
+  const btn = document.getElementById('edAlbumPick');
+  if (!btn) return;
+  btn.onclick = async () => {
+    const me = await (await fetch('/api/me')).json();
+    if (!me.loggedIn) { location.href = '/login.html'; return; }
+    try {
+      const photos = await loadMyAlbumPhotos();
+      openAlbumPicker(photos, (url) => {
+        const ta = document.getElementById('edContent');
+        ta.value = ta.value + (ta.value && !ta.value.endsWith('\n') ? '\n' : '') + '![图片](' + url + ')\n';
+        ta.dispatchEvent(new Event('input'));
+      });
+    } catch (e) { alert('加载相册失败，请重试'); }
+  };
+})();
+
+// 封面：从相册选图
+(function () {
+  const btn = document.getElementById('edCoverAlbumPick');
+  if (!btn) return;
+  btn.onclick = async () => {
+    const me = await (await fetch('/api/me')).json();
+    if (!me.loggedIn) { location.href = '/login.html'; return; }
+    try {
+      const photos = await loadMyAlbumPhotos();
+      openAlbumPicker(photos, (url) => {
+        currentCover = url;
+        const pv = document.getElementById('edCoverPreview');
+        const msg = document.getElementById('edCoverMsg');
+        if (pv) { pv.src = url; pv.style.display = 'block'; }
+        if (msg) msg.textContent = '已从相册选择封面';
+      });
+    } catch (e) { alert('加载相册失败，请重试'); }
+  };
 })();

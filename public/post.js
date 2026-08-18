@@ -21,7 +21,7 @@ function render(p) {
         <span>${!p.anonymous && p.ownerId ? `<a class="author-link" href="/user.html?id=${p.ownerId}">${escape(p.author)}</a>` : escape(p.author)}</span>
         <span>${escape(p.createdAt)}</span>
       </div>
-      <div class="post-content">${escape(p.content)}</div>
+      <div class="post-content md-view">${renderMarkdown(p.content)}</div>
       <div class="post-actions" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button id="likeBtn" class="like-btn ${p.liked?'liked':''}">${ICONS.thumb(16, '', p.liked)} ${p.liked?'已赞':'点赞'} <span class="like-count">${p.likes||0}</span></button>
         <button id="favBtn" class="like-btn">☆ 收藏</button>
@@ -41,6 +41,7 @@ function render(p) {
     <div class="comment-list">${renderComments(p.comments||[])}</div>
     </div>`;
   wrap.innerHTML = html;
+  attachSaveToAlbum(wrap);
 
   // C2 作者本人或管理员的"撤回草稿/删除"按钮（编辑入口简洁版：删除=撤回草稿，草稿可再发布）
   (async () => {
@@ -53,7 +54,7 @@ function render(p) {
     if (!canMod) return;
     const box = document.getElementById('ownActions');
     if (box) {
-      box.innerHTML = `<button class="me-btn mini" id="postDelBtn">删除(撤回草稿)</button>`;
+      box.innerHTML = `<button class="me-btn-danger" id="postDelBtn">${ICONS.trash(14)} 删除(撤回草稿)</button>`;
       document.getElementById('postDelBtn').onclick = async () => {
         if (!confirm('确定删除该帖子？将撤回草稿箱，可在"我的风采-草稿箱"重新发布。')) return;
         await fetch('/api/forum/post/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: p.id }) });
@@ -155,3 +156,40 @@ function renderComments(all) {
 }
 
 load();
+
+
+// 给正文图片加"存入相册"悬浮按钮
+function attachSaveToAlbum(container) {
+  if (!container) return;
+  const imgs = container.querySelectorAll('.post-content img, .read-body img, .md-view img');
+  imgs.forEach(img => {
+    if (img.closest('.save-album-wrap')) return; // 已处理过
+    const wrap = document.createElement('span');
+    wrap.className = 'save-album-wrap';
+    wrap.style.cssText = 'position:relative;display:inline-block';
+    img.parentNode.insertBefore(wrap, img);
+    wrap.appendChild(img);
+    const btn = document.createElement('button');
+    btn.className = 'save-album-btn';
+    btn.textContent = '存相册';
+    btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:.75rem;cursor:pointer;opacity:0;transition:opacity .15s;z-index:5';
+    wrap.appendChild(btn);
+    wrap.addEventListener('mouseenter', () => btn.style.opacity = '1');
+    wrap.addEventListener('mouseleave', () => btn.style.opacity = '0');
+    btn.onclick = async () => {
+      const me = await (await fetch('/api/me')).json();
+      if (!me.loggedIn) { location.href = '/login.html'; return; }
+      btn.textContent = '保存中…';
+      try {
+        const r = await fetch('/api/albums/save-image', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: img.getAttribute('src') })
+        });
+        const d = await r.json();
+        if (!r.ok) { alert(d.error || '保存失败'); btn.textContent = '存相册'; return; }
+        btn.textContent = '✅ 已保存';
+        setTimeout(() => { btn.textContent = '存相册'; }, 1500);
+      } catch (e) { alert('网络错误'); btn.textContent = '存相册'; }
+    };
+  });
+}

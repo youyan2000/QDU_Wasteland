@@ -22,7 +22,7 @@
 
   <!-- 编辑资料弹层 -->
   <div id="editProfileModal" class="modal" style="display:none">
-    <div class="modal-box" style="width:min(460px,92vw)">
+    <div class="modal-box" style="width:min(460px,92vw);max-height:88vh;overflow-y:auto">
       <div class="modal-head">
         <h3>编辑资料</h3>
         <button class="modal-close" id="epClose"><i class="icon-fill" data-icon="close"></i></button>
@@ -34,6 +34,22 @@
           <input id="epAvatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" style="flex:1;font-size:.85rem">
         </div>
         <div style="font-size:.75rem;color:var(--muted);margin-top:4px;width:100%">支持 jpg/png/gif/webp，≤2MB；上传后立即生效</div>
+      </div>
+      <div class="pf-row">
+        <label>昵称</label>
+        <input id="epNickname" type="text" maxlength="20" placeholder="2~20 个字符，全站唯一">
+      </div>
+      <div class="pf-row">
+        <label>学院</label>
+        <select id="epCollege" style="width:100%;padding:.45rem .6rem;border:1px solid var(--border,#ddd);border-radius:8px;font-size:.85rem;background:var(--surface,#fff);color:var(--ink)">
+          <option value="">选择学院</option>
+        </select>
+      </div>
+      <div class="pf-row">
+        <label>专业</label>
+        <select id="epMajor" style="width:100%;padding:.45rem .6rem;border:1px solid var(--border,#ddd);border-radius:8px;font-size:.85rem;background:var(--surface,#fff);color:var(--ink)">
+          <option value="">先选学院</option>
+        </select>
       </div>
       <div class="pf-row">
         <label>性别</label>
@@ -60,6 +76,30 @@
         </div>
       </div>
       <div class="pf-row">
+        <label>生日</label>
+        <input id="epBirthday" type="date" placeholder="如 2004-05-20" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink)">
+      </div>
+      <div class="pf-row">
+        <label>届别</label>
+        <input id="epGrade" type="text" maxlength="10" placeholder="如 2023级" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink)">
+      </div>
+      <div class="pf-row">
+        <label>微信</label>
+        <input id="epWechat" type="text" maxlength="40" placeholder="微信号" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink)">
+      </div>
+      <div class="pf-row">
+        <label>QQ</label>
+        <input id="epQQ" type="text" maxlength="20" placeholder="QQ号" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink)">
+      </div>
+      <div class="pf-row">
+        <label>电话</label>
+        <input id="epPhone" type="tel" maxlength="20" placeholder="手机号" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink)">
+      </div>
+      <div class="pf-row">
+        <label>其他社交媒体</label>
+        <input id="epSocial" type="text" maxlength="120" placeholder="如 微博 / 小红书 / B站 主页链接" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink)">
+      </div>
+      <div class="pf-row">
         <label>个性签名</label>
         <input id="epBio" type="text" maxlength="20" placeholder="一句话介绍自己">
       </div>
@@ -70,6 +110,31 @@
     </div>
   </div>
 
+  <!-- 修改密码弹层 -->
+  <div id="changePwdModal" class="modal" style="display:none">
+    <div class="modal-box" style="width:min(400px,92vw)">
+      <div class="modal-head">
+        <h3>修改密码</h3>
+        <button class="modal-close" id="cpClose"><i class="icon-fill" data-icon="close"></i></button>
+      </div>
+      <div class="pf-row">
+        <label>旧密码</label>
+        <input id="cpOld" type="password" placeholder="输入当前密码" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box">
+      </div>
+      <div class="pf-row">
+        <label>新密码（至少 6 位）</label>
+        <input id="cpNew" type="password" placeholder="输入新密码" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box">
+      </div>
+      <div class="pf-row">
+        <label>确认新密码</label>
+        <input id="cpNew2" type="password" placeholder="再次输入新密码" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box">
+      </div>
+      <div class="err" id="cpErr" style="color:#d32f2f;min-height:1em;font-size:.85rem"></div>
+      <div class="pf-actions">
+        <button id="cpSave" class="btn-submit" style="background:linear-gradient(90deg,var(--magenta),var(--sunrise));border:none;color:#fff;padding:.7rem 1.8rem;border-radius:10px;font-weight:700;cursor:pointer">确认修改</button>
+      </div>
+    </div>
+  </div>
   <!-- 隐私设置弹层 -->
   <div id="privacyModal" class="modal" style="display:none">
     <div class="modal-box" style="width:min(460px,92vw)">
@@ -93,6 +158,36 @@
       <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
         <label style="margin:0">籍贯</label><input type="checkbox" id="prvNative">
       </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">生日</label><input type="checkbox" id="prvBirthday">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">微信</label><input type="checkbox" id="prvWechat">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">QQ</label><input type="checkbox" id="prvQQ">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">电话</label><input type="checkbox" id="prvPhone">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">其他社交媒体</label><input type="checkbox" id="prvSocial">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">我的帖子</label><input type="checkbox" id="prvPosts">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">我的评价</label><input type="checkbox" id="prvReviews">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">我的文章</label><input type="checkbox" id="prvArticles">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">我的收藏</label><input type="checkbox" id="prvFavorites">
+      </div>
+      <div class="pf-row" style="display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">我的相册</label><input type="checkbox" id="prvAlbums">
+      </div>
       <div class="pf-actions">
         <button id="prvSave" class="btn-submit">保存</button>
       </div>
@@ -102,6 +197,6 @@
   <script src="icons.js"></script>
 <script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
   <script src="nav.js?v=20260818s"></script>
-  <script src="me.js?v=20260818r"></script>
+  <script src="me.js?v=20260818t"></script>
 </body>
 </html>

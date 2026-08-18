@@ -48,7 +48,14 @@ func handleListTopics() http.HandlerFunc {
 		}
 		// ⚠️ SQLite 单连接铁律：先完整取出 rows 并 Close，再做第二次查询，
 		// 否则在同一 handler 内第二次 db 调用会死锁。故先收集专题，关闭 rows，再查计数。
-		rows, err := authStore.db.Query(`SELECT id,title,description,created_by,created_at FROM topics ORDER BY id DESC`)
+		page := atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize := atoi(r.URL.Query().Get("pageSize"))
+		if pageSize < 1 { pageSize = 200 } // 不传参数时返回全部（兼容公开页面）
+		if pageSize > 200 { pageSize = 200 }
+		var total int
+		authStore.db.QueryRow(`SELECT COUNT(*) FROM topics`).Scan(&total)
+		rows, err := authStore.db.Query(`SELECT id,title,description,created_by,created_at FROM topics ORDER BY id DESC LIMIT ? OFFSET ?`, pageSize, (page-1)*pageSize)
 		if err != nil {
 			apiErr(w, 500, "查询失败")
 			return
@@ -73,7 +80,7 @@ func handleListTopics() http.HandlerFunc {
 		for i := range items {
 			_ = authStore.db.QueryRow(`SELECT COUNT(*) FROM topic_articles WHERE topic_id=?`, items[i].ID).Scan(&items[i].ArticleCount)
 		}
-		apiJSON(w, 200, map[string]any{"topics": items})
+		apiJSON(w, 200, map[string]any{"total": total, "topics": items})
 	}
 }
 

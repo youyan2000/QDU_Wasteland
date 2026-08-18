@@ -37,6 +37,18 @@ uploads/
 
 # 本地测试脚本产物
 test-*.tmp
-
-# ���ز��Խű�����Ĭ���˺ţ�����⣩
 test-v7.js
+
+# 规划/设计文档已外移到 ../docs（本仓库只保留 README.md）
+MASTER-PLAN.md
+PLAN.md
+DESIGN.md
+AESTHETIC-MASTERPLAN.md
+AESTHETIC-RESEARCH.md
+ANTI-AI-SLOP-GUIDE.md
+VISUAL-REVIEW.md
+SECURITY.md
+# 测试残留（cookie/个人测试页）
+_c.txt
+_cookies.txt
+public/eugene.html

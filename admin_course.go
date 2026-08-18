@@ -394,10 +394,9 @@ func handleAdminListColleges(db *DB, auth *AuthStore) http.HandlerFunc {
 		if requireAdmin(auth, w, r) == 0 {
 			return
 		}
-		names := make([]string, 0, len(db.CollegeSet))
-		for c := range db.CollegeSet {
-			names = append(names, c)
-		}
+		// 以官方 25 学院（orgColleges）为主，补充课表课程数
+		names := make([]string, 0, len(orgColleges))
+		names = append(names, orgColleges...)
 		sortStrings(names)
 		out := make([]map[string]any, 0, len(names))
 		for _, n := range names {
@@ -407,10 +406,10 @@ func handleAdminListColleges(db *DB, auth *AuthStore) http.HandlerFunc {
 					cnt++
 				}
 			}
-			disp, sched, majors := collegeAdmin(auth.db, n)
+			disp, sched, cat, majors := collegeAdmin(auth.db, n)
 			out = append(out, map[string]any{
 				"name": n, "courseCount": cnt,
-				"displayName": disp, "scheduleName": sched, "majors": majors,
+				"displayName": disp, "scheduleName": sched, "category": cat, "majors": majors,
 			})
 		}
 		apiJSON(w, 200, map[string]any{"total": len(out), "colleges": out})
@@ -583,11 +582,56 @@ func migrateCollegesAdmin(db *sql.DB) {
 		name          TEXT PRIMARY KEY,
 		display_name  TEXT NOT NULL DEFAULT '',
 		schedule_name TEXT NOT NULL DEFAULT '',
+		category      TEXT NOT NULL DEFAULT '',
 		majors        TEXT NOT NULL DEFAULT '',
 		updated_at    TEXT NOT NULL DEFAULT ''
 	)`)
+	// 兼容旧库：若缺 category 列则补上
+	var hasCat int
+	_ = db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('colleges_admin') WHERE name='category'`).Scan(&hasCat)
+	if hasCat == 0 {
+		_, _ = db.Exec(`ALTER TABLE colleges_admin ADD COLUMN category TEXT NOT NULL DEFAULT ''`)
+	}
+	// 种子：官方 25 学院（幂等——仅当记录不存在或 majors 为空时填充，避免覆盖管理员自定义）
+	now := nowStr()
+	for name, majors := range orgCollegeData {
+		var cnt int
+		var curMajors string
+		_ = db.QueryRow(`SELECT COUNT(*), COALESCE(majors,'') FROM colleges_admin WHERE name=?`, name).Scan(&cnt, &curMajors)
+		if cnt == 0 {
+			_, _ = db.Exec(`INSERT INTO colleges_admin (name,display_name,schedule_name,category,majors,updated_at) VALUES (?,?,?,?,?,?)`,
+				name, name, "", collegeCategory(name), strings.Join(majors, ","), now)
+		} else {
+			// majors 已有：仅回填空 category（不覆盖管理员自定义的专业）
+			var curCat string
+			_ = db.QueryRow(`SELECT COALESCE(category,'') FROM colleges_admin WHERE name=?`, name).Scan(&curCat)
+			if strings.TrimSpace(curCat) == "" {
+				_, _ = db.Exec(`UPDATE colleges_admin SET category=?, updated_at=? WHERE name=?`,
+					collegeCategory(name), now, name)
+			}
+		}
+	}
 }
 
+// collegeCategory 官方学科类别（来源：青岛大学专业统计.md）
+func collegeCategory(name string) string {
+	switch name {
+	case "数学与统计学院", "物理科学学院", "化学化工学院", "生命科学学院", "机电工程学院",
+		"材料科学与工程学院", "自动化学院", "电气工程学院", "电子信息学院", "计算机科学技术学院",
+		"环境与地理科学学院", "纺织服装学院":
+		return "理工类"
+	case "青岛医学院":
+		return "医学类"
+	case "马克思主义学院", "历史学院", "经济学院", "法学院", "政治与公共管理学院",
+		"教育科学学院", "体育学院", "文学与新闻传播学院", "外语学院", "商学院":
+		return "人文社科类"
+	case "艺术学院":
+		return "艺术类"
+	case "青岛大学德雷克联合学院":
+		return "中外合作办学"
+	}
+	return ""
+}
 // ---- 后台：编辑学院 ----
 // POST /api/admin/college  body:{name, displayName, scheduleName, majors}
 func handleAdminEditCollege(auth *AuthStore) http.HandlerFunc {
@@ -599,6 +643,7 @@ func handleAdminEditCollege(auth *AuthStore) http.HandlerFunc {
 			Name         string `json:"name"`
 			DisplayName  string `json:"displayName"`
 			ScheduleName string `json:"scheduleName"`
+			Category     string `json:"category"`
 			Majors       string `json:"majors"` // 逗号分隔：专业(缩写)
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -609,18 +654,21 @@ func handleAdminEditCollege(auth *AuthStore) http.HandlerFunc {
 			apiErr(w, 400, "缺少学院名")
 			return
 		}
-		_, _ = auth.db.Exec(`INSERT INTO colleges_admin (name,display_name,schedule_name,majors,updated_at) VALUES (?,?,?,?,?)
-			ON CONFLICT(name) DO UPDATE SET display_name=excluded.display_name, schedule_name=excluded.schedule_name, majors=excluded.majors, updated_at=excluded.updated_at`,
-			body.Name, body.DisplayName, body.ScheduleName, body.Majors, nowStr())
+		if body.Category == "" {
+			body.Category = collegeCategory(body.Name)
+		}
+		_, _ = auth.db.Exec(`INSERT INTO colleges_admin (name,display_name,schedule_name,category,majors,updated_at) VALUES (?,?,?,?,?,?)
+			ON CONFLICT(name) DO UPDATE SET display_name=excluded.display_name, schedule_name=excluded.schedule_name, category=excluded.category, majors=excluded.majors, updated_at=excluded.updated_at`,
+			body.Name, body.DisplayName, body.ScheduleName, body.Category, body.Majors, nowStr())
 		logAudit(auth.db, currentUserID(r), "编辑学院", "学院="+body.Name)
 		apiJSON(w, 200, map[string]any{"ok": true})
 	}
 }
 
 // collegeAdmin 获取学院的 admin 补充信息（无则返回空结构）
-func collegeAdmin(sdb *sql.DB, name string) (display, schedule, majors string) {
-	_ = sdb.QueryRow(`SELECT display_name,schedule_name,majors FROM colleges_admin WHERE name=?`, name).
-		Scan(&display, &schedule, &majors)
+func collegeAdmin(sdb *sql.DB, name string) (display, schedule, category, majors string) {
+	_ = sdb.QueryRow(`SELECT display_name,schedule_name,category,majors FROM colleges_admin WHERE name=?`, name).
+		Scan(&display, &schedule, &category, &majors)
 	return
 }
 

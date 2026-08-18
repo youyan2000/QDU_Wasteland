@@ -112,6 +112,10 @@ func handleUpload() http.HandlerFunc {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
 			return
 		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
+			return
+		}
 
 		// multipart 大小限制（200MB）
 		if err := r.ParseMultipartForm(200 * 1024 * 1024); err != nil {
@@ -323,6 +327,10 @@ func handleAddReview() http.HandlerFunc {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
 			return
 		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
+			return
+		}
 		// 邮箱验证（斐波那契触发）
 		if requireEmailVerified(uid) {
 			apiErr(w, 403, "请先验证邮箱后再继续发布（验证码见 /api/email/verify）")
@@ -383,11 +391,25 @@ func handleAdminListFiles(auth *AuthStore) http.HandlerFunc {
 		if requireAdmin(auth, w, r) == 0 {
 			return
 		}
-		rows, err := auth.db.Query(
-			`SELECT f.id, f.course_code, f.title, f.category, f.file_name, f.size,
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		page := atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize := atoi(r.URL.Query().Get("pageSize"))
+		if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+		where := ""
+		args := []any{}
+		if q != "" {
+			where = ` WHERE f.title LIKE ? OR f.file_name LIKE ? OR f.course_code LIKE ? OR u.nickname LIKE ? OR u.email LIKE ?`
+			args = append(args, "%"+q+"%", "%"+q+"%", "%"+q+"%", "%"+q+"%", "%"+q+"%")
+		}
+		var total int
+		auth.db.QueryRow(`SELECT COUNT(*) FROM files f LEFT JOIN users u ON u.id=f.uploader_id`+where, args...).Scan(&total)
+		args = append(args, pageSize, (page-1)*pageSize)
+		sqlq := `SELECT f.id, f.course_code, f.title, f.category, f.file_name, f.size,
 			        f.uploader_id, f.is_anonymous, f.status, f.created_at,
 			        COALESCE(u.nickname,''), COALESCE(u.email,'')
-			 FROM files f LEFT JOIN users u ON u.id=f.uploader_id ORDER BY f.id DESC`)
+			 FROM files f LEFT JOIN users u ON u.id=f.uploader_id` + where + ` ORDER BY f.id DESC LIMIT ? OFFSET ?`
+		rows, err := auth.db.Query(sqlq, args...)
 		if err != nil {
 			apiErr(w, 500, "查询失败")
 			return
@@ -417,7 +439,7 @@ func handleAdminListFiles(auth *AuthStore) http.HandlerFunc {
 			it.RealAuthor = nick + " (" + email + ")"
 			out = append(out, it)
 		}
-		apiJSON(w, 200, map[string]any{"total": len(out), "files": out})
+		apiJSON(w, 200, map[string]any{"total": total, "page": page, "pageSize": pageSize, "files": out})
 	}
 }
 
@@ -464,10 +486,24 @@ func handleAdminListReviews(auth *AuthStore) http.HandlerFunc {
 		if requireAdmin(auth, w, r) == 0 {
 			return
 		}
-		rows, err := auth.db.Query(
-			`SELECT r.id, r.course_code, r.rating, r.content, r.is_anonymous, r.status, r.created_at,
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		page := atoi(r.URL.Query().Get("page"))
+		if page < 1 { page = 1 }
+		pageSize := atoi(r.URL.Query().Get("pageSize"))
+		if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+		where := ""
+		args := []any{}
+		if q != "" {
+			where = ` WHERE r.content LIKE ? OR r.course_code LIKE ? OR u.nickname LIKE ? OR u.email LIKE ?`
+			args = append(args, "%"+q+"%", "%"+q+"%", "%"+q+"%", "%"+q+"%")
+		}
+		var total int
+		auth.db.QueryRow(`SELECT COUNT(*) FROM reviews r LEFT JOIN users u ON u.id=r.user_id`+where, args...).Scan(&total)
+		args = append(args, pageSize, (page-1)*pageSize)
+		sqlq := `SELECT r.id, r.course_code, r.rating, r.content, r.is_anonymous, r.status, r.created_at,
 			        r.user_id, COALESCE(u.nickname,''), COALESCE(u.email,'')
-			 FROM reviews r LEFT JOIN users u ON u.id=r.user_id ORDER BY r.id DESC`)
+			 FROM reviews r LEFT JOIN users u ON u.id=r.user_id` + where + ` ORDER BY r.id DESC LIMIT ? OFFSET ?`
+		rows, err := auth.db.Query(sqlq, args...)
 		if err != nil {
 			apiErr(w, 500, "查询失败")
 			return
@@ -495,7 +531,7 @@ func handleAdminListReviews(auth *AuthStore) http.HandlerFunc {
 			it.RealAuthor = nick + " (" + email + ")"
 			out = append(out, it)
 		}
-		apiJSON(w, 200, map[string]any{"total": len(out), "reviews": out})
+		apiJSON(w, 200, map[string]any{"total": total, "page": page, "pageSize": pageSize, "reviews": out})
 	}
 }
 

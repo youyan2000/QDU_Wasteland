@@ -18,7 +18,7 @@
     <!-- 栏目眉 + 大标题 -->
     <div class="courses-head">
       <span class="kicker">RESOURCE LIBRARY</span>
-      <h1 class="courses-h1">课程档案</h1>
+      <h1 class="courses-h1">课程资料</h1>
       <p class="courses-sub" id="subText">加载中…</p>
     </div>
 
@@ -68,13 +68,11 @@
         </select>
       </div>
       <div class="filter-row">
-        <span class="filter-label">学分区间</span>
-        <input id="creditMin" type="number" min="0" max="20" step="0.5" class="filter-input" style="width:90px" placeholder="最低学分">
-        <span style="padding:0 4px">~</span>
-        <input id="creditMax" type="number" min="0" max="20" step="0.5" class="filter-input" style="width:90px" placeholder="最高学分">
         <span class="filter-label" style="margin-left:18px">排序</span>
-        <select id="sortSelect" class="filter-input" style="width:170px">
+        <select id="sortSelect" class="filter-input" style="width:190px">
           <option value="name">按名称</option>
+          <option value="files">按资料数量(多→少)</option>
+          <option value="hot">按热度</option>
           <option value="credit">按学分(高→低)</option>
           <option value="college">按院系</option>
         </select>
@@ -84,11 +82,6 @@
       </div>
       </div>
     </div>
-
-    <details class="tag-band">
-      <summary><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> 课程标签</summary>
-      <div class="tag-row" id="tagRow"></div>
-    </details>
 
     <!-- 统计 -->
     <div class="list-meta" id="listMeta"></div>

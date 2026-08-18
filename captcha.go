@@ -11,6 +11,7 @@ import (
 	crand "crypto/rand"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -128,6 +129,10 @@ func handleCaptchaImage() http.HandlerFunc {
 
 // verifyCaptchaCode 校验验证码并作废（供登录/注册/发帖等复用）
 func verifyCaptchaCode(id, answer string) bool {
+	// 测试/排障开关：设置 DISABLE_CAPTCHA=1 可跳过验证码（仅本地调试用，生产勿开）
+	if os.Getenv("DISABLE_CAPTCHA") == "1" {
+		return true
+	}
 	if id == "" || answer == "" {
 		return false
 	}

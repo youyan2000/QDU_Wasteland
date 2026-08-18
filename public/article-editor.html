@@ -38,8 +38,9 @@
       <img id="edCoverPreview" class="cover-preview" style="display:none" alt="封面预览">
       <div>
         <div class="cover-label">封面图片（可选）</div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
           <label class="btn-newpost" style="padding:.45rem .9rem;font-size:.85rem;cursor:pointer">上传图片<input id="edCoverFile" type="file" accept="image/*" style="display:none"></label>
+          <button id="edCoverAlbumPick" class="btn" style="background:#eee;border:none;border-radius:999px;padding:.45rem .9rem;font-size:.85rem;cursor:pointer">🖼 从相册选图</button>
           <button id="edCoverRemove" class="btn" style="background:#eee;border:none;border-radius:999px;padding:.45rem .9rem;font-size:.85rem;cursor:pointer">移除封面</button>
           <span id="edCoverMsg" class="hint" style="font-size:.8rem;color:#888"></span>
         </div>
@@ -59,6 +60,7 @@
           <button data-ins="```&#10;代码&#10;```" title="代码块">&lt;/&gt;</button>
           <button data-ins="[链接文字](https://)" title="链接">↗</button>
           <button data-ins="---" title="分隔线">—</button>
+          <button type="button" id="edAlbumPick" title="从相册选图插入">🖼</button>
         </div>
         <textarea id="edContent" class="editor-textarea" placeholder="写下校园的经验、故事与建议…"></textarea>
         <div class="editor-foot-hint">已输入 <span id="edCount">0</span> 字 · 发布内容将进行敏感词自动审查</div>
@@ -74,7 +76,7 @@
 
   <script src="icons.js"></script>
   <script src="nav.js?v=20260818s"></script>
-  <script src="viewer-mdown.js"></script>
-  <script src="article-editor.js?v=20260818p"></script>
+  <script src="viewer-mdown.js?v=20260818b"></script>
+  <script src="article-editor.js?v=20260818r"></script>
 </body>
 </html>

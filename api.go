@@ -31,7 +31,10 @@ type listCoursesDTO struct {
 	Majors     []string `json:"majors"`
 	Teachers   []string `json:"teachers,omitempty"`
 	ClassGroup string   `json:"classGroup,omitempty"`
-	Terms      []string `json:"-"` // 仅供 newest 排序使用，不返回给前端
+	Terms      []string `json:"-"`
+	FileCount  int      `json:"-"`
+	ReviewCount int     `json:"-"`
+	Category   string   `json:"category,omitempty"` // 新分类体系（必修/选修下的路径）
 }
 
 // codeToCourses 缓存：code -> 对应 course(s)（byCode 已在 db 提供单映射）
@@ -99,10 +102,13 @@ func handleCourses(db *DB) http.HandlerFunc {
 
 		out := make([]listCoursesDTO, 0, len(db.Courses))
 		for _, c := range db.Courses {
-			// tag（传统课程标签）
+			// tag（传统课程标签，仍保留兼容）
 			if tag != "" && c.Tag != tag { continue }
-			// cat 课程类别映射
-			if cat != "" && !matchCat(cat, c) { continue }
+			// cat 新分类体系匹配（如 "必修"、"必修/专业核心课"、"选修/通识教育选修课/核心课"）
+			if cat != "" {
+				full := courseCategory(c)
+				if !catMatch(full, cat) { continue }
+			}
 			// 考核方式
 			if exam != "" && c.ExamType != exam { continue }
 			// 学分范围
@@ -131,6 +137,8 @@ func handleCourses(db *DB) http.HandlerFunc {
 				Tag: c.Tag, Credit: c.Credit,
 				Exam: c.ExamType, Nature: c.Nature, BigType: c.BigType,
 				General: c.GeneralCat, Summary: c.FeaturedText, Majors: c.Majors, Terms: c.Terms,
+				FileCount: courseFileCount(db, c.Code), ReviewCount: courseReviewCount(db, c.Code),
+				Category: courseCategory(c),
 			})
 		}
 		// J4：排序
@@ -167,12 +175,37 @@ func maxTermScore(terms []string) int {
 	return best
 }
 
+// courseFileCount 某课程的资料数量（正常状态）
+func courseFileCount(db *DB, code string) int {
+	var n int
+	authStore.db.QueryRow("SELECT COUNT(*) FROM files WHERE course_code=? AND status='正常'", code).Scan(&n)
+	return n
+}
+
+// courseReviewCount 某课程的评价数量（正常状态）
+func courseReviewCount(db *DB, code string) int {
+	var n int
+	authStore.db.QueryRow("SELECT COUNT(*) FROM reviews WHERE course_code=? AND status='正常'", code).Scan(&n)
+	return n
+}
+
 // applyCourseSort 按 sort 参数对课程列表排序（J4）
 func applyCourseSort(courses []listCoursesDTO, sortBy string) {
 	switch sortBy {
 	case "credit": // 学分从高到低
 		sort.SliceStable(courses, func(i, j int) bool {
 			return parseCredit(courses[i].Credit) > parseCredit(courses[j].Credit)
+		})
+	case "files": // 按资料数量（多→少）
+		sort.SliceStable(courses, func(i, j int) bool {
+			if courses[i].FileCount != courses[j].FileCount { return courses[i].FileCount > courses[j].FileCount }
+			return courses[i].Name < courses[j].Name
+		})
+	case "hot": // 按热度（评价数*2 + 资料数，多→少）
+		sort.SliceStable(courses, func(i, j int) bool {
+			hi, hj := courses[i].ReviewCount*2+courses[i].FileCount, courses[j].ReviewCount*2+courses[j].FileCount
+			if hi != hj { return hi > hj }
+			return courses[i].Name < courses[j].Name
 		})
 	case "college": // 按院系
 		sort.SliceStable(courses, func(i, j int) bool {
@@ -192,6 +225,14 @@ func applyCourseSort(courses []listCoursesDTO, sortBy string) {
 			return a.College < b.College
 		})
 	}
+}
+
+// catMatch 判断课程分类路径 full 是否匹配用户选择的筛选 cat（支持一级/二级/三级）
+func catMatch(full, cat string) bool {
+	if full == cat { return true }
+	// 前缀匹配（选了"必修"则匹配所有必修下的子类）
+	if strings.HasPrefix(full, cat+"/") { return true }
+	return false
 }
 
 // matchCat 课程类别映射（基于课表字段）
@@ -293,5 +334,12 @@ func handleStats(db *DB) http.HandlerFunc {
 			"offeringCount": len(db.Offerings),
 			"collegeCount":  len(db.CollegeSet),
 		})
+	}
+}
+
+// handleCourseCategories 返回课程新分类树（供前端高级检索下拉）
+func handleCourseCategories() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		apiJSON(w, 200, map[string]any{"categories": courseCategoryTree()})
 	}
 }

@@ -7,7 +7,6 @@
 //   GET /api/forum/post?id=xxx     帖子详情+评论
 //   POST /api/forum/comment        评论（登录）
 //   POST /api/forum/like?id=xxx    点赞（粗略计数）
-//   POST /api/forum/delete         删帖（作者或管理员）
 package main
 
 import (
@@ -138,6 +137,10 @@ func handleCreatePost() http.HandlerFunc {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
 			return
 		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
+			return
+		}
 
 		var body struct {
 			Forum     string `json:"forum"`
@@ -146,30 +149,37 @@ func handleCreatePost() http.HandlerFunc {
 			Anonymous bool   `json:"anonymous"`
 			Captcha   string `json:"captcha"`
 			CaptchaID string `json:"captchaId"`
+			Status    string `json:"status"` // 可选：draft（存草稿，跳过验证码/邮箱验证）
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			apiErr(w, 400, "请求格式错误")
 			return
 		}
 		body.Title = strings.TrimSpace(body.Title)
-		// 图形验证码校验 (V9)
-		if !verifyCaptchaCode(body.CaptchaID, strings.TrimSpace(body.Captcha)) {
-			apiErr(w, 400, "验证码错误，请重试")
-			return
-		}
 		body.Content = strings.TrimSpace(body.Content)
-		if body.Forum == "" || body.Title == "" {
-			apiErr(w, 400, "请填写广场和标题")
-			return
-		}
-		// 邮箱验证（斐波那契触发）：本次发布后计数 ∈ {1,2,3,5,8…} 且未验证则拦截
-		if requireEmailVerified(uid) {
-			apiErr(w, 403, "请先验证邮箱后再继续发布（验证码已可发送，见 /api/email/verify）")
-			return
+		isDraft := body.Status == "draft"
+		// 草稿：允许空标题/内容，跳过验证码和邮箱验证
+		if !isDraft {
+			// 图形验证码校验 (V9)
+			if !verifyCaptchaCode(body.CaptchaID, strings.TrimSpace(body.Captcha)) {
+				apiErr(w, 400, "验证码错误，请重试")
+				return
+			}
+			if body.Forum == "" || body.Title == "" {
+				apiErr(w, 400, "请填写广场和标题")
+				return
+			}
+			// 邮箱验证（斐波那契触发）
+			if requireEmailVerified(uid) {
+				apiErr(w, 403, "请先验证邮箱后再继续发布（验证码已可发送，见 /api/email/verify）")
+				return
+			}
 		}
 		// 关键词自动审查 (F1)：命中敏感词 → 落到待复核队列，审核通过后才公开
 		status := "正常"
-		if hits := hitWords(body.Title + " " + body.Content); len(hits) > 0 {
+		if isDraft {
+			status = "draft"
+		} else if hits := hitWords(body.Title + " " + body.Content); len(hits) > 0 {
 			status = "待复核"
 		}
 		_, err := authStore.db.Exec(
@@ -177,6 +187,10 @@ func handleCreatePost() http.HandlerFunc {
 			body.Forum, uid, body.Title, body.Content, b2i(body.Anonymous), status, time.Now().Format("2006-01-02 15:04:05"))
 		if err != nil {
 			apiErr(w, 500, "发帖失败")
+			return
+		}
+		if isDraft {
+			apiJSON(w, 200, map[string]string{"message": "已存为草稿"})
 			return
 		}
 		if status == "待复核" {
@@ -284,6 +298,10 @@ func handleAddComment() http.HandlerFunc {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
 			return
 		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
+			return
+		}
 		// 邮箱验证（斐波那契触发）
 		if requireEmailVerified(uid) {
 			apiErr(w, 403, "请先验证邮箱后再继续发布（验证码见 /api/email/verify）")
@@ -334,6 +352,10 @@ func handleLike() http.HandlerFunc {
 		}
 		if currentUserBanned(r) {
 			apiErr(w, 403, "该账号已被封禁，无法进行此操作")
+			return
+		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布，无法进行此操作")
 			return
 		}
 

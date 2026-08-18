@@ -26,3 +26,36 @@
 @media (max-width: 620px) { .u-sub { display: none; } }
 /* D2 私信 */
 .u-msg-hint { color: var(--muted); font-size: .85rem; }
+/* 拉黑按钮 */
+.u-block-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 1rem;
+  padding: 8px 18px;
+  border: 1px solid var(--error, #d32f2f);
+  border-radius: var(--radius-pill);
+  background: rgba(211,47,47,.08);
+  color: var(--error, #d32f2f);
+  font-weight: 600; font-size: .88rem;
+  cursor: pointer; transition: all .18s;
+}
+.u-block-btn:hover { background: var(--error, #d32f2f); color: #fff; box-shadow: 0 4px 14px rgba(211,47,47,.3); }
+.u-block-btn.blocked {
+  border-color: var(--success, #1a9e5c);
+  background: rgba(26,158,92,.1);
+  color: var(--success, #1a9e5c);
+}
+.u-block-btn.blocked:hover { background: var(--success, #1a9e5c); color: #fff; }
+
+/* 发送私信按钮（D2 专用，品红渐变胶囊） */
+.u-send-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: .55rem 1.5rem;
+  border: none; border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--magenta), var(--sunrise, #ff9a62));
+  color: #fff; font-weight: 700; font-size: .88rem;
+  cursor: pointer; box-shadow: 0 4px 14px rgba(255,46,136,.22);
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+}
+.u-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,46,136,.34); }
+.u-send-btn:active { transform: translateY(0) scale(.98); }
+.u-send-btn:disabled { opacity: .6; cursor: default; transform: none; }

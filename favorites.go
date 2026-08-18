@@ -239,6 +239,32 @@ func handleAlbumAddItem() http.HandlerFunc {
 	}
 }
 
+// handleAlbumRemoveItem 从相册删除一项
+// POST /api/albums/remove-item  body:{itemId}
+func handleAlbumRemoveItem() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		uid := currentUserID(r)
+		if uid == 0 { apiErr(w, 401, "请先登录"); return }
+		var body struct{ ItemID int64 `json:"itemId"` }
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apiErr(w, 400, "请求格式错误"); return }
+		var owner, albumID int64
+		authStore.db.QueryRow(`SELECT user_id, album_id FROM album_items WHERE id=?`, body.ItemID).Scan(&owner, &albumID)
+		if owner == 0 || owner != uid { apiErr(w, 403, "无权操作"); return }
+		var targetType, targetID string
+		authStore.db.QueryRow(`SELECT target_type, target_id FROM album_items WHERE id=?`, body.ItemID).Scan(&targetType, &targetID)
+		_, _ = authStore.db.Exec(`DELETE FROM album_items WHERE id=?`, body.ItemID)
+		// 若删除的是照片且它是相册封面，清空封面
+		if targetType == "photo" {
+			var cov string
+			authStore.db.QueryRow(`SELECT cover FROM albums WHERE id=?`, albumID).Scan(&cov)
+			if cov == "/album-photo-file/"+targetID {
+				_, _ = authStore.db.Exec(`UPDATE albums SET cover='' WHERE id=?`, albumID)
+			}
+		}
+		apiJSON(w, 200, map[string]any{"ok": true})
+	}
+}
+
 // handleAlbumItems 相册内容
 // GET /api/albums/items?album_id=
 func handleAlbumItems() http.HandlerFunc {
@@ -263,12 +289,16 @@ func handleAlbumItems() http.HandlerFunc {
 			AlbumID    int64  `json:"albumId"`
 			TargetType string `json:"targetType"`
 			TargetID   string `json:"targetId"`
+			PhotoURL   string `json:"photoUrl,omitempty"` // target_type=photo 时为照片访问 URL
 			CreatedAt  string `json:"createdAt"`
 		}
 		var out []item
 		for rows.Next() {
 			it := item{}
 			rows.Scan(&it.ID, &it.AlbumID, &it.TargetType, &it.TargetID, &it.CreatedAt)
+			if it.TargetType == "photo" {
+				it.PhotoURL = "/album-photo-file/" + it.TargetID
+			}
 			out = append(out, it)
 		}
 		apiJSON(w, 200, map[string]any{"items": out, "albumId": albumID})

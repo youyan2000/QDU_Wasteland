@@ -38,7 +38,7 @@
 .md-view li { margin: .2rem 0; }
 .md-view blockquote { border-left: 3px solid var(--magenta); padding-left: 1rem; color: var(--muted); margin: .6rem 0; }
 .md-view code.md-inline { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: .88em; font-family: Consolas, monospace; }
-.md-view pre.md-code { background: var(--surface-2); padding: 1rem; border-radius: 8px; overflow-x: auto; }
+.md-view pre.md-code { background: var(--surface-2); padding: 1.6rem 1rem 1rem; border-radius: 8px; overflow-x: auto; }
 .md-view pre.md-code code { font-family: Consolas, monospace; font-size: .88em; }
 .md-view hr { border: none; border-top: 1px solid var(--viewer-line); margin: 1.2rem 0; }
 .md-view a { color: var(--magenta); }

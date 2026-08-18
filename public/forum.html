@@ -20,7 +20,7 @@
         <h1 class="forum-h1">论坛</h1>
         <button class="all-chip active" data-all="1" id="allChip">全部</button>
       </div>
-      <p class="forum-sub">遇见别的人，而不是别的学习机器。四个广场，尽情表达与互助。</p>
+      <p class="forum-sub">在广场，遇见别的人。</p>
       <!-- 四个广场一排并列 -->
       <div class="forums-bar" id="forumsBar"></div>
     </div>
@@ -58,6 +58,12 @@
       <div class="pf-row">
         <label>内容</label>
         <textarea id="pfContent" rows="4" placeholder="详细内容…"></textarea>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <button type="button" id="pfImgBtn" class="pf-img-btn" style="display:inline-flex;align-items:center;gap:5px;padding:.35rem .8rem;border:1px dashed var(--border-strong);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;font-size:.82rem">🖼 上传图片</button>
+          <button type="button" id="pfAlbumBtn" class="pf-img-btn" style="display:inline-flex;align-items:center;gap:5px;padding:.35rem .8rem;border:1px dashed var(--border-strong);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;font-size:.82rem">📁 相册插图</button>
+          <span id="pfImgMsg" style="font-size:.78rem;color:var(--muted)"></span>
+          <input type="file" id="pfImgFile" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none">
+        </div>
       </div>
       <div class="pf-row">
         <label>验证码</label>

@@ -28,10 +28,17 @@ type User struct {
 	EmailVerified int    // 邮箱是否已验证(0/1)
 	Gender        string // 性别
 	Age           int    // 年龄
+	Birthday      string // 生日（如 2004-05-20）
+	Grade         string // 届别（如 2023级）
 	NativePlace   string // 籍贯
+	Wechat        string // 微信
+	QQ            string // QQ
+	Phone         string // 电话
+	Social        string // 其他社交媒体
 	Bio           string // 个性签名
 	Avatar        string // 头像 URL（空 = 默认）
 	Banned        int    // 是否封禁(0/1)
+	Muted         int    // 是否禁言（可登录但不可发布）
 	Privacy       string // 隐私设置 JSON
 	CreatedAt     string
 }
@@ -48,10 +55,17 @@ type SessionInfo struct {
 	EmailVerified int    `json:"emailVerified"`
 	Gender        string `json:"gender"`
 	Age           int    `json:"age"`
+	Birthday      string `json:"birthday,omitempty"`
+	Grade         string `json:"grade,omitempty"`
 	NativePlace   string `json:"nativePlace"`
+	Wechat        string `json:"wechat,omitempty"`
+	QQ            string `json:"qq,omitempty"`
+	Phone         string `json:"phone,omitempty"`
+	Social        string `json:"social,omitempty"`
 	Bio           string `json:"bio"`
 	Avatar        string `json:"avatar,omitempty"`
 	Banned        int    `json:"banned"`
+	Muted         int    `json:"muted,omitempty"`
 	CreatedAt     string `json:"createdAt,omitempty"`
 	Level         int    `json:"level"`
 	LevelTitle    string `json:"levelTitle"`
@@ -234,9 +248,22 @@ func openAuthStore() (*AuthStore, error) {
 	if err := migrateUsersPrivacy(db); err != nil {
 		return nil, err
 	}
+	// 公告：补 status 列（展示中/已下架）(P2)
+	migrateAnnouncementStatus(db)
 	// 种子：四个论坛广场
 	seedForums(db)
 	return &AuthStore{db: db}, nil
+}
+
+// migrateAnnouncementStatus 确保 announcements 表包含 status 列 (P2 公告下架)
+func migrateAnnouncementStatus(db *sql.DB) {
+	var cnt int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('announcements') WHERE name='status'`).Scan(&cnt); err != nil {
+		return
+	}
+	if cnt == 0 {
+		_, _ = db.Exec("ALTER TABLE announcements ADD COLUMN status TEXT NOT NULL DEFAULT '展示中'")
+	}
 }
 
 // seedForums 插入默认四广场（幂等）
@@ -295,6 +322,8 @@ func migratePostsStatus(db *sql.DB) error {
 // migrateArticleStatus 文章旧状态归一：已下架 → draft (C1)
 func migrateArticleStatus(db *sql.DB) {
 	_, _ = db.Exec("UPDATE articles SET status='draft' WHERE status NOT IN ('正常','draft','待复核','待审','已驳回')")
+	// 决策点1（发了就公开）：历史"待审"文章一并转为"正常"公开
+	_, _ = db.Exec("UPDATE articles SET status='正常' WHERE status='待审'")
 }
 
 // migrateReviewsTable 确保 reviews 表包含 status 列 (V7 评价后台)
@@ -384,6 +413,17 @@ func migrateUsersTable(db *sql.DB) error {
 			return err
 		}
 	}
+	// 联系方式扩展：生日/微信/QQ/电话/其他社媒
+	for _, col := range []string{"birthday", "grade", "wechat", "qq", "phone", "social"} {
+		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='`+col+`'`).Scan(&cnt); err != nil {
+			return err
+		}
+		if cnt == 0 {
+			if _, err := db.Exec("ALTER TABLE users ADD COLUMN " + col + " TEXT NOT NULL DEFAULT ''"); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -409,10 +449,10 @@ func (s *AuthStore) CreateUser(email, username, password, nickname, college, maj
 // GetByEmail 按邮箱查用户
 func (s *AuthStore) GetByEmail(email string) (*User, error) {
 	row := s.db.QueryRow(
-		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, avatar, banned, privacy, created_at FROM users WHERE email = ?",
+		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, birthday, grade, wechat, qq, phone, social, bio, avatar, banned, privacy, created_at FROM users WHERE email = ?",
 		email)
 	u := &User{}
-	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Birthday, &u.Grade, &u.Wechat, &u.QQ, &u.Phone, &u.Social, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -421,9 +461,9 @@ func (s *AuthStore) GetByEmail(email string) (*User, error) {
 
 // GetByUsername 按用户名查用户 (E1)
 func (s *AuthStore) GetByUsername(username string) (*User, error) {
-	row := s.db.QueryRow("SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, avatar, banned, privacy, created_at FROM users WHERE username = ?", username)
+	row := s.db.QueryRow("SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, birthday, grade, wechat, qq, phone, social, bio, avatar, banned, privacy, created_at FROM users WHERE username = ?", username)
 	u := &User{}
-	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Birthday, &u.Grade, &u.Wechat, &u.QQ, &u.Phone, &u.Social, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
 	if err != nil {
 		return nil, nil
 	}
@@ -433,10 +473,10 @@ func (s *AuthStore) GetByUsername(username string) (*User, error) {
 // GetByID 按 ID 查用户
 func (s *AuthStore) GetByID(id int64) (*User, error) {
 	row := s.db.QueryRow(
-		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, avatar, banned, privacy, created_at FROM users WHERE id = ?",
+		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, birthday, grade, wechat, qq, phone, social, bio, avatar, banned, privacy, created_at FROM users WHERE id = ?",
 		id)
 	u := &User{}
-	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Birthday, &u.Grade, &u.Wechat, &u.QQ, &u.Phone, &u.Social, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -446,7 +486,7 @@ func (s *AuthStore) GetByID(id int64) (*User, error) {
 // GetAllUsers 返回所有用户（用于后台用户管理，不含密码哈希）
 func (s *AuthStore) GetAllUsers() ([]SessionInfo, error) {
 	rows, err := s.db.Query(
-		"SELECT id, email, nickname, college, major, is_admin, banned, created_at FROM users ORDER BY id DESC")
+		"SELECT id, email, nickname, college, major, is_admin, banned, COALESCE(muted,0), created_at FROM users ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -455,9 +495,11 @@ func (s *AuthStore) GetAllUsers() ([]SessionInfo, error) {
 	for rows.Next() {
 		si := SessionInfo{}
 		var created string
-		if err := rows.Scan(&si.ID, &si.Email, &si.Nickname, &si.College, &si.Major, &si.IsAdmin, &si.Banned, &created); err != nil {
+		var mutedI int
+		if err := rows.Scan(&si.ID, &si.Email, &si.Nickname, &si.College, &si.Major, &si.IsAdmin, &si.Banned, &mutedI, &created); err != nil {
 			return nil, err
 		}
+		si.Muted = mutedI
 		si.CreatedAt = created
 		out = append(out, si)
 	}
@@ -487,7 +529,9 @@ func (u *User) ToSessionInfo() SessionInfo {
 		ID: u.ID, Email: u.Email, Username: u.Username, Nickname: u.Nickname,
 		College: u.College, Major: u.Major, IsAdmin: u.IsAdmin,
 		EmailVerified: u.EmailVerified, Gender: u.Gender, Age: u.Age,
-		NativePlace: u.NativePlace, Bio: u.Bio, Banned: u.Banned,
+		Birthday: u.Birthday, Grade: u.Grade, NativePlace: u.NativePlace,
+		Wechat: u.Wechat, QQ: u.QQ, Phone: u.Phone, Social: u.Social,
+		Bio: u.Bio, Avatar: u.Avatar, Banned: u.Banned, Muted: u.Muted,
 		CreatedAt: u.CreatedAt,
 		Privacy: priv,
 	}
@@ -550,14 +594,20 @@ func migrateUsersPrivacy(db *sql.DB) error {
 	return nil
 }
 
-// getUserPrivacy 读取用户隐私 JSON，解析失败返回默认（仅学院/专业公开）
+// getUserPrivacy 读取用户隐私 JSON，解析失败返回默认（仅学院/专业/籍贯公开；联系方式默认不公开）
 func getUserPrivacy(sdb *sql.DB, uid int64) map[string]any {
-	privacy := map[string]any{"age": 0, "gender": 0, "college": 1, "major": 1, "nativePlace": 1}
+	privacy := map[string]any{
+		"age": 0, "gender": 0, "college": 1, "major": 1, "nativePlace": 1,
+		"birthday": 0, "wechat": 0, "qq": 0, "phone": 0, "social": 0,
+	}
 	var raw string
 	_ = sdb.QueryRow(`SELECT COALESCE(privacy,'') FROM users WHERE id=?`, uid).Scan(&raw)
 	if raw != "" {
 		if err := json.Unmarshal([]byte(raw), &privacy); err != nil {
-			privacy = map[string]any{"age": 0, "gender": 0, "college": 1, "major": 1, "nativePlace": 1}
+			privacy = map[string]any{
+				"age": 0, "gender": 0, "college": 1, "major": 1, "nativePlace": 1,
+				"birthday": 0, "wechat": 0, "qq": 0, "phone": 0, "social": 0,
+			}
 		}
 	}
 	return privacy

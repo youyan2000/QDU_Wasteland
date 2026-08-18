@@ -19,7 +19,7 @@ async function loadMe() {
       ? `<div class="avatar"><img src="${u.avatar}" alt="头像"></div>`
       : `<div class="avatar">${escapeHtml(avatar)}</div>`;
     const adminLink = (u.isAdmin === 1)
-      ? `<a href="/admin.html" class="me-btn" style="display:inline-block;margin-top:.8rem;text-decoration:none">${ICONS.settings(15)} 管理后台</a>`
+      ? `<a href="/eugene.html" class="me-btn" style="display:inline-block;margin-top:.8rem;text-decoration:none">${ICONS.settings(15)} 管理后台</a>`
       : '';
     wrap.innerHTML = `
       <div class="profile-card">
@@ -36,14 +36,22 @@ async function loadMe() {
           <div class="info-item"><div class="label">专业</div><div class="value">${escapeHtml(u.major || '—')}</div></div>
           <div class="info-item"><div class="label">性别</div><div class="value">${escapeHtml(u.gender || '—')}</div></div>
           <div class="info-item"><div class="label">年龄</div><div class="value">${u.age ? u.age : '—'}</div></div>
+          <div class="info-item"><div class="label">生日</div><div class="value">${escapeHtml(u.birthday || '—')}</div></div>
+          <div class="info-item"><div class="label">届别</div><div class="value">${escapeHtml(u.grade || '—')}</div></div>
           <div class="info-item"><div class="label">籍贯</div><div class="value">${escapeHtml(u.nativePlace || '—')}</div></div>
+          <div class="info-item"><div class="label">微信</div><div class="value">${escapeHtml(u.wechat || '—')}</div></div>
+          <div class="info-item"><div class="label">QQ</div><div class="value">${escapeHtml(u.qq || '—')}</div></div>
+          <div class="info-item"><div class="label">电话</div><div class="value">${escapeHtml(u.phone || '—')}</div></div>
+          <div class="info-item"><div class="label">其他社媒</div><div class="value">${escapeHtml(u.social || '—')}</div></div>
           <div class="info-item"><div class="label">等级</div><div class="value">${u.level ? 'Lv.'+u.level+' · '+escapeHtml(u.levelTitle || '') : '—'}</div></div>
           <div class="info-item"><div class="label">注册时间</div><div class="value">${escapeHtml(u.createdAt || '—')}</div></div>
         </div>
         <div class="bio-line"><span class="bio-label">个性签名</span>${escapeHtml(u.bio || '这个人很懒，什么都没写')}</div>
         <div style="display:flex;gap:10px;margin-top:1rem;flex-wrap:wrap">
           <button id="editProfileBtn" class="me-btn">${ICONS.edit(15)} 编辑资料</button>
+          <button id="changePwdBtn" class="me-btn">${ICONS.settings(15)} 修改密码</button>
           <button id="privacyBtn" class="me-btn">${ICONS.lock(15)} 对外展示</button>
+          <button id="blockMgrBtn" class="me-btn">${ICONS.ban(15)} 黑名单管理</button>
           ${adminLink}
         </div>
         ${u.emailVerified === 1
@@ -66,7 +74,9 @@ async function loadMe() {
     loadMessages();
     bindVerify();
     bindEditProfile(u);
+    bindChangePwd();
     bindPrivacy(u);
+    bindBlockManager(u);
   } catch (e) {
     wrap.innerHTML = '<div class="me-loading">加载失败</div>';
   }
@@ -215,12 +225,16 @@ function renderActivity(wrap, a) {
   }).join('');
 
   const empty = '<div class="placeholder">还没有内容</div>';
+  const newDraftBtns = `<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="mgmt-btn primary" id="newPostDraft">＋ 新建帖子草稿</button>
+      <button class="mgmt-btn primary" id="newArticleDraft">＋ 新建文章草稿</button>
+    </div>`;
   const bodyHtml = {
     posts: `<div class="act-list">${posts || empty}</div>`,
     reviews: `<div class="act-list">${reviews || empty}</div>`,
     files: `<div class="act-list">${files || empty}</div>`,
     articles: `<div class="act-list">${articles || empty}</div>`,
-    drafts: `<div class="act-list">${drafts || empty}</div>`,
+    drafts: `${newDraftBtns}<div class="act-list">${drafts || '<div class="placeholder">还没有草稿</div>'}</div>`,
     favorites: `<div class="act-list" id="favList"><div class="placeholder">加载中…</div></div>`,
     albums: `<div class="act-list" id="albList"><div class="placeholder">加载中…</div></div>`
   };
@@ -279,6 +293,72 @@ async function loadCities(prov) {
     });
   } catch (e) {}
 }
+// 学院/专业下拉（编辑资料用，J2）
+async function fillEpCollege() {
+  const sel = document.getElementById('epCollege');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">选择学院</option>';
+  try {
+    const d = await (await fetch('/api/org')).json();
+    (d.colleges || []).forEach(c => {
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      sel.appendChild(o);
+    });
+  } catch (e) {}
+}
+async function fillEpMajor(college) {
+  const sel = document.getElementById('epMajor');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">选择专业</option>';
+  if (!college) { sel.innerHTML = '<option value="">先选学院</option>'; return; }
+  try {
+    const d = await (await fetch('/api/org')).json();
+    const list = (d.majors && d.majors[college]) || [];
+    list.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      sel.appendChild(o);
+    });
+  } catch (e) {}
+}
+// 修改密码（登录状态下）
+function bindChangePwd() {
+  const btn = document.getElementById('changePwdBtn');
+  if (!btn) return;
+  const modal = document.getElementById('changePwdModal');
+  if (!modal) return;
+  btn.onclick = () => {
+    document.getElementById('cpOld').value = '';
+    document.getElementById('cpNew').value = '';
+    document.getElementById('cpNew2').value = '';
+    document.getElementById('cpErr').textContent = '';
+    modal.style.display = 'flex';
+  };
+  document.getElementById('cpClose').onclick = () => modal.style.display = 'none';
+  modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+  document.getElementById('cpSave').onclick = async () => {
+    const err = document.getElementById('cpErr');
+    const oldP = document.getElementById('cpOld').value;
+    const newP = document.getElementById('cpNew').value;
+    const newP2 = document.getElementById('cpNew2').value;
+    if (!oldP) { err.textContent = '请输入旧密码'; return; }
+    if (newP.length < 6) { err.textContent = '新密码至少 6 位'; return; }
+    if (newP !== newP2) { err.textContent = '两次新密码不一致'; return; }
+    try {
+      const r = await fetch('/api/me/password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword: oldP, newPassword: newP })
+      });
+      const d = await r.json();
+      if (!r.ok) { err.textContent = d.error || '修改失败'; return; }
+      alert('密码已修改，请用新密码重新登录');
+      modal.style.display = 'none';
+      await fetch('/api/logout', { method: 'POST' });
+      location.href = '/login.html';
+    } catch (e) { err.textContent = '网络错误'; }
+  };
+}
 function bindEditProfile(u) {
   const btn = document.getElementById('editProfileBtn');
   if (!btn) return;
@@ -293,8 +373,15 @@ function bindEditProfile(u) {
   }
   btn.onclick = async () => {
     document.querySelectorAll('input[name="epGender"]').forEach(r => { r.checked = r.value === (u.gender || ''); });
+    document.getElementById('epNickname').value = u.nickname || '';
     document.getElementById('epAge').value = u.age || '';
     document.getElementById('epBio').value = u.bio || '';
+    document.getElementById('epBirthday').value = u.birthday || '';
+    document.getElementById('epGrade').value = u.grade || '';
+    document.getElementById('epWechat').value = u.wechat || '';
+    document.getElementById('epQQ').value = u.qq || '';
+    document.getElementById('epPhone').value = u.phone || '';
+    document.getElementById('epSocial').value = u.social || '';
     document.getElementById('epErr').textContent = '';
     // 头像预览回填
     const avImg = document.getElementById('epAvatarPreview');
@@ -304,6 +391,15 @@ function bindEditProfile(u) {
     }
     const avFile = document.getElementById('epAvatarFile');
     if (avFile) avFile.value = '';
+    // 学院/专业回填（J2 联动）
+    const epColSel2 = document.getElementById('epCollege');
+    const epMajSel2 = document.getElementById('epMajor');
+    if (epColSel2 && epMajSel2) {
+      await fillEpCollege();
+      epColSel2.value = u.college || '';
+      await fillEpMajor(epColSel2.value);
+      epMajSel2.value = u.major || '';
+    }
     // 填省份
     if (regionData.provinces.length === 0) await loadRegions();
     fillProvinceSelect();
@@ -314,6 +410,9 @@ function bindEditProfile(u) {
     if (curCity) { citySel.value = curCity; }
     modal.style.display = 'flex';
   };
+  const epColSel = document.getElementById('epCollege');
+  const epMajSel = document.getElementById('epMajor');
+  if (epColSel) epColSel.onchange = async () => { await fillEpMajor(epColSel.value); };
   provSel.onchange = async () => {
     citySel.value = '';
     await loadCities(provSel.value);
@@ -356,10 +455,35 @@ function bindEditProfile(u) {
     }
     if (bio.length > 20) { errEl.textContent = '个性签名最多 20 字'; return; }
     const cleanBio = bio.replace(/[<>"'\/`]/g, '');
+    // 昵称校验（2~20 字，可选；空 = 不修改）
+    const nickVal = document.getElementById('epNickname').value.trim();
+    if (nickVal && (nickVal.length < 2 || nickVal.length > 20)) { errEl.textContent = '昵称需 2~20 个字符'; return; }
+    // 联系方式格式校验（非空才校验）
+    const qqVal = document.getElementById('epQQ').value.trim();
+    const phoneVal = document.getElementById('epPhone').value.trim();
+    const gradeVal = document.getElementById('epGrade').value.trim();
+    if (qqVal && (!/^\d{5,12}$/.test(qqVal))) { errEl.textContent = 'QQ 号应为 5~12 位数字'; return; }
+    if (phoneVal && (!/^\d{7,15}$/.test(phoneVal))) { errEl.textContent = '电话号码应为 7~15 位数字'; return; }
+    if (gradeVal && !/^\d{4}级$/.test(gradeVal)) { errEl.textContent = '届别格式应为如 2023级'; return; }
+    // 学院/专业：若下拉未加载/未选择（值为空），保留原值，避免误清空
+    const epCol = document.getElementById('epCollege');
+    const epMaj = document.getElementById('epMajor');
+    const collegeVal = (epCol && epCol.value) ? epCol.value : (u.college || '');
+    const majorVal = (epMaj && epMaj.value) ? epMaj.value : (u.major || '');
     const r = await fetch('/api/me/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gender: gen, age, nativePlace: native, bio: cleanBio })
+      body: JSON.stringify({
+        nickname: nickVal,
+        gender: gen, age, birthday: document.getElementById('epBirthday').value.trim(),
+        grade: gradeVal,
+        nativePlace: native,
+        wechat: document.getElementById('epWechat').value.trim(),
+        qq: qqVal,
+        phone: phoneVal,
+        social: document.getElementById('epSocial').value.trim(),
+        bio: cleanBio, college: collegeVal, major: majorVal
+      })
     });
     const d = await r.json();
     if (!r.ok) { errEl.textContent = d.error || '保存失败'; return; }
@@ -490,7 +614,7 @@ async function loadAlbumsTab() {
         <span class="act-actions"><button class="mgmt-btn" data-del-album="${al.id}">删除</button></span>
       </div>`).join('')
     }<button class="mgmt-btn" id="mkAlbumBottom" style="margin-top:10px">+ 新建相册</button></div>`;
-    [...box.querySelectorAll('[data-album-id]')].forEach(b => { b.onclick = e => { e.preventDefault(); alert('相册预览：'+ b.dataset.albumId); }; });
+    [...box.querySelectorAll('[data-album-id]')].forEach(b => { b.onclick = e => { e.preventDefault(); location.href = '/album.html?id=' + b.dataset.albumId; }; });
     [...box.querySelectorAll('[data-del-album]')].forEach(b => {
       b.onclick = async () => {
         if (!confirm('确定删除该相册？')) return;
@@ -502,18 +626,65 @@ async function loadAlbumsTab() {
   } catch(e) { box.innerHTML = '<div class="placeholder">加载失败</div>'; }
 }
 function bindMkAlbum() {
-  const title = prompt('相册名称：');
-  if (!title || !title.trim()) return;
-  const desc = prompt('相册描述（可留空）：') || '';
-  (async () => {
-    await fetch('/api/albums/create', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ title: title.trim(), description: desc, isPrivate: 0 }) });
-    loadActivity(); const c = wrap2ActiveTab(); if (c) c.click();
-  })();
+  // 弹层表单：标题 + 描述 + 私密开关（替代 prompt）
+  const overlay = document.createElement('div');
+  overlay.className = 'modal';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="modal-box" style="width:min(420px,92vw)">
+      <div class="modal-head">
+        <h3>新建相册</h3>
+        <button class="modal-close" id="mkAlbClose"><i class="icon-fill" data-icon="close"></i></button>
+      </div>
+      <div class="pf-row">
+        <label>相册名称</label>
+        <input id="mkAlbTitle" type="text" placeholder="如：校园风景 / 小猫图鉴" maxlength="30" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box">
+      </div>
+      <div class="pf-row">
+        <label>描述（选填）</label>
+        <input id="mkAlbDesc" type="text" placeholder="一句话介绍这个相册" maxlength="60" style="width:100%;padding:.65rem .8rem;border:1px solid var(--border-strong);border-radius:8px;font-size:.95rem;box-sizing:border-box">
+      </div>
+      <div class="pf-row" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="mkAlbPrivate" style="width:auto">
+        <label for="mkAlbPrivate" style="margin:0">私密相册（仅自己可见）</label>
+      </div>
+      <div class="err" id="mkAlbErr" style="color:#d32f2f;min-height:1em;font-size:.85rem"></div>
+      <div class="pf-actions">
+        <button id="mkAlbSave" class="btn-submit" style="background:linear-gradient(90deg,var(--magenta),var(--sunrise));border:none;color:#fff;padding:.7rem 1.8rem;border-radius:10px;font-weight:700;cursor:pointer">创建相册</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#mkAlbClose').onclick = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#mkAlbSave').onclick = async () => {
+    const title = overlay.querySelector('#mkAlbTitle').value.trim();
+    const desc = overlay.querySelector('#mkAlbDesc').value.trim();
+    const isPrivate = overlay.querySelector('#mkAlbPrivate').checked ? 1 : 0;
+    const err = overlay.querySelector('#mkAlbErr');
+    if (!title) { err.textContent = '请填写相册名称'; return; }
+    try {
+      const r = await fetch('/api/albums/create', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ title, description: desc, isPrivate }) });
+      const d = await r.json();
+      if (!r.ok) { err.textContent = d.error || '创建失败'; return; }
+      overlay.remove();
+      loadActivity(); const c = wrap2ActiveTab(); if (c) c.click();
+    } catch (e) { err.textContent = '网络错误'; }
+  };
 }
 
 // 退出按钮在用户数据渲染后存在，用全局代理处理
 document.addEventListener('click', function (e) {
+  if (e.target && e.target.id === 'newPostDraft') {
+    // 新建帖子草稿：跳转帖子创建页（论坛发帖弹层，先进入论坛）
+    location.href = '/forum.html?newdraft=1';
+    return;
+  }
+  if (e.target && e.target.id === 'newArticleDraft') {
+    // 新建文章草稿：打开文章编辑器，自动存为草稿
+    location.href = '/article-editor.html?newdraft=1';
+    return;
+  }
   const withdrawBtn = e.target.closest('[data-mgmt-withdraw]');
   if (withdrawBtn) { mgmtWithdraw(withdrawBtn.getAttribute('type') || 'post', withdrawBtn.dataset.id); return; }
   const editBtn = e.target.closest('[data-draft-edit]');
@@ -534,12 +705,12 @@ function escapeHtml(s) {
 loadMe();
 
 
-// ---- 隐私设置（G3）----
+// ---- 隐私设置（G3 + 内容显隐扩展）----
 function bindPrivacy(u) {
   const btn = document.getElementById('privacyBtn');
   if (!btn) return;
   const modal = document.getElementById('privacyModal');
-  const defaultPriv = { age: 0, gender: 0, college: 1, major: 1, nativePlace: 1 };
+  const defaultPriv = { age: 0, gender: 0, college: 1, major: 1, nativePlace: 1, birthday: 0, wechat: 0, qq: 0, phone: 0, social: 0, posts: 1, reviews: 1, articles: 1, favorites: 1, albums: 1 };
   const conflated = Object.assign({}, defaultPriv, u.privacy || {});
   btn.onclick = () => {
     document.getElementById('prvAge').checked = conflated.age === 1;
@@ -547,17 +718,29 @@ function bindPrivacy(u) {
     document.getElementById('prvCollege').checked = conflated.college === 1;
     document.getElementById('prvMajor').checked = conflated.major === 1;
     document.getElementById('prvNative').checked = conflated.nativePlace === 1;
+    document.getElementById('prvBirthday').checked = conflated.birthday === 1;
+    document.getElementById('prvWechat').checked = conflated.wechat === 1;
+    document.getElementById('prvQQ').checked = conflated.qq === 1;
+    document.getElementById('prvPhone').checked = conflated.phone === 1;
+    document.getElementById('prvSocial').checked = conflated.social === 1;
+    document.getElementById('prvPosts').checked = conflated.posts === 1;
+    document.getElementById('prvReviews').checked = conflated.reviews === 1;
+    document.getElementById('prvArticles').checked = conflated.articles === 1;
+    document.getElementById('prvFavorites').checked = conflated.favorites === 1;
+    document.getElementById('prvAlbums').checked = conflated.albums === 1;
     modal.style.display = 'flex';
   };
   document.getElementById('prvClose').onclick = () => modal.style.display = 'none';
   modal.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
   document.getElementById('prvSave').onclick = async () => {
+    const g = (id) => (document.getElementById(id).checked ? 1 : 0);
     const privacy = {
-      age: document.getElementById('prvAge').checked ? 1 : 0,
-      gender: document.getElementById('prvGender').checked ? 1 : 0,
-      college: document.getElementById('prvCollege').checked ? 1 : 0,
-      major: document.getElementById('prvMajor').checked ? 1 : 0,
-      nativePlace: document.getElementById('prvNative').checked ? 1 : 0
+      age: g('prvAge'), gender: g('prvGender'), college: g('prvCollege'),
+      major: g('prvMajor'), nativePlace: g('prvNative'),
+      birthday: g('prvBirthday'), wechat: g('prvWechat'), qq: g('prvQQ'),
+      phone: g('prvPhone'), social: g('prvSocial'),
+      posts: g('prvPosts'), reviews: g('prvReviews'), articles: g('prvArticles'),
+      favorites: g('prvFavorites'), albums: g('prvAlbums')
     };
     const r = await fetch('/api/me/profile', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -567,5 +750,42 @@ function bindPrivacy(u) {
     if (!r.ok) { alert(d.error || '保存失败'); return; }
     modal.style.display = 'none';
     location.reload();
+  };
+}
+
+
+// ---- 黑名单管理（从设置移到我的风采）----
+function bindBlockManager() {
+  const btn = document.getElementById('blockMgrBtn');
+  if (!btn) return;
+  btn.onclick = async () => {
+    try {
+      const d = await (await fetch('/api/block/list')).json();
+      const list = d.blocked || [];
+      const overlay = document.createElement('div');
+      overlay.className = 'modal';
+      overlay.style.display = 'flex';
+      overlay.innerHTML = '<div class="modal-box" style="width:min(480px,92vw)">' +
+        '<div class="modal-head"><h3>黑名单管理</h3><button class="modal-close" id="bmClose"><i class="icon-fill" data-icon="close"></i></button></div>' +
+        '<p style="color:var(--muted);font-size:.85rem;margin:0 0 12px">拉黑后，该用户的帖子、文章、评论将在全站对你隐藏。</p>' +
+        '<div id="bmList" style="max-height:380px;overflow:auto">' + (list.length ? '' : '<div class="placeholder">黑名单为空</div>') + '</div></div>';
+      document.body.appendChild(overlay);
+      overlay.querySelector('#bmClose').onclick = () => overlay.remove();
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+      const listBox = overlay.querySelector('#bmList');
+      list.forEach(function (b) {
+        const row = document.createElement('div');
+        row.className = 'act-item';
+        row.style.borderBottom = '1px solid var(--border,#eee)';
+        row.innerHTML = '<span class="act-badge badge-article">拉黑</span>' +
+          '<a class="act-main" href="/user.html?id=' + b.id + '" target="_blank">' + escapeHtml(b.nickname || ('用户#' + b.id)) + '</a>' +
+          '<button class="mgmt-del" data-unblock="' + b.id + '">取消拉黑</button>';
+        row.querySelector('[data-unblock]').onclick = async function () {
+          await fetch('/api/block', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: Number(b.id) }) });
+          row.remove();
+        };
+        listBox.appendChild(row);
+      });
+    } catch (e) { alert('加载黑名单失败'); }
   };
 }

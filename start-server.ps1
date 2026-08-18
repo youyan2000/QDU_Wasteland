@@ -13,7 +13,15 @@ elseif (Test-Path 'F:\Go\bin') { $env:Path = 'F:\Go\bin;' + $env:Path }
 
 $env:CSV_DIR = 'F:\My_Projects\AI_projects\_csv'
 $env:ADMIN_EMAIL = 'admin@qdu.edu.cn'
-$env:ADMIN_PASSWORD = 'admin123456'
+
+# —— 管理员密码（安全：不硬编码默认密码）——
+# 首次部署请设置 ADMIN_PASSWORD；未设置时生成随机密码并打印到控制台（仅首次播种有效）。
+if (-not $env:ADMIN_PASSWORD) {
+    $chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    $rand = -join (1..16 | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+    $env:ADMIN_PASSWORD = $rand
+    Write-Host "⚠️ 未设置 ADMIN_PASSWORD，已生成随机管理员密码：$rand （请妥善保存；若已有管理员则忽略）"
+}
 
 # —— SMTP 发件邮箱（邮箱验证/找回密码真实发信）——
 # 安全：不在此硬编码密码。启动前请设置环境变量，例如：

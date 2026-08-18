@@ -39,6 +39,10 @@ func handleSubmitOpinion(auth *AuthStore) http.HandlerFunc {
 			apiErr(w, 403, "该账号已被封禁")
 			return
 		}
+		if currentUserMuted(r) {
+			apiErr(w, 403, "该账号已被限制发布")
+			return
+		}
 		var body struct {
 			Content   string `json:"content"`
 			Anonymous bool   `json:"anonymous"`
