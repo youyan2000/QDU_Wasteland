@@ -98,13 +98,17 @@ body {
   color: #fff;
 }
 .hero-title {
-  font-size: clamp(3.5rem, 14vw, 10.5rem);   /* K5: 更大巨字标题，去粗趋细（学 shucourse 细体编辑感） */
-  font-weight: 300;
-  letter-spacing: -0.055em;
+  font-size: clamp(3.5rem, 14vw, 10.5rem);   /* K5: 更大巨字标题 */
+  font-weight: 600;                           /* 提重：300 太细，与背景区分不足 */
+  letter-spacing: -0.05em;
   line-height: 0.95;
-  text-shadow: 0 4px 60px rgba(255,46,136,0.45), 0 0 20px rgba(0,0,0,0.3);
+  /* 更强的阴影：深色描边感 + 品红光晕，保证在亮背景图上清晰可读 */
+  text-shadow:
+    0 2px 0 rgba(0,0,0,0.25),
+    0 4px 24px rgba(0,0,0,0.55),
+    0 0 60px rgba(255,46,136,0.5);
   /* 渐变文字：品红 → 朝阳橙（朝阳与大海的融合） */
-  background: linear-gradient(90deg, var(--magenta-soft), var(--magenta) 35%, var(--sunrise) 75%, #ffd9a0);
+  background: linear-gradient(90deg, var(--magenta), var(--magenta) 40%, var(--sunrise) 78%, #ffd9a0);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -239,7 +243,7 @@ body {
   .hero-title { letter-spacing: -0.04em; }
 }
 
-/* ---------- 首页顶部（克制：仅右上角登录入口，不打扰 hero） ---------- */
+/* ---------- 首页顶部（右上角登录/用户入口，胶囊按钮） ---------- */
 .home-top-actions {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -250,16 +254,38 @@ body {
   padding: 0 calc(var(--space-page) + 4px);
   z-index: 10;
   pointer-events: none;
+  gap: 10px;
 }
 .home-top-actions a {
   pointer-events: auto;
-  color: rgba(255,255,255,0.85);
+  color: #fff;
   text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   letter-spacing: 0.02em;
-  transition: color 0.2s;
+  padding: 8px 18px;
+  border-radius: 999px;
+  transition: all 0.2s;
 }
-.home-top-actions a:hover { color: #fff; }
+/* 未登录：登录/注册胶囊（半透明底 + 细边框，hero 上清晰可点） */
+.home-top-actions a.home-auth-login {
+  background: linear-gradient(90deg, var(--magenta), var(--sunrise));
+  box-shadow: 0 4px 16px rgba(255,46,136,0.4);
+}
+.home-top-actions a.home-auth-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,46,136,0.55); }
+.home-top-actions a.home-auth-register {
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.5);
+  backdrop-filter: blur(6px);
+}
+.home-top-actions a.home-auth-register:hover { background: rgba(255,255,255,0.24); }
+/* 已登录：用户胶囊 */
+.home-top-actions a.home-auth-user {
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.45);
+  backdrop-filter: blur(6px);
+}
+.home-top-actions a.home-auth-user:hover { background: rgba(255,255,255,0.24); }
 /* 作者链接 */
 .author-link { color: var(--magenta); text-decoration: none; font-weight: 600; }
 .author-link:hover { text-decoration: underline; }

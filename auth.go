@@ -30,6 +30,7 @@ type User struct {
 	Age           int    // 年龄
 	NativePlace   string // 籍贯
 	Bio           string // 个性签名
+	Avatar        string // 头像 URL（空 = 默认）
 	Banned        int    // 是否封禁(0/1)
 	Privacy       string // 隐私设置 JSON
 	CreatedAt     string
@@ -49,6 +50,7 @@ type SessionInfo struct {
 	Age           int    `json:"age"`
 	NativePlace   string `json:"nativePlace"`
 	Bio           string `json:"bio"`
+	Avatar        string `json:"avatar,omitempty"`
 	Banned        int    `json:"banned"`
 	CreatedAt     string `json:"createdAt,omitempty"`
 	Level         int    `json:"level"`
@@ -373,6 +375,15 @@ func migrateUsersTable(db *sql.DB) error {
 		// 存量用户回填 username = email@前部分（唯一性由前端防重 + email先得）
 		_, _ = db.Exec("UPDATE users SET username = lower(substr(email,1,instr(email,'@')-1)) WHERE username=''")
 	}
+	// avatar (头像，空 = 默认)
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='avatar'`).Scan(&cnt); err != nil {
+		return err
+	}
+	if cnt == 0 {
+		if _, err := db.Exec("ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -398,10 +409,10 @@ func (s *AuthStore) CreateUser(email, username, password, nickname, college, maj
 // GetByEmail 按邮箱查用户
 func (s *AuthStore) GetByEmail(email string) (*User, error) {
 	row := s.db.QueryRow(
-		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, banned, privacy, created_at FROM users WHERE email = ?",
+		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, avatar, banned, privacy, created_at FROM users WHERE email = ?",
 		email)
 	u := &User{}
-	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Banned, &u.Privacy, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -410,9 +421,9 @@ func (s *AuthStore) GetByEmail(email string) (*User, error) {
 
 // GetByUsername 按用户名查用户 (E1)
 func (s *AuthStore) GetByUsername(username string) (*User, error) {
-	row := s.db.QueryRow("SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, banned, privacy, created_at FROM users WHERE username = ?", username)
+	row := s.db.QueryRow("SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, avatar, banned, privacy, created_at FROM users WHERE username = ?", username)
 	u := &User{}
-	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Banned, &u.Privacy, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
 	if err != nil {
 		return nil, nil
 	}
@@ -422,10 +433,10 @@ func (s *AuthStore) GetByUsername(username string) (*User, error) {
 // GetByID 按 ID 查用户
 func (s *AuthStore) GetByID(id int64) (*User, error) {
 	row := s.db.QueryRow(
-		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, banned, privacy, created_at FROM users WHERE id = ?",
+		"SELECT id, email, username, password, nickname, college, major, is_admin, email_verified, gender, age, native_place, bio, avatar, banned, privacy, created_at FROM users WHERE id = ?",
 		id)
 	u := &User{}
-	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Banned, &u.Privacy, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password, &u.Nickname, &u.College, &u.Major, &u.IsAdmin, &u.EmailVerified, &u.Gender, &u.Age, &u.NativePlace, &u.Bio, &u.Avatar, &u.Banned, &u.Privacy, &u.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
