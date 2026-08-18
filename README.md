@@ -2,7 +2,7 @@
 
 > 一个集「课程资料 / 同学社区 / 学校信息 / 个人中心」于一体的校园平台。
 > 技术栈：**Go 后端（标准库 net/http）+ 原生 JS 前端（无框架） + SQLite**。
-> 主线规划见 `MASTER-PLAN.md`。
+> 主线规划见 `../docs/MASTER-PLAN.md`（仓库内只保留本 README，设计文档已外移）。
 
 ---
 
@@ -15,7 +15,7 @@
 | 🏫 学校信息 | 分类文章 / 发布 / Markdown 渲染 / 点赞 / 评论 | 文章审核 / 下架 |
 | 👤 个人中心 | 我的帖子/评价/资料/文章/草稿聚合 / 通知 / 私信 / 公开主页 / 设置 | 设管理员 / 用户管理 |
 
-**交叉能力**：全站搜索 · 敏感词自动审查 · 邮箱验证(斐波那契) · 找回密码 · 通知/私信 · 站长公告 · 稿件管理 · 自定义主题/导航(规划)
+**交叉能力**：全站搜索 · 敏感词自动审查 · AI 内容审查(两级) · 邮箱验证(斐波那契) · 找回密码 · 通知/私信 · 站长公告 · 稿件管理(仿B站) · 自定义主题/导航/拉黑 · 头像上传 · 相册照片 · 论坛发图 · 课程分类 · 禁言 · 等级积分 · 举报审核闭环 · 意见箱 · 响应式
 
 ---
 
@@ -23,21 +23,24 @@
 
 ```
 qdu-wasteland/
-├── main.go / MASTER-PLAN.md / README.md / start-server.ps1
+├── main.go / README.md / start-server.ps1
 ├── auth.go / auth_http.go       # 用户、会话、注册登录 (SQLite)
+├── avatar.go                    # 头像上传
 ├── course.go                    # 课表 CSV 导入 + 课程/班次内存库
 ├── api.go / search.go           # 课程列表/详情、全站搜索
 ├── content.go                   # 上传/下载/预览、课程评价
 ├── api_forum.go / content_update.go  # 论坛、编辑删除
-├── article.go / article 前端     # 学校信息文章
-├── admin.go / censor.go / report.go / virus.go / csrf.go / ratelimit.go
+├── article.go / article_cover.go     # 学校信息文章、封面
+├── admin.go / censor.go / report.go / virus.go / csrf.go / ratelimit.go / audit.go
 ├── mail.go / email_verify.go     # 邮件、邮箱验证、找回密码
 ├── notify.go / message.go        # 通知、私信
-├── announcement.go / user_profile.go
-├── me_activity.go                # 我的内容聚合
+├── org.go / regions.go           # 学院专业统一、籍贯
+├── favorites.go / topic.go / block.go / ban.go / maintenance.go / opinion.go
 ├── public/                      # 前端静态文件
 └── uploads/ / qdu-auth.db       # 上传文件 / SQLite 库（gitignore）
 ```
+
+> 设计/规划文档（MASTER-PLAN / DESIGN / AESTHETIC-* / SECURITY 等）在仓库外的 `../docs/`。
 
 ---
 
@@ -50,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File start-server.ps1
 # 或手动
 set CSV_DIR=F:\My_Projects\AI_projects\_csv
 set ADMIN_EMAIL=admin@qdu.edu.cn
-set ADMIN_PASSWORD=admin123456
+set ADMIN_PASSWORD=你的密码
 go build -o qdu-wasteland.exe .
 qdu-wasteland.exe
 ```
@@ -59,7 +62,7 @@ qdu-wasteland.exe
 
 > ⚠️ **重要**：后端使用 `modernc.org/sqlite`（纯 Go 内嵌转译字节码），可能被 360 等杀软**误报**为 `Backdoor/W64.CobaltStrike`。这不是真的后门（源码零恶意特征 + `go mod verify` 依赖哈希通过）。请把项目目录加入杀软白名单。
 
-**管理员账号**：`admin@qdu.edu.cn` / `admin123456`（首次播种）
+**管理员账号**：首次启动通过 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 播种；若未设置则自动生成随机密码并打印到日志（见 `../docs/SECURITY.md`）。
 
 ---
 
@@ -76,7 +79,7 @@ qdu-wasteland.exe
 | 2025秋 | `_csv/2025autumn_utf8.csv` | 原生 |
 | 2026春 | `_csv/2026spring_utf8.csv` | 原生 |
 
-**当前规模**：课程 **4462 门** · 开课班次 **38123 条** · 学院 **50 个**。
+**当前规模**：课程 **4462 门** · 开课班次 **38123 条** · 官方学院 **25 个**（按《青岛大学专业统计.md》统一全站；课表另有 50+ 开课机构名仅用于课程显示）。
 
 新课表（.xlsx）导入步骤：用 `_xlsx_tmp/xlsx2csv.py` 转成同构 csv → 放入 `_csv` → 在 `course.go` `loadAll` 注册学期。
 
@@ -138,6 +141,7 @@ qdu-wasteland.exe
 ## 📆 开发进度
 
 - **V0–V13 全部完成**（功能/安全/治理/社交闭环）
-- **V14 综合改版进行中**：见 `MASTER-PLAN.md` 第五节（关于学校排版、公告改铃铛、课程多维检索、个人中心自定义+稿件管理）
+- **V14+ 综合改版完成**（课程多维检索、个人中心自定义、稿件管理、头像、AI 审查、相册照片、论坛图片、课程分类、禁言等）
+- **阶段 F/G/I/J/K/L/M/N 全部完成**（详见 `MASTER-PLAN.md`，唯一待办为 H 上线部署）
 
 > 历史多份 plan 已合并为 `MASTER-PLAN.md` 唯一主线。
