@@ -40,8 +40,6 @@ qdu-wasteland/
 └── uploads/ / qdu-auth.db       # 上传文件 / SQLite 库（gitignore）
 ```
 
-> 设计/规划文档（MASTER-PLAN / DESIGN / AESTHETIC-* / SECURITY 等）在仓库外的 `../docs/`。
-
 ---
 
 ## 🚀 如何运行
