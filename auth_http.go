@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -241,8 +242,8 @@ func handleLogin(auth *AuthStore) http.HandlerFunc {
 			apiErr(w, 400, "请求格式错误")
 			return
 		}
-		// 验证码校验（防暴力破解）
-		if !verifyCaptchaCode(strings.TrimSpace(req.CaptchaID), strings.TrimSpace(req.Captcha)) {
+		// 验证码校验（防暴力破解）；管理员（ADMIN_EMAIL）豁免，供自动备份脚本使用
+		if !isAdminEmail(strings.TrimSpace(req.Email)) && !verifyCaptchaCode(strings.TrimSpace(req.CaptchaID), strings.TrimSpace(req.Captcha)) {
 			apiErr(w, 423, "验证码错误或已过期，请刷新后重试")
 			return
 		}
@@ -479,4 +480,10 @@ func handleChangePassword(auth *AuthStore) http.HandlerFunc {
 		logAudit(auth.db, uid, "修改密码", "用户ID="+strconv.FormatInt(uid, 10))
 		apiJSON(w, 200, map[string]string{"message": "密码已修改"})
 	}
+}
+// isAdminEmail 判断邮箱是否为站长管理员（环境变量 ADMIN_EMAIL）
+func isAdminEmail(email string) bool {
+	e := strings.TrimSpace(strings.ToLower(email))
+	admin := strings.TrimSpace(strings.ToLower(os.Getenv("ADMIN_EMAIL")))
+	return admin != "" && e == admin
 }

@@ -897,4 +897,67 @@ body[data-theme="dark"] .auth-card { background: #1a1a1d !important; border: 1px
 body[data-theme="dark"] .auth-tab.active,
 body[data-theme="dark"] .auth-submit { background: #8f3d3a !important; background-image: none !important; color: #f0e6df !important; border-color: #b8544f !important; }
 body[data-theme="dark"] .auth-submit:hover { background: #a34943 !important; background-image: none !important; }
-body[data-theme="dark"] .auth-logo { background-image: linear-gradient(90deg, #e8d8d2, var(--magenta), var(--sunrise)) !important; }
+body[data-theme="dark"] .auth-logo { background-image: linear-gradient(90deg, #e8d8d2, var(--magenta), var(--sunrise)) !important; }/* ---------- 搜索页按钮·主题统一（P4h） ---------- */
+/* 暗黑：搜索按钮实色（search.css 的渐变需强制清掉） */
+body[data-theme="dark"] .search-form .btn-newpost {
+  background: #8f3d3a !important; background-image: none !important;
+  color: #f0e6df !important; border: 1px solid #b8544f !important; border-radius: 999px !important;
+}
+body[data-theme="dark"] .search-form .btn-newpost:hover { background: #a34943 !important; background-image: none !important; }/* ---------- 课程资料·搜索按钮 主题统一（P4i） ---------- */
+/* 默认：实心品红去渐变 */
+body:not([data-theme="dark"]):not([data-theme="cyber"]):not([data-theme="github"]) #searchBtn {
+  background: var(--magenta, #ff2e88) !important; background-image: none !important;
+  border-radius: var(--radius-md) !important; color: #fff !important;
+}
+/* 简约：黑底白字方角 */
+body[data-theme="github"] #searchBtn {
+  background: #1f2328 !important; background-image: none !important;
+  border-radius: 2px !important; color: #fff !important;
+}
+body[data-theme="github"] #searchBtn:hover { background: #32383f !important; background-image: none !important; }
+/* 赛博：霓虹 */
+body[data-theme="cyber"] #searchBtn {
+  background: #0d0d1c !important; background-image: none !important;
+  color: #00ffc8 !important; border: 1px solid #00ffc8 !important; border-radius: 4px !important;
+  text-shadow: 0 0 8px #00ffc8 !important;
+  box-shadow: 0 0 12px rgba(0,255,200,.6), inset 0 0 8px rgba(0,255,200,.3) !important;
+}
+body[data-theme="cyber"] #searchBtn:hover { background: #06141a !important; box-shadow: 0 0 18px rgba(0,255,200,.9) !important; }
+/* 暗黑：反抗调 */
+body[data-theme="dark"] #searchBtn {
+  background: #8f3d3a !important; background-image: none !important;
+  color: #f0e6df !important; border: 1px solid #b8544f !important; border-radius: var(--radius-md) !important;
+}
+body[data-theme="dark"] #searchBtn:hover { background: #a34943 !important; background-image: none !important; }/* ---------- 暗黑：密码眼睛 + 举报按钮/浮层 配色（P4j） ---------- */
+/* 密码显示/隐藏的眼睛：随主题色，暗黑下用暖灰（不再黑） */
+body[data-theme="dark"] .pw-toggle { color: var(--muted, #8f8a83) !important; }
+body[data-theme="dark"] .pw-toggle:hover { color: #c9a77b !important; }
+body[data-theme="cyber"] .pw-toggle { color: #35ffd3 !important; }
+body[data-theme="github"] .pw-toggle { color: #59636e !important; }
+
+/* 举报迷你按钮：暗黑下用暖灰，不惨白 */
+body[data-theme="dark"] .rep-btn-mini { color: #a39c94 !important; }
+body[data-theme="dark"] .rep-btn-mini:hover { color: #eb6b6b !important; }
+body[data-theme="cyber"] .rep-btn-mini { color: #35ffd3 !important; }
+body[data-theme="cyber"] .rep-btn-mini:hover { color: #00ffc8 !important; }
+
+/* 举报浮层：暗黑下整体深色（原 report.js 硬编码 #fff） */
+body[data-theme="dark"] .rep-box,
+body[data-theme="cyber"] .rep-box { background: #1a1a1d !important; color: #e6e2dc !important; }
+body[data-theme="dark"] .rep-reason,
+body[data-theme="cyber"] .rep-reason { background: #222226 !important; border-color: rgba(255,255,255,.14) !important; color: #cfc9c2 !important; }
+body[data-theme="dark"] .rep-reason.active,
+body[data-theme="cyber"] .rep-reason.active { background: var(--magenta, #8f3d3a) !important; border-color: var(--magenta, #b8544f) !important; color: #f0e6df !important; }
+body[data-theme="dark"] .rep-box textarea,
+body[data-theme="cyber"] .rep-box textarea { background: #17171a !important; border-color: rgba(255,255,255,.14) !important; color: #e6e2dc !important; }
+body[data-theme="dark"] .rep-btn-ghost,
+body[data-theme="cyber"] .rep-btn-ghost { background: #222226 !important; border-color: rgba(255,255,255,.14) !important; color: #cfc9c2 !important; }
+/* 举报提交按钮：暗黑下暗血，去 report.js 的粉色渐变 */
+body[data-theme="dark"] .rep-btn-submit {
+  background: #8f3d3a !important; background-image: none !important; color: #f0e6df !important;
+}
+body[data-theme="cyber"] .rep-btn-submit {
+  background: #0d0d1c !important; background-image: none !important; color: #00ffc8 !important;
+  border: 1px solid #00ffc8 !important; text-shadow: 0 0 8px #00ffc8 !important;
+  box-shadow: 0 0 8px rgba(0,255,200,.5) !important;
+}

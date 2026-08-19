@@ -1,8 +1,8 @@
 # QDU Wasteland 【青岛大学课程资料共享与学习社区】
 
+> https://www.qdwasteland.top/
 > 一个集「课程资料 / 同学社区 / 学校信息 / 个人中心」于一体的校园平台。
 > 技术栈：**Go 后端（标准库 net/http）+ 原生 JS 前端（无框架） + SQLite**。
-> 主线规划见 `../docs/MASTER-PLAN.md`（仓库内只保留本 README，设计文档已外移）。
 
 ---
 
@@ -60,28 +60,7 @@ qdu-wasteland.exe
 
 打开 **http://localhost:3000**
 
-> ⚠️ **重要**：后端使用 `modernc.org/sqlite`（纯 Go 内嵌转译字节码），可能被 360 等杀软**误报**为 `Backdoor/W64.CobaltStrike`。这不是真的后门（源码零恶意特征 + `go mod verify` 依赖哈希通过）。请把项目目录加入杀软白名单。
-
 **管理员账号**：首次启动通过 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 播种；若未设置则自动生成随机密码并打印到日志（见 `../docs/SECURITY.md`）。
-
----
-
-## 📚 课程数据（8 份历年课表）
-
-| 学期 | 转换文件 | 来源 |
-|------|---------|------|
-| 2023春 | `_csv/2023春_utf8.csv` | xlsx 转换 |
-| 2023秋 | `_csv/2023秋_utf8.csv` | xlsx 转换 |
-| 2024春 | `_csv/2024春_utf8.csv` | xlsx 转换 |
-| 2024夏 | `_csv/2024夏_utf8.csv` | xlsx 转换 |
-| 2024秋 | `_csv/2024秋_utf8.csv` | xlsx 转换 |
-| 2025春 | `_csv/2025spring_utf8.csv` | 原生 |
-| 2025秋 | `_csv/2025autumn_utf8.csv` | 原生 |
-| 2026春 | `_csv/2026spring_utf8.csv` | 原生 |
-
-**当前规模**：课程 **4462 门** · 开课班次 **38123 条** · 官方学院 **25 个**（按《青岛大学专业统计.md》统一全站；课表另有 50+ 开课机构名仅用于课程显示）。
-
-新课表（.xlsx）导入步骤：用 `_xlsx_tmp/xlsx2csv.py` 转成同构 csv → 放入 `_csv` → 在 `course.go` `loadAll` 注册学期。
 
 ---
 
@@ -93,33 +72,6 @@ qdu-wasteland.exe
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 首启播种站长（幂等） |
 | `MAIL_HOST`/`MAIL_PORT`/`MAIL_USER`/`MAIL_PASS`/`MAIL_FROM` | SMTP 邮件；未配置时验证码/链接打印到 server.log（日志模式） |
 | `CLAMAV_CMD` | ClamAV clamscan 路径（设置后启用病毒扫描） |
-
----
-
-## 🗄️ 数据库表（SQLite qdu-auth.db）
-
-- `users` — id/email/username/密码哈希/nickname/college/major/is_admin/email_verified/created_at
-- `files` — 课程资料（含 status: 正常/已下架，匿名机制）
-- `reviews` — 课程评价（status: 正常/已下架）
-- `forums`/`posts`/`comments`/`post_likes` — 论坛（posts 含 status: 正常/draft 草稿箱）
-- `articles` — 学校文章（status: 正常/draft）
-- `reports` — 举报
-- `censor_words` — 敏感词（可后台增删）
-- `email_tokens` — 邮箱验证/重置 token
-- `notifications` / `messages` / `announcements` — 通知/私信/公告
-
----
-
-## 🔒 安全措施（已实现）
-
-- **上传防护**：危险扩展名黑名单(exe/dll/bat/vbs/宏docm等) + 文件头魔数嗅探(伪装PE/ELF/宏拦截) + 可选 ClamAV
-- **CSRF**：写方法同源校验(Origin/Referer) + Cookie SameSite=Strict
-- **频率限制**：注册/登录/发帖/评论/评价/举报 同IP 1小时 ≤5次
-- **敏感词**：发帖/评论/评价/上传/文章/举报内容自动拦截
-- **邮箱验证**：发帖第1/2/3/5/8…（斐波那契）次触发；6位验证码30分钟一次性
-- **找回密码**：邮箱链接一次性 token
-- **产出需登录**：发文章/传资料/评论/发帖/评价/举报需登录；下载/预览公开
-- **草稿箱/编辑**：删除=转草稿仅作者+管理员可见；发布=公开
 
 ---
 
@@ -135,15 +87,3 @@ qdu-wasteland.exe
 - 邮箱：`/api/email/(verify /verify/confirm /reset /reset/confirm)`
 - 举报：`/api/report`
 - 后台（管理员）：`/api/admin/{dashboard,users,reports,files,reviews,articles,censor,announcement}...`
-
----
-
-## 📆 开发进度
-
-- **V0–V13 全部完成**（功能/安全/治理/社交闭环）
-- **V14+ 综合改版完成**（课程多维检索、个人中心自定义、稿件管理、头像、AI 审查、相册照片、论坛图片、课程分类、禁言等）
-- **阶段 F/G/I/J/K/L/M/N 全部完成**
-- **✅ 已正式上线**：https://qdwasteland.top（Vultr 境外 VPS + Cloudflare CDN + HTTPS 自动续期 + systemd 守护）
-- 详见 `../docs/MASTER-PLAN.md`（唯一主线）与 `../docs/DEPLOY-GUIDE.md`（部署教程）
-
-> 历史多份 plan 已合并为 `../docs/MASTER-PLAN.md` 唯一主线。
