@@ -65,7 +65,7 @@
 
   <!-- Footer：深色收尾（设计 DNA 的深浅对照）-->
   <footer class="footer">
-    <p>Wasteland © 2026 — 青岛大学学习互助社区（内测） · <a href="/terms.html" style="color:var(--muted)">用户协议</a> · <a href="/privacy.html" style="color:var(--muted)">隐私政策</a></p>
+    <p>Wasteland © 2026  青岛大学学习互助社区（内测） · <a href="/terms.html" style="color:var(--muted)">用户协议</a> · <a href="/privacy.html" style="color:var(--muted)">隐私政策</a> · <a href="https://github.com/youyan2000/QDU_Wasteland" target="_blank" rel="noopener" style="color:var(--muted)">开源仓库</a> · <a href="https://wpa.qq.com/msgrd?v=3&uin=3978279928&site=qq&menu=yes" target="_blank" rel="noopener" style="color:var(--muted)">联系方式</a>（QQ 3978279928）</p>
   </footer><script>fetch("/api/me").then(r=>r.json()).then(d=>{const b=document.getElementById("homeAuth");if(!b)return;if(d.loggedIn){b.innerHTML=`<a href="/me.html" class="home-auth-user">&#128100; ${(d.user.nickname||d.user.email)}</a>`}else{b.innerHTML=`<a href="/login.html" class="home-auth-login">登录</a><a href="/login.html#register" class="home-auth-register">注册</a>`}}).catch(()=>{})</script><script src="icons.js"></script>
 <script>document.querySelectorAll("[data-icon]").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(22);});</script>
 </body>

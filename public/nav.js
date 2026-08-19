@@ -329,3 +329,20 @@
     };
   }
   initFeedback();
+
+  // 全站统一页脚：除首页/登录页（各自已有 footer）外的其他页面，在底部注入同一行页脚
+  (function injectFooter() {
+    // 已有专属页脚则跳过（首页 .footer、登录页 .auth-foot）
+    if (document.querySelector('.footer') || document.querySelector('.auth-foot')) return;
+    // 排除无内容包装的轻页面（预览等）不要也可以——这里统一加，保持"每一页都有"
+    var f = document.createElement('footer');
+    f.className = 'site-footer';
+    f.style.cssText = 'text-align:center;padding:1.4rem 1rem;color:var(--muted);font-size:.82rem;border-top:1px solid var(--border);';
+    f.innerHTML = 'Wasteland © 2026  青岛大学学习互助社区（内测） · ' +
+      '<a href="/terms.html" style="color:var(--muted)">用户协议</a> · ' +
+      '<a href="/privacy.html" style="color:var(--muted)">隐私政策</a> · ' +
+      '<a href="https://github.com/youyan2000/QDU_Wasteland" target="_blank" rel="noopener" style="color:var(--muted)">开源仓库</a> · ' +
+      '<a href="https://wpa.qq.com/msgrd?v=3&uin=3978279928&site=qq&menu=yes" target="_blank" rel="noopener" style="color:var(--muted)">联系方式</a>' +
+      '（QQ 3978279928）';
+    document.body.appendChild(f);
+  })();

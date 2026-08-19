@@ -55,3 +55,8 @@ SECURITY.md
 _c.txt
 _cookies.txt
 
+
+# 临时测试脚本残留
+_ft.*
+_shot*
+_shots*
