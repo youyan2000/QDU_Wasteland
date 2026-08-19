@@ -283,10 +283,83 @@ systemctl status qdu-wasteland      # active (running) 即成功
 | **H2** | HTTPS/域名 | 买域名 + Let's Encrypt 免费证书（`certbot`）或 Cloudflare |
 | **H3** | SQLite → MySQL | 本项目当前开发用 SQLite，生产建议迁 MySQL（代码支持，需迁移脚本） |
 | **H4** | 启用 ClamAV | 设置 `CLAMAV_CMD=/usr/bin/clamscan` 环境变量，病毒扫描上线 |
-| **H5** | 数据备份 | 定期备份 `qdu-auth.db` + `uploads/`（cron 脚本） |
+| **H5** | 数据备份 | 见下方"第 10.5 章 · 备份体系（H5 完整配置）" |
 | **H6** | 压测 2000 | 用压测工具验证日常200/峰值2000，调优 Nginx/Go |
 | **H7** | 境外 VPS + CDN | 已在做；文件下载可走 jsDelivr/Cloudflare 分流带宽 |
 | **H8** | 运维文档 | 本文即运维文档的一部分 |
+
+---
+
+## 第 10.5 章 · 备份体系（H5 完整配置）
+
+> 三方向备份：
+> - **方向①**：Web 源码 → GitHub（public）—— 从开发机手动 `git push`
+> - **方向②**：课程资料 → GitHub `QDU_course_resource`（public）—— 服务器定时（自动）
+> - **方向③**：服务器完整备份 → 电脑（private）—— 电脑定时拉取（自动）
+
+### 10.5.1 方向② · 课程资料备份（服务器 → GitHub）
+
+**服务器上配置**（一次性）：
+
+```bash
+# 1. 把脚本放到服务器
+scp deploy/course-backup.sh root@服务器IP:/root/qdu-wasteland/deploy/
+chmod +x /root/qdu-wasteland/deploy/course-backup.sh
+
+# 2. 安装 sqlite3（脚本读数据库用）
+apt install -y sqlite3
+
+# 3. 创建 GitHub Token（只授权 QDU_course_resource 仓库）：
+#    GitHub → Settings → Developer settings → Personal access tokens → Tokens(classic)
+#    → Generate → 勾选 repo → 生成后复制
+
+# 4. 手动测试一次
+QW_GITHUB_TOKEN=你的token /root/qdu-wasteland/deploy/course-backup.sh
+
+# 5. 定时（每天凌晨 4 点）：
+crontab -e
+# 加一行：
+0 4 * * * QW_GITHUB_TOKEN=你的token /root/qdu-wasteland/deploy/course-backup.sh >> /var/log/qdu-course-backup.log 2>&1
+```
+
+> ⚠️ 注意：GitHub 单文件 ≤100MB，脚本会自动跳过超大文件（由方向③兜底）。
+
+### 10.5.2 方向③ · 服务器完整备份 → 电脑（private）
+
+**服务器端**（已就绪，backup.go + deploy/backup.sh）：
+
+```bash
+# 配置定时（每天凌晨 3 点触发服务端备份接口）
+crontab -e
+# 加一行：
+0 3 * * * QW_ADMIN_EMAIL=备份账号 QW_ADMIN_PASSWORD=密码 /root/qdu-wasteland/deploy/backup.sh >> /var/log/qdu-backup.log 2>&1
+# 产物在 /root/qdu-wasteland/backups/（qdu-时间戳.db + uploads-时间戳.zip，轮转保留14份）
+```
+
+**电脑端**（本仓库 pull-backup.ps1）：
+
+```powershell
+# 1. 配置环境变量
+$env:QW_SSH_HOST = 'root@207.148.106.155'          # 服务器
+$env:QW_LOCAL_BACKUP_DIR = 'D:\QDU-backups'        # 电脑备份目录
+$env:QW_BACKUP_GIT_REPO = 'https://github.com/youyan2000/qdu-server-backup.git'  # 私有仓库（可选）
+$env:QW_BACKUP_GIT_TOKEN = '你的token'
+
+# 2. 手动拉一次
+powershell -ExecutionPolicy Bypass -File pull-backup.ps1
+
+# 3. 定时（Windows 计划任务，每天凌晨 5 点）
+schtasks /Create /SC DAILY /ST 05:00 /TN QW-PullBackup /TR "powershell -ExecutionPolicy Bypass -File F:\My_Projects\AI_projects\qdu-wasteland\pull-backup.ps1" /F
+```
+
+> ⚠️ 方向③备份含**用户数据**（数据库），推送的 GitHub 仓库**必须 Private**，绝不能 public。
+
+### 10.5.3 恢复方法（万一服务器挂了）
+
+1. 方向③：从电脑 `D:\QDU-backups\` 取最新 `qdu-时间戳.db` 和 `uploads-时间戳.zip`
+2. 上传到新服务器对应目录（`qdu-auth.db` + `uploads/`）
+3. 重启服务即恢复
+4. 若只丢课程资料：从方向②的 GitHub 仓库拉回文件 + 清单
 
 ---
 

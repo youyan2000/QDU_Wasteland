@@ -1,4 +1,4 @@
-# backup.ps1 — 触发一次数据备份（H5 自动备份的调度入口）
+﻿# backup.ps1 — 触发一次数据备份（H5 自动备份的调度入口）
 # 用法：
 #   1. 设置环境变量：$env:ADMIN_EMAIL / $env:ADMIN_PASSWORD / $env:QW_BASE_URL(可选，默认 localhost:3000)
 #   2. 手动：powershell -ExecutionPolicy Bypass -File backup.ps1
