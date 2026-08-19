@@ -24,7 +24,7 @@ function render(p) {
       <div class="post-content md-view">${renderMarkdown(p.content)}</div>
       <div class="post-actions" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button id="likeBtn" class="like-btn ${p.liked?'liked':''}">${ICONS.thumb(16, '', p.liked)} ${p.liked?'已赞':'点赞'} <span class="like-count">${p.likes||0}</span></button>
-        <button id="favBtn" class="like-btn">☆ 收藏</button>
+        <button id="favBtn" class="like-btn">${ICONS.bookmark(16)} 收藏</button>
         <button class="rep-btn-mini" data-report-type="post" data-report-id="${p.id}" data-report-label="${escape(p.title)}">举报</button>
         <span style="margin-left:auto;display:flex;gap:8px" id="ownActions"></span>
       </div>
@@ -81,7 +81,7 @@ function render(p) {
       const r = await fetch('/api/favorites?type=post');
       const d = await r.json();
       const faved = (d.favorites||[]).some(f => f.targetId === String(p.id));
-      favBtn.textContent = faved ? '★ 已收藏' : '☆ 收藏';
+      favBtn.innerHTML = ICONS.bookmark(16, '', faved) + ' ' + (faved ? '已收藏' : '收藏');
       favBtn.classList.toggle('liked', faved);
     })();
     favBtn.onclick = async () => {
@@ -92,7 +92,7 @@ function render(p) {
         body: JSON.stringify({ targetType:'post', targetId: String(p.id) })
       });
       const d = await res.json();
-      favBtn.textContent = d.favorited ? '★ 已收藏' : '☆ 收藏';
+      favBtn.innerHTML = ICONS.bookmark(16, '', d.favorited) + ' ' + (d.favorited ? '已收藏' : '收藏');
       favBtn.classList.toggle('liked', d.favorited);
     };
   }
@@ -187,7 +187,7 @@ function attachSaveToAlbum(container) {
         });
         const d = await r.json();
         if (!r.ok) { alert(d.error || '保存失败'); btn.textContent = '存相册'; return; }
-        btn.textContent = '✅ 已保存';
+        btn.textContent = '已保存';
         setTimeout(() => { btn.textContent = '存相册'; }, 1500);
       } catch (e) { alert('网络错误'); btn.textContent = '存相册'; }
     };

@@ -27,7 +27,12 @@ function render(c) {
     ['通选类别', c.general], ['开课学期', c.terms.join(' / ')]
   ].filter(x => x[1]);
 
-  const majors = c.majors && c.majors.length ? c.majors.join(' · ') : '—';
+  // 上课专业：专业课列出实际专业（长列表截断显示 + 悬浮提示完整列表）
+  const majorsList = (c.majors && c.majors.length) ? c.majors : [];
+  const majorsText = majorsList.length === 0 ? '—'
+    : majorsList.length === 1 && majorsList[0] === '全校' ? '全校'
+    : majorsList.slice(0, 6).join(' · ') + (majorsList.length > 6 ? ` 等${majorsList.length}个专业` : '');
+  const majorsFull = majorsList.join(' · ');
 
   let html = `
     <div class="courses-head">
@@ -48,7 +53,7 @@ function render(c) {
   }
   html += `</table>`;
   // 上课专业（独立整块，长内容可换行，不打乱上方表格）
-  html += `<div class="major-block"><span class="major-label">上课专业</span><span class="major-vals">${escape(majors)}</span></div>`;
+  html += `<div class="major-block"><span class="major-label">上课专业</span><span class="major-vals" title="${escape(majorsFull)}">${escape(majorsText)}</span></div>`;
 
   // 课程资料区（放前面，优先看到）
   html += `<h2 class="detail-h2">${ICONS.folder(18)} 课程资料</h2>`;

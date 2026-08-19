@@ -1,3 +1,9 @@
+// 填充上传区图标（upload.html 中留空的 .dz-icon）
+(function () {
+  const el = document.querySelector('.dz-icon');
+  if (el && window.ICONS) el.innerHTML = ICONS.paperclip(28);
+})();
+
 // upload.js — 上传资料页
 // 未登录直接跳登录（点上传资料应先去登录）
 (async function() {
@@ -54,7 +60,7 @@ function initPicker() {
         div.textContent = c.name + '（' + c.code + '）';
         div.onclick = () => {
           selectedCourse = { code: c.code, name: c.name };
-          document.getElementById('uSel').innerHTML = `<span class="selected-course">${ICONS.check(14)} ${c.name}</span>`;
+          document.getElementById('uSel').innerHTML = `<span class="selected-course">${ICONS.check(14)} ${escapeHtml(c.name)}</span>`;
           search.value = c.name;
           suggest.style.display='none';
           document.getElementById('pickerErr').style.display='none';
@@ -83,7 +89,7 @@ function setFile(f){
   selectedFile = f;
   const chip = document.getElementById('uFileChip');
   chip.style.display = 'flex';
-  chip.innerHTML = `<span>${ICONS.file(14)} ${f.name}</span><span class="fc-size">${fmtSize(f.size)}</span><button class="fc-remove" type="button">${ICONS.close(12)}</button>`;
+  chip.innerHTML = `<span>${ICONS.file(14)} ${escapeHtml(f.name)}</span><span class="fc-size">${fmtSize(f.size)}</span><button class="fc-remove" type="button">${ICONS.close(12)}</button>`;
   chip.querySelector('.fc-remove').onclick = () => { selectedFile=null; chip.style.display='none'; document.getElementById('uFile').value=''; };
   document.getElementById('uErr').textContent='';
 }
@@ -150,3 +156,6 @@ function initSubmit() {
     btn.disabled = false; btn.textContent = '提交审核';
   });
 }
+
+// 安全转义：防止文件名/文本含 HTML 造成 XSS
+function escapeHtml(s) { return (s==null?'':String(s)).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }

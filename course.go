@@ -202,10 +202,8 @@ func (db *DB) rebuildCourses() {
 					if !seen[m] { seen[m] = true; c.Majors = append(c.Majors, m) }
 				}
 			}
-			// 专业数过多（明显面向全校多专业）→ 折叠为"全校"
-			if len(c.Majors) >= 6 {
-				c.Majors = []string{"全校"}
-			}
+			// 注意：专业课即使覆盖多专业也不再折叠为"全校"（如 C语言程序设计），
+			// 前端展示时截断列表并标注"等N个专业"，避免误导为全校开课。
 		}
 		db.Courses = append(db.Courses, *c)
 	}

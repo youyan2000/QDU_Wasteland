@@ -290,6 +290,83 @@ systemctl status qdu-wasteland      # active (running) 即成功
 
 ---
 
+## 第 10·B 章 · 域名 + Cloudflare CDN + HTTPS（H2 实操版，2026-08 验证通过）
+
+> 目标：让 `你的域名` 访问网站 + 免费 CDN 加速 + 免费 HTTPS + 防护。
+> 全程**不需要备案**（境外 VPS + Cloudflare 免费版）。
+
+### 10B.1 买域名（推荐：阿里云/腾讯云，支付宝付）
+
+| 后缀 | 首年 | 续费 | Cloudflare 注册支持 |
+|------|------|------|---------------------|
+| `.top` | ¥14 | ¥39/年 | ❌ 不支持在 Cloudflare 注册（但可托管） |
+| `.site` | ~¥10 | ~¥40 | ✅ 支持 |
+| `.com` | ¥85 | ¥95 | ✅ 支持 |
+
+**实操要点**：
+- 选 `.top` 最省钱（¥14/年），**在阿里云买**（支付宝付，几乎不会失败）。
+- ⚠️ **Cloudflare 注册商不支持 `.top`**（"cannot be registered"），但**托管 `.top` 完全没问题**——托管和注册是两回事。
+- ⚠️ 别在 Cloudflare 用 PayPal 买域名，**支付常失败**（"An unexpected error..."），还可能产生欠费账单。要买就在 Cloudflare 用信用卡，或干脆阿里云买。
+- 买完要**实名认证**（个人身份证，几分钟到几小时）。
+
+### 10B.2 注册 Cloudflare（免费）
+
+- https://dash.cloudflare.com/sign-up → 邮箱注册 → 验证。
+- **免费版即可**，CDN/HTTPS/防护都有。
+
+### 10B.3 把域名 DNS 托管给 Cloudflare（改 NS）
+
+1. Cloudflare → **Add a site** → 输入域名 → 选 **Free** 计划。
+2. Cloudflare 会分配**两个 Name Server**（形如 `xxx.ns.cloudflare.com` / `yyy.ns.cloudflare.com`）——**复制**。
+3. 去阿里云域名控制台（https://dc.console.aliyun.com/）→ 你的域名 → **修改 DNS 服务器**：
+   - 删掉阿里云的 `dns1.hichina.com` / `dns2.hichina.com`
+   - 填 Cloudflare 的两个 NS（**不要带结尾点号**，如 `jocelyn.ns.cloudflare.com`）
+   - 保存
+4. 等 1-2 小时生效（实测可以很快）。验证：
+   ```
+   nslookup -type=NS 你的域名
+   ```
+   显示 Cloudflare 的 NS = 成功。
+
+### 10B.4 Cloudflare 添加 A 记录
+
+DNS 页面 → **Add record**：
+| Type | Name | 内容 | 代理 |
+|------|------|------|------|
+| A | `@` | 服务器 IP（如 207.148.106.155） | 先灰云(DNS only) |
+| A | `www` | 同上 | 先灰云 |
+
+> 先灰云（DNS only）→ 等网站通了 → 再点成橙云（代理）启用加速。分步验证好排查。
+
+### 10B.5 配 HTTPS（certbot 免费证书）
+
+服务器上：
+```bash
+apt install -y certbot python3-certbot-nginx
+
+# 让 Nginx 认新域名（把 server_name _; 改成你的域名）
+sed -i 's/server_name _;/server_name 你的域名 www.你的域名;/' /etc/nginx/sites-available/qdu-wasteland
+systemctl reload nginx
+
+# 一键签发证书 + 自动配置 HTTPS + 强制跳转
+certbot --nginx -d 你的域名 -d www.你的域名
+```
+- 邮箱填你的；同意条款 Y；分享邮箱 N；HTTP→HTTPS 重定向选 2。
+
+### 10B.6 验证
+
+- 浏览器打开 `https://你的域名` → 有小锁 🔒 = 成功
+- Cloudflare 里把 A 记录点成**橙云（代理）** → CDN 加速 + 防护生效
+
+### ⚠️ 踩坑记录（本次实操真实遇到）
+1. **.top 不能在 Cloudflare 注册** → 阿里云买 + Cloudflare 托管，绕开。
+2. **Cloudflare PayPal 支付失败** → 换信用卡，或阿里云买域名。
+3. **密码含 `#` 写进 systemd .service** → `#` 变注释，密码被截断！**改用 EnvironmentFile（.env 文件）**，密码原样生效。
+4. **漏传 public/ 前端文件夹** → 网站 404（程序在跑但没页面）。程序 + CSV + **public** 三样都要传。
+5. **Nginx 502** = 后端没起来（等 3-4 分钟课表加载完）；**404** = 静态文件缺失（public 没传）。
+
+---
+
 ## 附录 A · 常用运维命令
 
 ```bash
@@ -318,6 +395,9 @@ mysqldump -u qdu -p qdu_wasteland > /root/backup_$(date +%F).sql
 - 服务器：Vultr Tokyo，Ubuntu 22.04，IP `207.148.106.155`
 - 已装：MySQL 8 / Nginx / ClamAV / UFW / git / curl
 - 已配：MySQL 库 `qdu_wasteland` + 账号 `qdu`；UFW 放行 22/80/443；Nginx 反向代理 80→3000
-- 待做：传程序 → 启动 → 验证 → H2-H8
+- **已完成部署**：程序（systemd 守护 + 开机自启）· 课表 8 份 · public 前端 · 管理员账号
+- **域名**：`qdwasteland.top`（阿里云购买 ¥14/年，实名已过）→ NS 已托管 Cloudflare（jocelyn/valentin.ns.cloudflare.com）
+- **Cloudflare**：Free 计划，A 记录 @/www → 207.148.106.155（灰云，待开橙云加速）
+- **待做**：certbot 配 HTTPS → 开橙云加速 → H0/H3/H6/H7 余项
 
 > ⚠️ 密码请勿写进本文件；如已误写，用环境变量/密钥管理替代，并重置密码。

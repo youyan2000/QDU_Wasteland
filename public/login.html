@@ -96,5 +96,32 @@
   <script src="auth.js"></script>
 <script src="icons.js"></script>
 <script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
-</body>
+  <script>
+    // 登录页主题引导：加载 themes.css 并应用 localStorage 保存的主题（与 nav.js 一致，但不注入导航条）
+    (function () {
+      if (!document.getElementById('themesCss')) {
+        var l = document.createElement('link');
+        l.id = 'themesCss'; l.rel = 'stylesheet'; l.href = '/themes.css';
+        document.head.appendChild(l);
+      }
+      function hexSoft(hex) {
+        var n = parseInt(hex.slice(1), 16), r = (n>>16)&255, g = (n>>8)&255, b = n&255;
+        var sr = Math.round(r*0.25+230*0.75), sg = Math.round(g*0.1+245*0.9), sb = Math.round(b*0.2+235*0.8);
+        return '#' + ((1<<24)+(sr<<16)+(sg<<8)+sb).toString(16).slice(1);
+      }
+      (function apply() {
+        var t = localStorage.getItem('qwTheme') || '';
+        var color = localStorage.getItem('qwColor') || '';
+        if (t) document.body.setAttribute('data-theme', t); else document.body.removeAttribute('data-theme');
+        if (color) {
+          var valid = /^#[0-9a-fA-F]{6}\$/.test(color);
+          if (valid) {
+            document.body.style.setProperty('--magenta', color);
+            document.body.style.setProperty('--magenta-deep', color);
+            document.body.style.setProperty('--magenta-soft', hexSoft(color));
+          }
+        }
+      })();
+    })();
+  </script></body>
 </html>

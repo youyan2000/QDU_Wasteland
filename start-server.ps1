@@ -4,6 +4,7 @@
 #      请把本目录加入杀毒白名单，或自查误报（源码与依赖哈希已校验，见 PLAN.md 安全说明）。
 #   2. 运行：powershell -ExecutionPolicy Bypass -File start-server.ps1
 #   3. SMTP 配置：请通过环境变量提供（见下方 MAIL_* 说明），不要把密码写死在脚本里。
+#   4. 若 qdu-wasteland.exe 被残留句柄/杀软占用（无法替换或启动被拒），自动改用 qdu-wasteland-new.exe。
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
@@ -34,20 +35,24 @@ if ($env:MAIL_HOST) {
     Write-Host '⚠️ 未设置 MAIL_HOST 等环境变量，邮件将走日志模式（验证码/链接打印到 server.log）'
 }
 
-# 若 exe 被误杀/缺失则重建
-if (-not (Test-Path 'qdu-wasteland.exe')) {
-    Write-Host 'qdu-wasteland.exe 缺失，重新编译...'
-    go build -o qdu-wasteland.exe .
+# —— 构建：默认 qdu-wasteland.exe；若被占用则自动换名 ——
+$exeName = 'qdu-wasteland.exe'
+go build -o $exeName . 2>$null
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exeName)) {
+    Write-Host '⚠️ qdu-wasteland.exe 被占用（残留句柄/杀软拦截），改用 qdu-wasteland-new.exe'
+    $exeName = 'qdu-wasteland-new.exe'
+    go build -o $exeName .
     if ($LASTEXITCODE -ne 0) { Write-Error '编译失败'; exit 1 }
 }
+Write-Host "📦 使用 $exeName 启动"
 
-# 停止旧进程
-Get-Process qdu-wasteland -ErrorAction SilentlyContinue | Stop-Process -Force
+# 停止旧进程（两种名字都停）
+Get-Process qdu-wasteland, 'qdu-wasteland-new' -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep 1
 
 # 启动服务器：用 PowerShell 重定向并强制 UTF-8 输出，避免中文日志乱码；
 # 路径含空格也能正确工作（& 调用操作符 + 引号包裹）。
-$proc = Start-Process -FilePath "$PSScriptRoot\qdu-wasteland.exe" `
+$proc = Start-Process -FilePath "$PSScriptRoot\$exeName" `
     -WorkingDirectory $PSScriptRoot `
     -RedirectStandardOutput "$PSScriptRoot\server.log" `
     -RedirectStandardError "$PSScriptRoot\server.err.log" `

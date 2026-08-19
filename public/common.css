@@ -236,3 +236,32 @@ pre.md-code > .md-copy {
   opacity: .92; transition: opacity .15s, background .15s; z-index: 2;
 }
 pre.md-code > .md-copy:hover { opacity: 1; background: rgba(120,120,150,.38); }
+
+/* ================= 返回按钮（← 返回论坛/课程库/我的风采 等，全站通用） ================= */
+.courses-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  transition: all .18s;
+}
+.courses-back:hover { color: var(--magenta); border-color: var(--magenta); background: var(--magenta-soft); transform: translateX(-2px); }
+/* 暗色模式对比度 */
+body[data-theme="dark"] .courses-back,
+body[data-theme="cyber"] .courses-back {
+  background: #26262e !important;
+  border-color: rgba(255,255,255,.28) !important;
+  color: #d8d6d2 !important;
+}
+body[data-theme="dark"] .courses-back:hover,
+body[data-theme="cyber"] .courses-back:hover {
+  border-color: var(--magenta) !important;
+  color: #fff !important;
+}

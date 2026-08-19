@@ -433,7 +433,7 @@ function bindEditProfile(u) {
         u.avatar = d.avatar;
         const avImg = document.getElementById('epAvatarPreview');
         if (avImg) { avImg.src = d.avatar; avImg.style.display = 'block'; }
-        errEl.textContent = '✅ 头像已更新';
+        errEl.innerHTML = ICONS.check(14) + ' 头像已更新';
       } catch (e) { errEl.textContent = '网络错误，上传失败'; }
     };
   }
@@ -552,12 +552,16 @@ async function draftAction(type, id, act) {
 async function mgmtWithdraw(type, id) {
   if (!confirm('确定撤回该内容？将收回草稿箱。')) return;
   const url = type === 'post' ? '/api/forum/post/delete' : '/api/articles/delete';
-  await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    const d = await r.json().catch(function () { return {}; });
+    if (!r.ok) { alert(d.error || '撤回失败，请重试'); return; }
+  } catch (e) { alert('网络错误，撤回失败'); return; }
   await reloadActivityShow('drafts');
 }
 // 草稿"编辑" → 新标签打开编辑器/详情（保持本页稿件管理）
 function draftEdit(type, id) {
-  const url = type === 'post' ? '/post.html?id=' + id : '/article-editor.html?edit=' + id;
+  const url = type === 'post' ? '/forum.html?edit=' + id : '/article-editor.html?edit=' + id;
   window.open(url, '_blank');
 }
 
@@ -686,13 +690,13 @@ document.addEventListener('click', function (e) {
     return;
   }
   const withdrawBtn = e.target.closest('[data-mgmt-withdraw]');
-  if (withdrawBtn) { mgmtWithdraw(withdrawBtn.getAttribute('type') || 'post', withdrawBtn.dataset.id); return; }
+  if (withdrawBtn) { mgmtWithdraw(withdrawBtn.getAttribute('type') || 'post', Number(withdrawBtn.dataset.id)); return; }
   const editBtn = e.target.closest('[data-draft-edit]');
-  if (editBtn) { draftEdit(editBtn.getAttribute('type') || 'article', editBtn.dataset.id); return; }
+  if (editBtn) { draftEdit(editBtn.getAttribute('type') || 'article', Number(editBtn.dataset.id)); return; }
   const delBtn = e.target.closest('[data-draft-del]');
-  if (delBtn) { draftAction(delBtn.dataset.type || delBtn.getAttribute('type'), delBtn.dataset.id, 'del'); return; }
+  if (delBtn) { draftAction(delBtn.dataset.type || delBtn.getAttribute('type'), Number(delBtn.dataset.id), 'del'); return; }
   const pubBtn = e.target.closest('[data-draft-pub]');
-  if (pubBtn) { draftAction(pubBtn.dataset.type || pubBtn.getAttribute('type'), pubBtn.dataset.id, 'pub'); return; }
+  if (pubBtn) { draftAction(pubBtn.dataset.type || pubBtn.getAttribute('type'), Number(pubBtn.dataset.id), 'pub'); return; }
   if (e.target && e.target.id === 'logoutBtn') {
     (async () => { await fetch('/api/logout', { method: 'POST' }); location.href = '/login.html'; })();
   }

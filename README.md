@@ -142,6 +142,8 @@ qdu-wasteland.exe
 
 - **V0–V13 全部完成**（功能/安全/治理/社交闭环）
 - **V14+ 综合改版完成**（课程多维检索、个人中心自定义、稿件管理、头像、AI 审查、相册照片、论坛图片、课程分类、禁言等）
-- **阶段 F/G/I/J/K/L/M/N 全部完成**（详见 `MASTER-PLAN.md`，唯一待办为 H 上线部署）
+- **阶段 F/G/I/J/K/L/M/N 全部完成**
+- **✅ 已正式上线**：https://qdwasteland.top（Vultr 境外 VPS + Cloudflare CDN + HTTPS 自动续期 + systemd 守护）
+- 详见 `../docs/MASTER-PLAN.md`（唯一主线）与 `../docs/DEPLOY-GUIDE.md`（部署教程）
 
-> 历史多份 plan 已合并为 `MASTER-PLAN.md` 唯一主线。
+> 历史多份 plan 已合并为 `../docs/MASTER-PLAN.md` 唯一主线。

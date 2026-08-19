@@ -3,6 +3,7 @@ package main
 
 import (
 	"crypto/rand"
+	"io"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
@@ -40,6 +41,7 @@ func createSession(w http.ResponseWriter, userID int64) {
 		Path:     "/",
 		MaxAge:   7 * 24 * 3600, // 7 天
 		HttpOnly: true,          // 防 XSS 读取
+		Secure:   true,          // 仅 HTTPS 传输（已上线 HTTPS）
 		SameSite: http.SameSiteStrictMode, // A3 CSRF：跨站非 GET 请求不带会话 Cookie
 	})
 }
@@ -65,7 +67,7 @@ func destroySession(w http.ResponseWriter, r *http.Request) {
 		sessionsMu.Unlock()
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true,
+		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: true,
 	})
 }
 
@@ -309,8 +311,28 @@ func handleUpdateProfile(auth *AuthStore) http.HandlerFunc {
 			Major       string         `json:"major"`
 			Privacy     map[string]any `json:"privacy"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		rawBody, _ := io.ReadAll(r.Body)
+		if err := json.Unmarshal(rawBody, &body); err != nil {
 			apiErr(w, 400, "请求格式错误"); return
+		}
+		// 检测本次请求是否提交了任何个人资料字段（隐私设置单独保存时不得触碰资料）
+		hasProfile := false
+		{
+			var raw map[string]json.RawMessage
+			_ = json.Unmarshal(rawBody, &raw)
+			for _, k := range []string{"nickname", "gender", "age", "birthday", "grade", "nativePlace", "wechat", "qq", "phone", "social", "bio", "college", "major"} {
+				if _, ok := raw[k]; ok { hasProfile = true; break }
+			}
+		}
+		if !hasProfile {
+			// 仅隐私设置：只更新 privacy 列，其他资料原样保留
+			if len(body.Privacy) > 0 {
+				privacyJSON, _ := json.Marshal(body.Privacy)
+				_, _ = auth.db.Exec("UPDATE users SET privacy=? WHERE id=?", string(privacyJSON), uid)
+			}
+			u, _ := auth.GetByID(uid)
+			apiJSON(w, 200, map[string]any{"message": "已保存", "user": u.ToSessionInfo()})
+			return
 		}
 		// 后端输入校验（不可信输入必须双重校验）
 		body.Nickname = cleanUserText(body.Nickname, 20)

@@ -70,7 +70,7 @@ document.addEventListener('click', function (e) {
   const text = code.textContent;
   const done = function () {
     const label = btn.getAttribute('data-label') || '复制';
-    btn.textContent = '✅ 已复制';
+    btn.textContent = '已复制';
     setTimeout(function () { btn.textContent = label; }, 1600);
   };
   const fallback = function () {

@@ -98,7 +98,7 @@
 .post-meta .tag { color:var(--magenta); font-weight:600; }
 .post-content { line-height:1.8; white-space:pre-wrap; margin-bottom:1.2rem; }
 .post-actions { border-top: 1px solid var(--border); padding-top:.8rem; }
-.like-btn { padding:.5rem 1.2rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); cursor:pointer; }
+.like-btn { padding:.5rem 1.2rem; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: var(--surface); cursor:pointer; color: var(--ink); display:inline-flex; align-items:center; gap:5px; }
 .like-btn:hover { border-color:var(--magenta); color:var(--magenta); }
 .comments-h2 { font-size:1.2rem; font-weight:700; margin:1.6rem 0 .8rem; }
 .comment-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding:1rem; }
@@ -145,7 +145,7 @@
 .cm-reply:hover { border-color: var(--magenta); color: var(--magenta); background: var(--magenta-soft); }
 .comment-item .rep-btn-mini,
 .comment-item .cm-reply { display: inline-flex; align-items: center; gap: 3px; }
-.comment-item .cm-reply-cancel { border:none; background: var(--track); border-radius: var(--radius-sm); padding:5px 10px; cursor:pointer; }
+.comment-item .cm-reply-cancel { border:none; background: var(--track); border-radius: var(--radius-sm); padding:5px 10px; cursor:pointer; color: var(--ink); }
 
 /* 帖子正文图片（Markdown 渲染） */
 .post-content.md-view { line-height: 1.7; }

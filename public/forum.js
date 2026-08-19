@@ -16,7 +16,7 @@ async function loadForums() {
   forums.forEach(f => {
     const d = document.createElement('button');
     d.className = 'forum-chip' + (f.slug === currentForum ? ' active' : '');
-    d.innerHTML = `<span class="fc-name">${f.name}</span><span class="fc-desc">${f.desc}</span>`;
+    d.innerHTML = `<span class="fc-name">${escape(f.name)}</span><span class="fc-desc">${escape(f.desc)}</span>`;
     d.onclick = () => { currentForum = f.slug === currentForum ? '' : f.slug; currentPage = 1; syncForums(); loadPosts(); };
     bar.appendChild(d);
   });
@@ -115,11 +115,18 @@ document.querySelectorAll('.sort-tab').forEach(b => {
 // 发帖
 const modal = document.getElementById('postModal');
 const isNewDraft = new URLSearchParams(location.search).get('newdraft') === '1';
+const editId = parseInt(new URLSearchParams(location.search).get('edit') || '0', 10);
+let editingPost = null; // 编辑中的帖子（草稿编辑模式）
 function openPostModal() {
   if (window.loadPfCaptcha) window.loadPfCaptcha(document.getElementById('pfCapImg'));
-  // 新建草稿模式：加"存草稿"按钮
+  // 编辑模式：标题改"编辑帖子"，广场不可改（后端更新接口不接收广场/匿名变更）
+  const h3 = modal.querySelector('.modal-head h3');
+  if (h3) h3.textContent = editId > 0 ? '编辑帖子' : '发帖';
+  const pfSel = document.getElementById('pfForum');
+  if (pfSel) pfSel.disabled = editId > 0;
+  // 新建草稿/编辑草稿模式：加"存草稿"按钮
   const actions = document.querySelector('.pf-actions');
-  if (isNewDraft && actions && !document.getElementById('pfDraftBtn')) {
+  if ((isNewDraft || editId > 0) && actions && !document.getElementById('pfDraftBtn')) {
     const dBtn = document.createElement('button');
     dBtn.id = 'pfDraftBtn';
     dBtn.className = 'btn-submit';
@@ -130,6 +137,24 @@ function openPostModal() {
   }
   if (window.bindPfImageUpload) bindPfImageUpload();
   modal.style.display = 'flex';
+}
+
+// 编辑模式：加载草稿/帖子内容填入弹层（作者或管理员可编辑草稿）
+async function openEditPost(id) {
+  try {
+    const r = await fetch('/api/forum/post?id=' + id);
+    const d = await r.json();
+    if (!d.post) { alert('无法加载该帖子（可能不存在或无权编辑）'); return; }
+    const p = d.post;
+    const sel = document.getElementById('pfForum');
+    if (!sel.options.length) await loadForums();
+    sel.value = p.forum || '';
+    document.getElementById('pfTitle').value = p.title || '';
+    document.getElementById('pfContent').value = p.content || '';
+    document.getElementById('pfAnon').checked = !!p.anonymous;
+    document.getElementById('pfErr').textContent = '';
+    openPostModal();
+  } catch (e) { alert('加载失败'); }
 }
 document.getElementById('newPostBtn').onclick = async () => {
   const r = await fetch('/api/me');
@@ -144,19 +169,29 @@ if (isNewDraft) {
     if (!d.loggedIn) { location.href = '/login.html'; return; }
     openPostModal();
   })();
+} else if (editId > 0) {
+  (async () => {
+    const r = await fetch('/api/me');
+    const d = await r.json();
+    if (!d.loggedIn) { location.href = '/login.html'; return; }
+    await openEditPost(editId);
+  })();
 }
 async function savePostDraft() {
   const err = document.getElementById('pfErr');
   const title = document.getElementById('pfTitle').value.trim();
   const content = document.getElementById('pfContent').value.trim();
   if (!title && !content) { err.textContent = '请至少填写标题或内容'; return; }
-  const res = await fetch('/api/forum/post/create', {
+  const isEdit = editId > 0;
+  const res = await fetch(isEdit ? '/api/forum/post/update' : '/api/forum/post/create', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      forum: document.getElementById('pfForum').value, title, content,
-      anonymous: document.getElementById('pfAnon').checked,
-      captcha: '', captchaId: '', status: 'draft'
-    })
+    body: JSON.stringify(isEdit
+      ? { id: editId, title, content, status: 'draft' }
+      : {
+          forum: document.getElementById('pfForum').value, title, content,
+          anonymous: document.getElementById('pfAnon').checked,
+          captcha: '', captchaId: '', status: 'draft'
+        })
   });
   const d = await res.json();
   if (!res.ok) { err.textContent = d.error || '保存失败'; return; }
@@ -170,14 +205,17 @@ document.getElementById('pfSubmit').onclick = async () => {
   const title = document.getElementById('pfTitle').value.trim();
   const content = document.getElementById('pfContent').value.trim();
   if (!title) { err.textContent = '请填写标题'; return; }
-  const res = await fetch('/api/forum/post/create', {
+  const isEdit = editId > 0;
+  const res = await fetch(isEdit ? '/api/forum/post/update' : '/api/forum/post/create', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      forum: document.getElementById('pfForum').value, title, content,
-      anonymous: document.getElementById('pfAnon').checked,
-      captcha: document.getElementById('pfCaptcha').value.trim(),
-      captchaId: document.getElementById('pfCaptchaId').value
-    })
+    body: isEdit
+      ? JSON.stringify({ id: editId, title, content, status: '正常' })
+      : JSON.stringify({
+          forum: document.getElementById('pfForum').value, title, content,
+          anonymous: document.getElementById('pfAnon').checked,
+          captcha: document.getElementById('pfCaptcha').value.trim(),
+          captchaId: document.getElementById('pfCaptchaId').value
+        })
   });
   const d = await res.json();
   if (!res.ok) { err.textContent = d.error; return; }
@@ -219,7 +257,7 @@ function bindPfImageUpload() {
         if (!r.ok) { msg.textContent = d.error || '上传失败'; continue; }
         // 插入 Markdown 图片语法
         ta.value = ta.value + (ta.value && !ta.value.endsWith('\n') ? '\n' : '') + '![图片](' + d.url + ')\n';
-        msg.textContent = '✅ 已插入 ' + f.name;
+        msg.innerHTML = ICONS.check(14) + ' 已插入 ' + escape(f.name);
       } catch (e) { msg.textContent = '上传失败'; }
     }
     file.value = '';

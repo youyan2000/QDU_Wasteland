@@ -36,6 +36,7 @@ qdu-auth.db
 
 # 上传文件
 uploads/
+backups/
 
 # 本地测试脚本产物
 test-*.tmp

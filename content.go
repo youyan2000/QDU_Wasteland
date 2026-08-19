@@ -215,7 +215,7 @@ func handleFileDownload() http.HandlerFunc {
 			apiErr(w, 404, "文件已丢失")
 			return
 		}
-		w.Header().Set("Content-Disposition", `attachment; filename="`+fname+`"`)
+		w.Header().Set("Content-Disposition", `attachment; filename="`+sanitizeFilename(fname)+`"`)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		http.ServeFile(w, r, path)
 	}
@@ -242,7 +242,7 @@ func handleFilePreview() http.HandlerFunc {
 		// 设置正确的 Content-Type（inline 预览）
 		ct := mimeByExt(fname)
 		w.Header().Set("Content-Type", ct)
-		w.Header().Set("Content-Disposition", "inline; filename=\""+fname+"\"")
+		w.Header().Set("Content-Disposition", "inline; filename=\""+sanitizeFilename(fname)+"\"")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		http.ServeFile(w, r, path)
 	}
@@ -567,4 +567,11 @@ func handleAdminReviewStatus(auth *AuthStore) http.HandlerFunc {
 		}
 		apiJSON(w, 200, map[string]any{"ok": true, "id": id, "status": body.Status})
 	}
+}
+// sanitizeFilename 清洗文件名用于 HTTP Header：移除 CR/LF（防响应头注入）和引号（防破坏 filename 结构）
+func sanitizeFilename(s string) string {
+	s = strings.ReplaceAll(s, "\r", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	s = strings.ReplaceAll(s, `"`, "")
+	return s
 }

@@ -416,6 +416,12 @@ function render(stat, reviewItems, topicCand) {
         <label style="font-size:.85rem;color:var(--muted)">维护提示语</label>
         <input id="maintMsg" type="text" placeholder="站点维护中，请稍后再来" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;margin:6px 0 12px">
       </div>
+      <div style="margin-top:18px;border-top:1px solid #eee;padding-top:12px">
+        <label style="font-size:.95rem;font-weight:600">数据备份（H5）</label>
+        <p style="color:var(--muted);font-size:.85rem;margin:4px 0 8px">一键生成数据库一致性快照 + 上传目录压缩包，保留最近 14 份自动轮转。定时任务可调用 /api/admin/backup。</p>
+        <button class="btn-mini" id="backupBtn" style="background:var(--magenta);color:#fff">立即备份</button>
+        <span id="backupMsg" style="margin-left:8px;font-size:.85rem;color:var(--muted)"></span>
+      </div>
     </div>
 
     <div class="admin-pane" data-pane="aireview">
@@ -1572,6 +1578,20 @@ document.addEventListener('click', async (e) => {
     } catch (err) { alert('切换维护模式失败，请稍后再试'); }
     return;
   }
+  const backupBtn = e.target.closest('#backupBtn');
+  if (backupBtn) {
+    const msg = document.getElementById('backupMsg');
+    if (!msg) return;
+    msg.textContent = '备份中…';
+    backupBtn.disabled = true;
+    try {
+      const r = await fetch('/api/admin/backup', { method: 'POST' });
+      const d = await r.json();
+      if (!r.ok) { msg.textContent = d.error || '备份失败'; return; }
+      msg.innerHTML = ICONS.check(14) + ' 备份完成：' + (d.size / 1024 / 1024).toFixed(1) + ' MB → ' + d.db + (d.pruned ? '（已清理旧备份 ' + d.pruned + ' 份）' : '');
+    } catch (e) { msg.textContent = '网络错误'; }
+    finally { backupBtn.disabled = false; }
+  }
 });
 
 
@@ -1642,7 +1662,7 @@ function bindAiReview() {
       if (d.verdict) {
         const v = d.verdict;
         const okColor = v.ok ? '#1a9e5c' : '#d32f2f';
-        const okText = v.ok ? '✅ 通过' : '⚠️ 疑似违规';
+        const okText = v.ok ? (ICONS.check(14) + ' 通过') : (ICONS.ban(14) + ' 疑似违规');
         result.style.display = 'block';
         result.style.borderColor = v.ok ? '#cde8d8' : '#f0c9c9';
         result.innerHTML = '<div style="font-size:1rem;font-weight:700;color:' + okColor + ';margin-bottom:6px">' + okText + '</div>' +
@@ -1685,10 +1705,10 @@ function bindAiAutoReview() {
         html += removed.map(v => '<div style="padding:6px 8px;border-left:3px solid #d32f2f;background:#fdf2f2;border-radius:4px;margin-bottom:4px">[' + escapeHtml(v.kind) + ' #' + v.id + '] ' + escapeHtml(v.content) + ' — ' + escapeHtml(v.reason || '') + '</div>').join('');
       }
       if (borderline.length) {
-        html += '<div style="margin:10px 0 8px"><b>⚠️ 模糊内容，需人工复核：</b></div>';
+        html += '<div style="margin:10px 0 8px"><b>模糊内容，需人工复核：</b></div>';
         html += borderline.map(v => '<div style="padding:6px 8px;border-left:3px solid #e67e22;background:#fdf6ec;border-radius:4px;margin-bottom:4px">[' + escapeHtml(v.kind) + ' #' + v.id + '] ' + escapeHtml(v.content) + ' — ' + escapeHtml(v.reason || '') + '</div>').join('');
       }
-      if (!removed.length && !borderline.length) html += '<div style="color:#1a9e5c">全部内容正常 ✅</div>';
+      if (!removed.length && !borderline.length) html += '<div style="color:#1a9e5c">全部内容正常</div>';
       result.innerHTML = html;
     } catch (e) { msg.textContent = '网络错误'; }
     finally { btn.disabled = false; }
