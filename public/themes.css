@@ -231,9 +231,9 @@ body[data-nav="left"] .topics-main { margin: 0 auto; }
 /* ---------- I2.7 左侧导航下内容防溢出（harden） ---------- */
 body[data-nav="left"] .courses-main,
 body[data-nav="left"] .me-main,
-body[data-nav="left"] .read-main,
 body[data-nav="left"] .editor-main,
 body[data-nav="left"] .topics-main { max-width: none; width: 100%; box-sizing: border-box; }
+body[data-nav="left"] .read-main { max-width: 980px; width: 100%; box-sizing: border-box; margin: 0 auto; }
 /* 表格/长文本在窄空间下可收缩，不撑破布局 */
 body[data-nav="left"] .info-table,
 body[data-nav="left"] .major-block,
@@ -960,4 +960,29 @@ body[data-theme="cyber"] .rep-btn-submit {
   background: #0d0d1c !important; background-image: none !important; color: #00ffc8 !important;
   border: 1px solid #00ffc8 !important; text-shadow: 0 0 8px #00ffc8 !important;
   box-shadow: 0 0 8px rgba(0,255,200,.5) !important;
+}/* ---------- 课程评价·发布评价按钮 主题统一（P4k） ---------- */
+/* 默认：实心品红去渐变 */
+body:not([data-theme="dark"]):not([data-theme="cyber"]):not([data-theme="github"]) #reviewSubmit,
+body:not([data-theme="dark"]):not([data-theme="cyber"]):not([data-theme="github"]) .review-form #reviewSubmit {
+  background: var(--magenta, #ff2e88) !important; background-image: none !important; color: #fff !important;
 }
+/* 简约：黑底白字方角 */
+body[data-theme="github"] #reviewSubmit,
+body[data-theme="github"] .review-form #reviewSubmit {
+  background: #1f2328 !important; background-image: none !important; color: #fff !important; border-radius: 2px !important;
+}
+body[data-theme="github"] #reviewSubmit:hover { background: #32383f !important; background-image: none !important; }
+/* 赛博：霓虹 */
+body[data-theme="cyber"] #reviewSubmit,
+body[data-theme="cyber"] .review-form #reviewSubmit {
+  background: #0d0d1c !important; background-image: none !important; color: #00ffc8 !important;
+  border: 1px solid #00ffc8 !important; border-radius: 4px !important; text-shadow: 0 0 8px #00ffc8 !important;
+  box-shadow: 0 0 10px rgba(0,255,200,.5), inset 0 0 8px rgba(0,255,200,.25) !important;
+}
+/* 暗黑：反抗调 */
+body[data-theme="dark"] #reviewSubmit,
+body[data-theme="dark"] .review-form #reviewSubmit {
+  background: #8f3d3a !important; background-image: none !important; color: #f0e6df !important;
+  border: 1px solid #b8544f !important;
+}
+body[data-theme="dark"] #reviewSubmit:hover { background: #a34943 !important; background-image: none !important; }

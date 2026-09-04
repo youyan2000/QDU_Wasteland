@@ -1,0 +1,51 @@
+# CI — QDU Wasteland
+# 每次 push / 提 PR 自动运行：静态检查 → 单元测试 → 交叉编译 Linux 生产包 → 前端完整性检查
+# 云端运行器是 Linux，本地等价验证请运行: powershell -File ci-local.ps1
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: vet + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: 静态检查 go vet
+        run: go vet ./...
+
+      - name: 单元测试 go test
+        # TestClamAVIntegration 在未设置 CLAMAV_CMD 时自动跳过（与本地一致）
+        run: go test -v ./...
+
+      - name: 交叉编译 Linux 生产二进制
+        # CGO_ENABLED=0: 使用 modernc.org/sqlite 纯 Go 驱动，静态链接，可直接在服务器运行
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/qdu-wasteland-linux .
+          ls -la dist/
+
+      - name: 前端完整性检查 (public/)
+        # 防止部署时漏拷 public/ 这类问题——CI 里先保证前端文件齐全
+        run: |
+          for f in index.html themes.css style.css nav.js setup.json; do
+            test -f "public/$f" && echo "OK  public/$f" || { echo "缺失 public/$f"; exit 1; }
+          done
+          count=$(find public -type f | wc -l)
+          echo "public/ 文件总数: $count"
+          test "$count" -ge 50 || { echo "public/ 文件数异常（<50），疑似未拷贝完整"; exit 1; }
+
+      - name: 上传构建产物 (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: qdu-wasteland-linux
+          path: dist/qdu-wasteland-linux

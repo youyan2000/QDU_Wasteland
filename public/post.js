@@ -12,12 +12,15 @@ async function load() {
   } catch (e) { wrap.innerHTML = '<div class="empty">加载失败</div>'; }
 }
 
+const FORUM_NAMES = { trade: '交易广场', paper: '纸片广场', help: '求助广场', friend: '友人广场' };
+function forumName(slug) { return FORUM_NAMES[slug] || slug; }
+
 function render(p) {
   let html = `
     <article class="post-detail">
       <h1 class="post-title">${escape(p.title)}</h1>
       <div class="post-meta">
-        <span class="tag">${escape(p.forum)}</span>
+        <span class="tag">${escape(forumName(p.forum))}</span>
         <span>${!p.anonymous && p.ownerId ? `<a class="author-link" href="/user.html?id=${p.ownerId}">${escape(p.author)}</a>` : escape(p.author)}</span>
         <span>${escape(p.createdAt)}</span>
       </div>
@@ -25,6 +28,7 @@ function render(p) {
       <div class="post-actions" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <button id="likeBtn" class="like-btn ${p.liked?'liked':''}">${ICONS.thumb(16, '', p.liked)} ${p.liked?'已赞':'点赞'} <span class="like-count">${p.likes||0}</span></button>
         <button id="favBtn" class="like-btn">${ICONS.bookmark(16)} 收藏</button>
+        <button id="shareBtn" class="like-btn">${ICONS.download(16)} 分享</button>
         <button class="rep-btn-mini" data-report-type="post" data-report-id="${p.id}" data-report-label="${escape(p.title)}">举报</button>
         <span style="margin-left:auto;display:flex;gap:8px" id="ownActions"></span>
       </div>
@@ -42,6 +46,16 @@ function render(p) {
     </div>`;
   wrap.innerHTML = html;
   attachSaveToAlbum(wrap);
+  // 分享：复制链接 + 提示
+  var sb = document.getElementById('shareBtn');
+  if (sb) sb.onclick = function () {
+    var url = location.href;
+    var done = function () { sb.innerHTML = ICONS.check(16) + ' 已复制'; setTimeout(function () { sb.innerHTML = ICONS.download(16) + ' 分享'; }, 1500); };
+    var fb = function () { var ta = document.createElement('textarea'); ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch(e){} document.body.removeChild(ta); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(function(){ fb(); done(); });
+    else { fb(); done(); }
+  };
+
 
   // C2 作者本人或管理员的"撤回草稿/删除"按钮（编辑入口简洁版：删除=撤回草稿，草稿可再发布）
   (async () => {

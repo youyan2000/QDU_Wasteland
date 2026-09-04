@@ -21,8 +21,11 @@ function renderMarkdown(md) {
   s = s.replace(/^## (.*)$/gm, '<h2>$1</h2>');
   s = s.replace(/^# (.*)$/gm, '<h1>$1</h1>');
 
-  // 引用
-  s = s.replace(/^&gt; (.*)$/gm, '<blockquote>$1</blockquote>');
+  // 引用：连续多行 `> 行` 合并为一个 blockquote（行内换行用 <br>）
+  s = s.replace(/(?:^|\n)((?:&gt; [^\n]*\n?)+)/gm, function (m, block) {
+    var lines = block.split(String.fromCharCode(10)).map(function (l) { return l.replace(/^&gt; ?/, ''); }).filter(function (l) { return l !== ''; });
+    return '<blockquote>' + lines.map(function (l) { return l + '<br>'; }).join('') + '</blockquote>';
+  });
 
   // 水平线
   s = s.replace(/^---+$/gm, '<hr>');

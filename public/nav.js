@@ -338,7 +338,7 @@
     var f = document.createElement('footer');
     f.className = 'site-footer';
     f.style.cssText = 'text-align:center;padding:1.4rem 1rem;color:var(--muted);font-size:.82rem;border-top:1px solid var(--border);';
-    f.innerHTML = 'Wasteland © 2026  青岛大学学习互助社区（内测） · ' +
+    f.innerHTML = 'Wasteland © 2026  青大学习资料与互助社区（非官方独立运营） · ' +
       '<a href="/terms.html" style="color:var(--muted)">用户协议</a> · ' +
       '<a href="/privacy.html" style="color:var(--muted)">隐私政策</a> · ' +
       '<a href="https://github.com/youyan2000/QDU_Wasteland" target="_blank" rel="noopener" style="color:var(--muted)">开源仓库</a> · ' +

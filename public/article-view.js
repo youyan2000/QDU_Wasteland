@@ -14,21 +14,32 @@ async function load() {
 
 function render(a) {
   document.title = a.title + ' · 文章 · QDU Wasteland';
-  wrap.innerHTML = `
-    <header class="read-head">
-      <span class="cat-chip active" style="cursor:default">${escape(a.category)}</span>
-      <h1 class="read-title">${escape(a.title)}</h1>
-      <div class="read-meta">
-        <span class="read-author">${ICONS.user(14)} ${a.userId ? `<a class="author-link" href="/user.html?id=${a.userId}">${escape(a.author)}</a>` : escape(a.author)}</span>
-        <span>${escape(a.createdAt)}</span>
-        <span class="read-views">${ICONS.eye(14)} ${a.views || 0} 阅读</span>
-        <button class="rep-btn-mini" data-report-type="article" data-report-id="${a.id}" data-report-label="${escape(a.title)}">举报</button>
-      </div>
-    </header>
-    <article class="read-body md-view">${renderMarkdown(a.content || '')}</article>
-    <footer class="read-foot">
-      <a class="btn btn-ghost" href="/articles.html">← 返回文章列表</a>
-    </footer>`;
+  var coverHtml = a.cover ? '<div class="read-cover"><img src="' + escape(a.cover) + '" alt="封面" loading="lazy"></div>' : '';
+  wrap.innerHTML = [
+    '<header class="read-head">',
+    '  <span class="cat-chip active" style="cursor:default">' + escape(a.category) + '</span>',
+    '  <h1 class="read-title">' + escape(a.title) + '</h1>',
+    '  <div class="read-meta">',
+    '    <span class="read-author">' + ICONS.user(14) + ' ' + (a.userId ? '<a class="author-link" href="/user.html?id=' + a.userId + '">' + escape(a.author) + '</a>' : escape(a.author)) + '</span>',
+    '    <span>' + escape(a.createdAt) + '</span>',
+    '    <span class="read-views">' + ICONS.eye(14) + ' ' + (a.views || 0) + ' 阅读</span>',
+    '    <button class="rep-btn-mini" data-report-type="article" data-report-id="' + a.id + '" data-report-label="' + escape(a.title) + '">举报</button>',
+    '    <button id="artShareBtn" style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:.35rem .9rem;border:1px solid var(--border-strong);border-radius:999px;background:var(--surface);color:var(--ink);cursor:pointer;font-size:.8rem">' + ICONS.download(15) + ' 分享</button>',
+    '  </div>',
+    '</header>',
+    coverHtml,
+    '<article class="read-body md-view">' + renderMarkdown(a.content || '') + '</article>',
+    '<footer class="read-foot"></footer>'
+  ].join('');
+  // 分享：复制链接
+  var sb = document.getElementById('artShareBtn');
+  if (sb) sb.onclick = function () {
+    var url = location.href;
+    var done = function () { sb.innerHTML = ICONS.check(15) + ' 已复制'; setTimeout(function () { sb.innerHTML = ICONS.download(15) + ' 分享'; }, 1500); };
+    var fb = function () { var ta = document.createElement('textarea'); ta.value = url; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(function(){ fb(); done(); });
+    else { fb(); done(); }
+  };
   attachSaveToAlbum(wrap);
 }
 

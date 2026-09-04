@@ -128,15 +128,16 @@
 .editor-err:not(:empty) { display: block; }
 
 /* ============ 阅读页 ============ */
-.read-main { max-width: 780px; margin: 0 auto; padding: 2rem var(--space-page) 3.5rem; }
-.read-main .editor-back { display: inline-block; margin-bottom: 1.8rem; }
+.read-main { max-width: 880px; margin: 0 auto !important; padding: 1.5rem var(--space-page) 3.5rem; }
+.read-main .editor-back { display: inline-block; margin-bottom: 1.4rem; color: var(--muted); text-decoration: none; font-size: .9rem; }
 .read-head { margin-bottom: 1.6rem; }
 .read-title { font-family: var(--font-editorial); font-size: clamp(1.6rem,3.6vw,2.3rem); font-weight: 800; letter-spacing: -.02em; margin: .7rem 0 .5rem; line-height: 1.3; }
-.read-meta { display: flex; gap: 16px; color: var(--muted); font-size: .85rem; align-items: center; }
+.read-meta { display: flex; gap: 16px; color: var(--muted); font-size: .85rem; align-items: center; flex-wrap: wrap; }
 .read-author { font-weight: 600; color: var(--ink); }
 .read-body {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  padding: 2rem 2.2rem; font-size: 1rem; line-height: 1.9;
+  padding: 2.8rem 1.5rem; font-size: 1.18rem; line-height: 1.9;
+  width: 100%; box-sizing: border-box; margin: 0;
 }
 .read-foot { margin-top: 1.6rem; display: flex; justify-content: center; }
 /* ============ F4 专题页 ============ */
@@ -178,8 +179,13 @@
 .ac-cover-img img { width:100%; height:100%; object-fit:cover; display:block; }
 
 /* K3 阅读正文行宽（≤65字符） + K4 衬线编辑感 */
-.read-body, .read-body p { max-width: 65ch; margin-left: auto; margin-right: auto; }
+.read-body, .read-body p { max-width: none; }
 .read-body, .read-body .md-view { font-family: Georgia, "Songti SC", "STSong", serif; }
+
+/* 文章阅读页正文：放大字号与行高（覆盖通用 .md-view 的 0.98rem） */
+.read-body .md-view, .read-body .md-view p, .read-body.md-view {
+  font-size: 1.18rem !important; line-height: 1.9 !important;
+}
 .read-body h1, .read-body h2, .read-body h3 { font-family: "Aptos", "Microsoft YaHei", sans-serif; }
 
 /* 弹层（相册选择等）— 与 forum.css/me.css 保持一致 */
@@ -230,3 +236,6 @@
 .art-page-btn:hover:not(:disabled) { border-color: var(--magenta); color: var(--magenta); }
 .art-page-btn:disabled { opacity: .45; cursor: default; }
 .art-page-info { color: var(--muted); font-size: .85rem; }
+/* 文章阅读页封面 */
+.read-cover { margin: .5rem 0 1.6rem; max-width: 100%; }
+.read-cover img { width: 100%; max-height: 340px; object-fit: cover; border-radius: 10px; display: block; }
