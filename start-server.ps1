@@ -12,7 +12,7 @@ Set-Location $PSScriptRoot
 if ($env:GO_BIN) { $env:Path = $env:GO_BIN + ';' + $env:Path }
 elseif (Test-Path 'F:\Go\bin') { $env:Path = 'F:\Go\bin;' + $env:Path }
 
-$env:CSV_DIR = 'F:\My_Projects\AI_projects\_csv'
+$env:CSV_DIR = 'F:\My_Projects\Wasteland\_csv'
 $env:ADMIN_EMAIL = 'admin@qdu.edu.cn'
 
 # —— 管理员密码（安全：不硬编码默认密码）——

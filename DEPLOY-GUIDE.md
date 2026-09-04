@@ -182,7 +182,7 @@ systemctl status nginx                # active (running)
 ### 7.1 本地编译 Linux 版（PowerShell）
 
 ```powershell
-cd F:\My_Projects\AI_projects\qdu-wasteland
+cd F:\My_Projects\Wasteland\qdu-wasteland
 $env:GOOS="linux"; $env:GOARCH="amd64"
 go build -o qdu-wasteland-linux .
 $env:GOOS=""; $env:GOARCH=""
@@ -193,13 +193,13 @@ $env:GOOS=""; $env:GOARCH=""
 
 ```powershell
 # 传程序到 /root/
-scp F:\My_Projects\AI_projects\qdu-wasteland\qdu-wasteland-linux root@你的IP:/root/
+scp F:\My_Projects\Wasteland\qdu-wasteland\qdu-wasteland-linux root@你的IP:/root/
 
 # 传课表 CSV 目录（8 份课表，可整个目录打包）
-scp -r F:\My_Projects\AI_projects\_csv root@你的IP:/root/csv_data/
+scp -r F:\My_Projects\Wasteland\_csv root@你的IP:/root/csv_data/
 
 # ⚠️ 必须传前端文件夹 public/（否则网站 404！程序运行时 ./public/ 提供静态页面）
-scp -r F:\My_Projects\AI_projects\qdu-wasteland\public root@你的IP:/root/
+scp -r F:\My_Projects\Wasteland\qdu-wasteland\public root@你的IP:/root/
 ```
 
 > SCP = 跨网络复制文件，语法：`scp 本地路径 root@IP:服务器路径`。输密码后等待 100% 完成。
@@ -349,7 +349,7 @@ $env:QW_BACKUP_GIT_TOKEN = '你的token'
 powershell -ExecutionPolicy Bypass -File pull-backup.ps1
 
 # 3. 定时（Windows 计划任务，每天凌晨 5 点）
-schtasks /Create /SC DAILY /ST 05:00 /TN QW-PullBackup /TR "powershell -ExecutionPolicy Bypass -File F:\My_Projects\AI_projects\qdu-wasteland\pull-backup.ps1" /F
+schtasks /Create /SC DAILY /ST 05:00 /TN QW-PullBackup /TR "powershell -ExecutionPolicy Bypass -File F:\My_Projects\Wasteland\qdu-wasteland\pull-backup.ps1" /F
 ```
 
 > ⚠️ 方向③备份含**用户数据**（数据库），推送的 GitHub 仓库**必须 Private**，绝不能 public。
