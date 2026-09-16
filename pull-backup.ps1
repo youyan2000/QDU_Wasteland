@@ -1,4 +1,4 @@
-# pull-backup.ps1 — 服务器完整备份拉取到电脑（方向③）
+﻿# pull-backup.ps1 — 服务器完整备份拉取到电脑（方向③）
 # 功能：
 #   1. 服务器端已由 backup.go + deploy/backup.sh 生成 backups/（数据库快照 + uploads 打包，轮转14份）
 #   2. 本脚本用 scp 把服务器 backups/ 拉到电脑本地目录

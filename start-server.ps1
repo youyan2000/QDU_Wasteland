@@ -1,4 +1,4 @@
-# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
+﻿# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
 # 说明：
 #   1. 若杀毒软件误报 qdu-wasteland.exe 为 Backdoor/W64.CobaltStrike：
 #      请把本目录加入杀毒白名单，或自查误报（源码与依赖哈希已校验，见 PLAN.md 安全说明）。
