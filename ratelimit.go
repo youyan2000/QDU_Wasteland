@@ -8,15 +8,10 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"hash/fnv"
-	"io"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -165,49 +160,24 @@ func rateLimitHandler(action string, h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := r.Method
 		if m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions {
-			skip := action == "auth" && bodyEmailIsAdmin(r)
-			if !skip {
-				limit := 30
-				switch action {
-				case "auth":
-					limit = 5
-				case "mail":
-					limit = 10 // 邮箱验证/找回密码：每 1 小时每指纹 ≤10 次（与登录配额分离，避免误伤）
-				case "upload":
-					limit = 15
-				}
-				key := fpKey(r) + "|" + action
-				if ok, _ := rateLimitOK(key, limit); !ok {
-					apiErr(w, 429, "操作过于频繁，本小时内已达 "+strconv.Itoa(limit)+" 次上限，请稍后再试")
-					return
-				}
+			limit := 30
+			switch action {
+			case "auth":
+				limit = 5
+			case "mail":
+				limit = 10 // 邮箱验证/找回密码：每 1 小时每指纹 ≤10 次（与登录配额分离，避免误伤）
+			case "upload":
+				limit = 15
+			}
+			key := fpKey(r) + "|" + action
+			if ok, _ := rateLimitOK(key, limit); !ok {
+				apiErr(w, 429, "操作过于频繁，本小时内已达 "+strconv.Itoa(limit)+" 次上限，请稍后再试")
+				return
 			}
 		}
 		h(w, r)
 	}
 
-}
-
-// bodyEmailIsAdmin 读取请求体中的 email 字段，判断是否为站长管理员邮箱（用于登录限流豁免）。
-// 读取后恢复 body，供后续 handler 继续使用。
-func bodyEmailIsAdmin(r *http.Request) bool {
-	if r.Body == nil {
-		return false
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return false
-	}
-	r.Body = io.NopCloser(bytes.NewReader(body))
-	var v struct {
-		Email string `json:"email"`
-	}
-	if json.Unmarshal(body, &v) != nil {
-		return false
-	}
-	email := strings.TrimSpace(strings.ToLower(v.Email))
-	admin := strings.TrimSpace(strings.ToLower(os.Getenv("ADMIN_EMAIL")))
-	return admin != "" && email == admin
 }
 
 // requireVerifiedQuota 在"配额动作"(发帖/评论/评价/私信/举报/上传)前调用：
