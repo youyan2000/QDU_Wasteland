@@ -38,6 +38,15 @@ on_error() {
 }
 trap on_error ERR
 
+# ---------- 0. 自检：脚本自身语法必须合法 ----------
+# 带语法错误的脚本会运行到中途才崩溃，而语法错误会让 ERR 陷阱失效，
+# 可能把网站留在"已停服"状态。所以在做任何动作之前先自检。
+if ! bash -n "$0" 2>/dev/null; then
+  echo "✗ 脚本自身语法检查未通过（$0）—— 拒绝执行，线上不受影响"
+  bash -n "$0" || true
+  exit 1
+fi
+
 echo "======================================================"
 echo " QDU Wasteland 安全更新  $STAMP"
 echo "  源码: $SRC"
@@ -130,6 +139,12 @@ fi
 echo "[3/7] ✓ 编译成功（$NEWSIZE 字节）"
 
 # ---------- 4/7 停服 ----------
+# 停服前先放一个"看门狗"：无论本脚本之后因何原因死掉（含语法错误、被 kill），
+# 15 分钟后只要服务还没起来就自动拉起它 —— 保证网站不会长期宕机。
+# 正常更新时服务处于 active，看门狗到点检查后什么也不做。
+( sleep 900; systemctl is-active --quiet "$SERVICE" || systemctl start "$SERVICE" ) >/dev/null 2>&1 &
+WATCHDOG_PID=$!
+echo "      已启动看门狗（PID $WATCHDOG_PID，15 分钟后若服务未运行则自动拉起）"
 systemctl stop "$SERVICE"
 STOPPED=1
 echo "[4/7] ✓ 服务已停止"
@@ -139,10 +154,31 @@ echo "[4/7] ✓ 服务已停止"
 mv "$SRC/qdu-wasteland-linux.new" "$RUN/qdu-wasteland-linux"
 chmod +x "$RUN/qdu-wasteland-linux"
 cp -r "$SRC/public/." "$RUN/public/"
+
+# ⚠ 关键安全点：绝不覆盖「正在运行的脚本自身」。
+# 若把 update.sh 覆盖掉，bash 会继续从被改写的文件里读后续内容 → 解析崩溃，
+# 而语法错误会让 ERR 兜底陷阱失效，脚本会死在"已停服"状态导致网站宕机。
 mkdir -p "$RUN/deploy"
-cp -r "$SRC/deploy/." "$RUN/deploy/"
+SELF="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+SKIPPED_SELF=""
+for f in "$SRC"/deploy/*; do
+  [ -e "$f" ] || continue
+  base="$(basename "$f")"
+  if [ -e "$RUN/deploy/$base" ]; then
+    dest="$(readlink -f "$RUN/deploy/$base" 2>/dev/null || echo "$RUN/deploy/$base")"
+    if [ "$dest" = "$SELF" ]; then
+      SKIPPED_SELF="$base"
+      continue
+    fi
+  fi
+  cp -r "$f" "$RUN/deploy/"
+done
 chmod +x "$RUN"/deploy/*.sh 2>/dev/null || true
 echo "[5/7] ✓ 已替换 程序 + public/ + deploy/"
+if [ -n "$SKIPPED_SELF" ]; then
+  echo "      跳过 $SKIPPED_SELF（正在运行的脚本不覆盖自身，否则会运行中崩溃）"
+  echo "      如需同步它：cp $SRC/deploy/$SKIPPED_SELF $RUN/deploy/$SKIPPED_SELF"
+fi
 echo "      （数据库 qdu-auth.db / uploads/ / .env 全程未改动）"
 
 # ---------- 6/7 启动（冷启动需 3-4 分钟：加载 4457 门课 / 38123 条开课）----------
