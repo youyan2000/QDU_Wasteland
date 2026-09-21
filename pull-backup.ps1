@@ -6,7 +6,7 @@
 #
 # 用法（在电脑上执行）：
 #   $env:QW_SSH_HOST = 'root@你的服务器IP'
-#   $env:QW_LOCAL_BACKUP_DIR = 'D:\QDU-backups'      # 可省略，默认 D:\QDU-backups
+#   $env:QW_LOCAL_BACKUP_DIR = 'F:\My_Projects\Wasteland\backups'      # 可省略，默认 F:\My_Projects\Wasteland\backups
 #   powershell -ExecutionPolicy Bypass -File pull-backup.ps1
 #   （首次会提示输入服务器密码）
 #
@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 $SSH_HOST   = $env:QW_SSH_HOST
 $SSH_PORT   = if ($env:QW_SSH_PORT) { $env:QW_SSH_PORT } else { '22' }
 $REMOTE_DIR = if ($env:QW_REMOTE_BACKUP_DIR) { $env:QW_REMOTE_BACKUP_DIR } else { '/root/qdu-wasteland/backups/' }
-$LOCAL_DIR  = if ($env:QW_LOCAL_BACKUP_DIR) { $env:QW_LOCAL_BACKUP_DIR } else { 'D:\QDU-backups' }
+$LOCAL_DIR  = if ($env:QW_LOCAL_BACKUP_DIR) { $env:QW_LOCAL_BACKUP_DIR } else { 'F:\My_Projects\Wasteland\backups' }
 $KEEP       = 15   # 本地保留最近 N 批（每批 = 1 个数据库快照 + 1 个 uploads 包）
 
 # 可选：推送到 GitHub 私有仓库（留空则跳过）

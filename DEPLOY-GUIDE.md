@@ -348,7 +348,7 @@ crontab -e
 ```powershell
 # 1. 配置环境变量
 $env:QW_SSH_HOST = 'root@你的服务器IP'               # 服务器（勿把真实IP写进公开文档）
-$env:QW_LOCAL_BACKUP_DIR = 'D:\QDU-backups'        # 电脑备份目录
+$env:QW_LOCAL_BACKUP_DIR = 'F:\My_Projects\Wasteland\backups'        # 电脑备份目录
 $env:QW_BACKUP_GIT_REPO = 'https://github.com/youyan2000/qdu-server-backup.git'  # 私有仓库（可选）
 $env:QW_BACKUP_GIT_TOKEN = '你的token'
 
@@ -363,7 +363,7 @@ schtasks /Create /SC DAILY /ST 05:00 /TN QW-PullBackup /TR "powershell -Executio
 
 ### 10.5.3 恢复方法（万一服务器挂了）
 
-1. 方向③：从电脑 `D:\QDU-backups\` 取最新 `qdu-时间戳.db` 和 `uploads-时间戳.zip`
+1. 方向③：从电脑 `F:\My_Projects\Wasteland\backups\` 取最新 `qdu-时间戳.db` 和 `uploads-时间戳.zip`
 2. 上传到新服务器对应目录（`qdu-auth.db` + `uploads/`）
 3. 重启服务即恢复
 4. 若只丢课程资料：从方向②的 GitHub 仓库拉回文件 + 清单
