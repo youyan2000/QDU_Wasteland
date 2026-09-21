@@ -65,12 +65,36 @@ if [ -d "$RUN/deploy" ]; then
 fi
 echo "[1/7] ✓ 备份完成 → $RUN/backups/ (*.$STAMP)"
 
-# ---------- 2/7 拉取新代码（只动源码目录，不碰数据）----------
+# ---------- 2/7 同步新代码（只动源码目录，不碰数据）----------
+# 部署镜像原则：源码目录以远端为准。
+# 不用 git pull：上游历史可能被强推改写（rebase/amend），此时 pull 会因"分叉"直接失败。
 cd "$SRC"
+BRANCH="${QW_BRANCH:-main}"
+if ! git fetch --prune origin; then
+  echo "✗ git fetch 失败（网络？）—— 中止，线上不受影响"
+  exit 1
+fi
+if ! git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null; then
+  echo "✗ 找不到远端分支 origin/$BRANCH —— 中止"
+  exit 1
+fi
+
 BEFORE="$(git rev-parse --short HEAD)"
-git pull --ff-only
+# 丢弃前先把本地改动存成补丁（防误伤：万一有人在服务器上直接改过代码）
+if [ -n "$(git status --porcelain)" ]; then
+  PATCH="$RUN/backups/src-local-changes-$STAMP.patch"
+  if git diff > "$PATCH" 2>/dev/null; then
+    echo "  ⚠ 源码目录有未提交改动，已保存补丁: $PATCH"
+  fi
+fi
+DIVERGED="$(git log --oneline "origin/$BRANCH..HEAD" 2>/dev/null | wc -l | tr -d ' ')"
+
+git reset --hard "origin/$BRANCH" >/dev/null
 AFTER="$(git rev-parse --short HEAD)"
-echo "[2/7] ✓ 代码 $BEFORE → $AFTER"
+echo "[2/7] ✓ 代码 $BEFORE → $AFTER（已同步 origin/$BRANCH）"
+if [ "${DIVERGED:-0}" != "0" ]; then
+  echo "      注意：丢弃了 $DIVERGED 个不在远端的本地提交（上游强推改写历史所致，内容已在远端）"
+fi
 if [ "$BEFORE" = "$AFTER" ]; then
   echo "      （无新提交，继续重建）"
 fi
