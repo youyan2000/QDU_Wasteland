@@ -121,13 +121,17 @@ else
 fi
 
 hr "7. 配置（.env 与环境变量，仅显示变量名，值已脱敏）"
-if [ -f "$RUN/.env" ]; then
-  echo "环境文件: $RUN/.env （大小 $(stat -c%s "$RUN/.env") 字节，修改时间 $(stat -c%y "$RUN/.env")）"
-  echo "包含变量名:"
-  grep -oE '^[A-Za-z_][A-Za-z0-9_]*' "$RUN/.env" 2>/dev/null | sed 's/^/  /'
-else
-  echo "(未找到 $RUN/.env)"
-fi
+ENVFOUND=0
+for ef in /root/qdu-wasteland.env "$RUN/.env"; do
+  if [ -f "$ef" ]; then
+    ENVFOUND=1
+    echo "环境文件: $ef （$(stat -c%s "$ef") 字节，修改时间 $(stat -c%y "$ef")）"
+    echo "包含变量名（值不显示）:"
+    grep -oE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*' "$ef" 2>/dev/null | tr -d ' ' | sed 's/^/  /'
+    echo ""
+  fi
+done
+[ "$ENVFOUND" = "0" ] && echo "(未找到环境配置文件)"
 if [ -f "$SVC_FILE" ]; then
   echo ""
   echo "systemd 服务配置 $SVC_FILE:"
@@ -156,7 +160,8 @@ echo "站点配置文件:"
 ls -la /etc/nginx/sites-enabled/ 2>/dev/null
 echo ""
 echo "反代目标:"
-grep -rhE "proxy_pass|server_name|root " /etc/nginx/sites-enabled/ 2>/dev/null | sed 's/^[[:space:]]*/  /' | head -12
+# 注意：sites-enabled 里是符号链接，必须用 -R 跟随，否则读不到内容
+grep -RhE "proxy_pass|server_name|root |listen " /etc/nginx/sites-enabled/ 2>/dev/null | sed 's/^[[:space:]]*/  /' | head -16
 echo ""
 echo "HTTPS 证书到期时间:"
 for c in /etc/letsencrypt/live/*/cert.pem; do
