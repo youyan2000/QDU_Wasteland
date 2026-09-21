@@ -55,7 +55,7 @@
    - Hostname → `qdu-wasteland`
    - Deploy Now
 3. 等 1-2 分钟，服务器列表出现后记录三样东西：
-   - **IP 地址**（如 207.148.106.155）
+   - **IP 地址**（如 你的服务器IP）
    - **用户名**：root
    - **密码**（实例详情页可看/重置）
 
@@ -413,7 +413,7 @@ schtasks /Create /SC DAILY /ST 05:00 /TN QW-PullBackup /TR "powershell -Executio
 DNS 页面 → **Add record**：
 | Type | Name | 内容 | 代理 |
 |------|------|------|------|
-| A | `@` | 服务器 IP（如 207.148.106.155） | 先灰云(DNS only) |
+| A | `@` | 服务器 IP（如 你的服务器IP） | 先灰云(DNS only) |
 | A | `www` | 同上 | 先灰云 |
 
 > 先灰云（DNS only）→ 等网站通了 → 再点成橙云（代理）启用加速。分步验证好排查。
@@ -472,12 +472,12 @@ mysqldump -u qdu -p qdu_wasteland > /root/backup_$(date +%F).sql
 
 ## 附录 B · 本次实际操作记录（2026-08）
 
-- 服务器：Vultr Tokyo，Ubuntu 22.04，IP `207.148.106.155`
+- 服务器：Vultr Tokyo，Ubuntu 22.04，IP `你的服务器IP`
 - 已装：MySQL 8 / Nginx / ClamAV / UFW / git / curl
 - 已配：MySQL 库 `qdu_wasteland` + 账号 `qdu`；UFW 放行 22/80/443；Nginx 反向代理 80→3000
 - **已完成部署**：程序（systemd 守护 + 开机自启）· 课表 8 份 · public 前端 · 管理员账号
 - **域名**：`qdwasteland.top`（阿里云购买 ¥14/年，实名已过）→ NS 已托管 Cloudflare（jocelyn/valentin.ns.cloudflare.com）
-- **Cloudflare**：Free 计划，A 记录 @/www → 207.148.106.155（灰云，待开橙云加速）
+- **Cloudflare**：Free 计划，A 记录 @/www → 你的服务器IP（灰云，待开橙云加速）
 - **待做**：certbot 配 HTTPS → 开橙云加速 → H0/H3/H6/H7 余项
 
 > ⚠️ 密码请勿写进本文件；如已误写，用环境变量/密钥管理替代，并重置密码。
