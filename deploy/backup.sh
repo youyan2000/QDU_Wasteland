@@ -54,7 +54,8 @@ SNAP="$BACKUP_DIR/qdu-$STAMP.db"
 if [ -e "$SNAP" ]; then die "快照文件已存在: $SNAP（同一秒内重复执行？）"; fi
 
 # busy_timeout: 若应用正持锁写入，等待最多 60 秒而不是立即失败
-if ! sqlite3 "$DB" "PRAGMA busy_timeout=60000; VACUUM INTO '$SNAP';" 2>/tmp/qw-backup-err; then
+# （stdout 丢弃：PRAGMA busy_timeout 会把设定值打印出来，干扰日志）
+if ! sqlite3 "$DB" "PRAGMA busy_timeout=60000; VACUUM INTO '$SNAP';" >/dev/null 2>/tmp/qw-backup-err; then
   ERRMSG="$(head -3 /tmp/qw-backup-err 2>/dev/null || true)"
   rm -f "$SNAP"
   die "数据库快照失败: $ERRMSG"

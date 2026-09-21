@@ -105,7 +105,22 @@ if ! command -v go >/dev/null 2>&1; then
   echo "✗ 找不到 go 编译器（安装: snap install go --classic）"
   exit 1
 fi
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$SRC/qdu-wasteland-linux.new" .
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$SRC/qdu-wasteland-linux.new" . &
+BUILD_PID=$!
+echo "      编译已开始（PID $BUILD_PID）"
+echo "      ⚠ 注意：若构建缓存与本次配置不匹配（如首次使用 CGO_ENABLED=0），"
+echo "        1 核服务器上可能需要 10-40 分钟；期间没有输出是正常的，请勿中断。"
+while kill -0 "$BUILD_PID" 2>/dev/null; do
+  sleep 30
+  if kill -0 "$BUILD_PID" 2>/dev/null; then
+    echo "      …仍在编译（已等待 ${SECONDS}s）"
+  fi
+done
+if ! wait "$BUILD_PID"; then
+  echo "✗ 编译失败（详见上方 Go 报错）—— 中止更新，线上服务与数据均未受影响"
+  rm -f "$SRC/qdu-wasteland-linux.new"
+  exit 1
+fi
 NEWSIZE="$(stat -c%s "$SRC/qdu-wasteland-linux.new")"
 if [ "$NEWSIZE" -lt 1000000 ]; then
   echo "✗ 编译产物异常偏小（$NEWSIZE 字节），中止更新"
