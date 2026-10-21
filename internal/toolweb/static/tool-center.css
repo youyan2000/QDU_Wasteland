@@ -1,0 +1,96 @@
+/* Tool-specific styles only; typography, colours and navigation come from the site. */
+/* Action pairs are independent of the site's accent: neon fills need dark text. */
+body.tools-body, body.nextjlc-body {
+ --tool-action-bg: #c2185b; --tool-action-fg: #fff; --tool-action-hover: #a3154e;
+ --tool-accent-text: #a3154e; --tool-accent-soft: var(--magenta-soft);
+ --tool-muted: var(--muted); --tool-disabled-bg: #e7e0e4; --tool-disabled-fg: #62596b;
+ --tool-control-radius: var(--radius-sm); --tool-filter-radius: var(--radius-pill);
+ --tool-card-shadow: var(--shadow-md);
+}
+body.tools-body[data-theme="dark"], body.nextjlc-body[data-theme="dark"] {
+ --tool-action-bg: #8f3d3a; --tool-action-hover: #a34943;
+ --tool-accent-text: #f0aaa3; --tool-accent-soft: #311d20; --tool-muted: #aaa29a;
+ --tool-disabled-bg: #2a2a31; --tool-disabled-fg: #b4ada6;
+}
+body.tools-body[data-theme="cyber"], body.nextjlc-body[data-theme="cyber"] {
+ --tool-action-bg: #00ffc8; --tool-action-fg: #071714; --tool-action-hover: #35ffd3;
+ --tool-accent-text: #35ffd3; --tool-accent-soft: #04221f; --tool-muted: #a2a2c8;
+ --tool-disabled-bg: #171730; --tool-disabled-fg: #a2a2c8;
+ --tool-control-radius: 4px; --tool-filter-radius: 4px;
+ --tool-card-shadow: 0 0 0 1px rgba(0,255,200,.16), 0 4px 20px rgba(0,255,200,.1);
+}
+body.tools-body[data-theme="github"], body.nextjlc-body[data-theme="github"] {
+ --tool-action-bg: #1f2328; --tool-action-hover: #32383f;
+ --tool-accent-text: #1f2328; --tool-accent-soft: #f6f8fa;
+ --tool-disabled-bg: #eaeef2; --tool-disabled-fg: #59636e;
+ --tool-control-radius: 2px; --tool-filter-radius: 2px; --tool-card-shadow: none;
+}
+.tools-main { max-width: 1200px; margin: 0 auto; padding: 48px var(--space-page) 64px; min-height: calc(100dvh - 190px); }
+.tools-heading { margin-bottom: 40px; }
+.tools-kicker { font-size: .74rem; letter-spacing: .16em; font-weight: 700; color: var(--tool-accent-text); margin: 0 0 12px; }
+.tools-heading h1 { font: 700 clamp(1.9rem,3.5vw,2.7rem)/1.35 var(--font-sans); letter-spacing: -.03em; margin: 0 0 16px; }
+.tools-heading h1 span { display: block; font-size: clamp(1.3rem, 2.6vw, 1.8rem); line-height: 1.5; letter-spacing: 0; font-weight: 500; color: var(--tool-muted); margin-top: 10px; }
+.tools-demo-note { color: var(--tool-muted); background: var(--surface-2); border-left: 3px solid var(--magenta); padding: 10px 14px; font-size: .85rem; margin-top: 18px; }
+.tools-section { margin-bottom: 40px; }
+.tool-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.tool-card { min-width: 0; display: flex; flex-direction: column; padding: 25px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-md); transition: border-color .18s,box-shadow .18s; }
+.tool-card-ready { border-color: var(--magenta); }
+.tool-card-ready:hover, .tool-card-ready:focus-within { box-shadow: var(--tool-card-shadow); }
+body.tools-body[data-theme="github"] .tool-card { border-radius: 6px; }
+body.tools-body[data-theme="github"] .tool-card-ready { border-color: var(--border-strong); }
+body.tools-body[data-theme="github"] .tool-card-ready:hover, body.tools-body[data-theme="github"] .tool-card-ready:focus-within { border-color: var(--ink); }
+.tool-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; }
+.tool-symbol { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--tool-control-radius); color: var(--tool-muted); }
+.tool-card-ready .tool-symbol { background: var(--tool-accent-soft); color: var(--tool-accent-text); border-color: transparent; }
+.tool-status { font-size: .75rem; color: var(--tool-muted); background: var(--track); padding: 4px 10px; border-radius: var(--tool-filter-radius); white-space: nowrap; }
+.tool-status.is-ready { background: var(--tool-accent-soft); color: var(--tool-accent-text); }
+.tool-card h3 { font-size: 1.25rem; margin: 0 0 10px; overflow-wrap: anywhere; }
+.tool-summary { font-size: .9rem; color: var(--tool-muted); line-height: 1.85; flex: 1; margin-bottom: 24px; }
+.tool-card-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border); padding-top: 16px; }
+.tool-category { font: .68rem/1.5 var(--font-mono); letter-spacing: .06em; color: var(--tool-muted); }
+.tool-open { display: inline-flex; align-items: center; gap: 12px; padding: 10px 18px; background: var(--tool-action-bg); color: var(--tool-action-fg); text-decoration: none; font-size: .87rem; font-weight: 600; border-radius: var(--tool-control-radius); min-height: 44px; transition: background-color .18s; }
+.tool-open:hover { background: var(--tool-action-hover); color: var(--tool-action-fg); }
+.tools-body .tool-open:focus-visible { outline: 2px solid var(--tool-accent-text); outline-offset: 3px; }
+.tool-pending { color: var(--tool-muted); font-size: .8rem; padding: 10px 0; }
+.tools-body [hidden] { display: none !important; }
+/* NeXTJLC is a native page in the same shell. Keep Tailwind isolated from nav/footer. */
+body.nextjlc-body { --color-bg: var(--paper); --color-bg-alt: var(--surface); --color-surface-tertiary: var(--surface-2); --color-input-bg: var(--surface-2); --color-text: var(--ink); --color-subtext: var(--tool-muted); --color-text-muted: var(--tool-muted); --color-accent: var(--magenta); --color-accent-hover: var(--magenta-deep); --color-accent-subtle: var(--tool-accent-soft); --color-border: var(--border-strong); --color-disabled: var(--tool-disabled-bg); --scrollbar-track: var(--paper); --scrollbar-thumb: var(--border-strong); font-family: var(--font-sans); background: var(--paper); color: var(--ink); }
+.nextjlc-main { max-width: 1200px; margin: 0 auto; padding: 32px var(--space-page) 48px; }
+.nextjlc-breadcrumb { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: .85rem; color: var(--tool-muted); margin-bottom: 24px; }
+.nextjlc-breadcrumb a { color: var(--tool-accent-text); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
+.nextjlc-heading h1 { font: 700 clamp(1.8rem,3vw,2.35rem)/1.4 var(--font-sans); color: var(--ink); margin: 0 0 8px; }
+.nextjlc-heading p { color: var(--tool-muted); font-size: .92rem; line-height: 1.8; max-width: 760px; }
+.nextjlc-heading { margin-bottom: 24px; }
+body.nextjlc-body #root { min-width: 0; }
+body.nextjlc-body #root .nextjlc-app { min-height: 0; }
+body.nextjlc-body #root .nextjlc-workspace { min-height: 380px; padding: 32px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 24px; }
+body.nextjlc-body #root .nextjlc-credit { font-size: .78rem; background: transparent; padding: 12px 0; border-top: 1px solid var(--border); color: var(--tool-muted); }
+body.nextjlc-body #root .nextjlc-credit nav { display: none; }
+body.nextjlc-body #root .nextjlc-credit a { color: var(--tool-muted); }
+body.nextjlc-body #root ::selection { background: var(--tool-accent-soft); color: var(--ink); }
+/* Override action utilities only inside the embedded app, never its shared shell. */
+body.nextjlc-body #root button[class~="bg-(--color-accent)"],
+body.nextjlc-body #root button[class~="text-(--color-bg)"] { background-color: var(--tool-action-bg); color: var(--tool-action-fg); }
+body.nextjlc-body #root button[class~="bg-(--color-accent)"]:hover:not(:disabled),
+body.nextjlc-body #root button[class~="text-(--color-bg)"]:hover:not(:disabled) { background-color: var(--tool-action-hover); color: var(--tool-action-fg); }
+body.nextjlc-body #root :is(button,a)[class~="text-(--color-accent)"],
+body.nextjlc-body #root :is(button,a)[class~="hover:text-(--color-accent)"]:hover:not(:disabled) { color: var(--tool-accent-text); }
+body.nextjlc-body #root button:focus-visible { outline: 2px solid var(--tool-accent-text); outline-offset: 3px; }
+/* Keep disabled actions readable without revealing hover-only file-row icons. */
+body.nextjlc-body #root button:disabled { color: var(--tool-disabled-fg); cursor: not-allowed; box-shadow: none; text-shadow: none; }
+body.nextjlc-body #root button[class~="bg-(--color-accent)"]:disabled,
+body.nextjlc-body #root button[class~="text-(--color-bg)"]:disabled { background-color: var(--tool-disabled-bg); border-color: var(--border-strong); opacity: 1; }
+#site-nav .site-nav { line-height: 1.6; font-family: var(--font-sans); }
+@media(max-width:768px) {
+ .tools-main { padding-top: 30px; }
+ .tools-heading { margin-bottom: 28px; }
+ .nextjlc-main { padding-top: 24px; }
+ body.nextjlc-body #root .nextjlc-workspace { padding: 24px 12px; min-height: 340px; }
+}
+@media(max-width:540px) {
+ .tool-grid { grid-template-columns: 1fr; gap: 16px; }
+ .tool-card { padding: 20px; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .tools-body :is(.tool-card,.tool-open) { transition: none; }
+}

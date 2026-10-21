@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{.Title}} · Wasteland">
+  <title>{{.Title}} · Wasteland</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/common.css">
+  <link id="themesCss" rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/tool/_assets/tool-center.css">
+  <link rel="stylesheet" href="/tool/_assets/collection.css">
+  <script defer src="/icons.js"></script>
+  <script defer src="/nav.js"></script>
+  <script defer src="/tool/_assets/collection.js"></script>
+</head>
+<body class="tools-body collection-body">
+  <a class="skip-link" href="#collection-content">跳到内容</a>
+  <div id="site-nav"></div>
+  <main class="tools-main collection-main" id="collection-content">
+    <nav class="collection-breadcrumb" aria-label="面包屑">
+      <a href="/tool/">返回工具</a><span aria-hidden="true">/</span><span aria-current="page">{{.Title}}</span>
+    </nav>
+    <header class="tools-heading collection-heading">
+      <p class="tools-kicker">WASTELAND / {{if eq .Slug "information"}}READ & THINK{{else}}JUST FOR FUN{{end}}</p>
+      <h1>{{.Title}}<span>{{.Intro}}</span></h1>
+      <p class="collection-count">{{len .Items}} 个网站 · 点击卡片在新标签页打开</p>
+    </header>
+    <section class="collection-grid" aria-label="{{.Title}}网址">
+      {{range .Items}}
+      <article class="collection-card" data-bookmark-id="{{.URL}}" data-bookmark-title="{{.Title}}" data-bookmark-description="{{.Description}}" data-bookmark-image="{{.Image}}">
+        <a class="collection-card-link" href="{{.URL}}" target="_blank" rel="noopener noreferrer" aria-label="打开 {{.Title}}（新标签页）">
+          <div class="collection-cover" aria-hidden="true"><img class="collection-cover-image" src="/tool/_assets/covers/photos/{{.Image}}" alt="" loading="lazy"><span class="collection-favicon"><img src="https://www.google.com/s2/favicons?domain_url={{.URL}}&amp;sz=128" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback="{{.Title}}"></span><span class="collection-arrow" aria-hidden="true">↗</span></div>
+          <h2>{{.Title}}</h2>
+          <p>{{.Description}}</p>
+          <span class="collection-domain">{{.URL}}</span>
+        </a>
+      </article>
+      {{end}}
+    </section>
+  </main>
+</body>
+</html>

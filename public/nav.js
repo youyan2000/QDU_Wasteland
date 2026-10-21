@@ -15,6 +15,7 @@
     { href: '/courses.html', label: '课程资料' },
     { href: '/forum.html', label: '论坛' },
     { href: '/articles.html', label: '文章' },
+    { href: '/tool/', label: '工具' },
     { href: '/me.html', label: '我的风采' }
   ];
 

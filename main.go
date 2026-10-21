@@ -235,6 +235,9 @@ func main() {
 	srv("/api/admin/opinions", handleAdminOpinions(authStore))
 	srv("/api/admin/opinions/", handleAdminOpinions(authStore))
 
+	// 工具中心：独立于 public/ 的构建包；仅已上线的公开工具可访问。
+	registerToolRoutes(http.DefaultServeMux)
+
 	// 静态前端 + 自定义 404（挂到 DefaultServeMux，与 srv() 注册的 /api 路由同源）
 	fs := http.FileServer(http.Dir("./public"))
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

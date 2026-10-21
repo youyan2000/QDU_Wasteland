@@ -151,3 +151,73 @@
 }
 .site-nav .nav-auth-register:hover { border-color: var(--magenta); color: var(--magenta); }
 .site-nav .nav-right #navAuth { display: flex; align-items: center; gap: 8px; }
+
+/* 五项导航：允许顶栏收缩，长昵称不撑破页面；保留主题左栏布局。 */
+.site-nav { box-sizing: border-box; gap: 12px; }
+.site-nav .nav-box,
+.site-nav .nav-links,
+.site-nav .nav-right,
+.site-nav .nav-right #navAuth,
+.site-nav .nav-search { min-width: 0; }
+.site-nav .nav-logo,
+.site-nav .nav-bell { flex-shrink: 0; }
+.site-nav .nav-logo,
+.site-nav .nav-links a,
+.site-nav .nav-auth { white-space: nowrap; }
+.site-nav .nav-links a { flex-shrink: 0; box-sizing: border-box; }
+.site-nav .nav-auth { overflow: hidden; text-overflow: ellipsis; }
+.site-nav .nav-search input { box-sizing: border-box; max-width: 100%; }
+body:not([data-nav="left"]) .site-nav .nav-box { flex: 1 1 auto; }
+body:not([data-nav="left"]) .site-nav .nav-links {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+body:not([data-nav="left"]) .site-nav .nav-links::-webkit-scrollbar { display: none; }
+body:not([data-nav="left"]) .site-nav .nav-right #navAuth { max-width: min(18vw, 240px); }
+
+/* themes.css 由 nav.js 后加载：用容器 ID 覆盖布局，不改主题或保存的导航设置。 */
+@media (max-width: 768px) {
+  html body[data-nav="left"] { padding-left: 0; }
+  #site-nav .site-nav {
+    position: sticky;
+    top: 0; left: auto; right: auto; bottom: auto;
+    width: 100%; height: auto; min-height: var(--nav-height, 64px);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "logo actions" "links links";
+    align-items: center;
+    gap: 6px 8px;
+    padding: 8px 10px;
+  }
+  #site-nav .site-nav .nav-box { display: contents; }
+  #site-nav .site-nav .nav-logo { grid-area: logo; }
+  #site-nav .site-nav .nav-links {
+    grid-area: links;
+    flex-direction: row;
+    width: 100%;
+    margin: 0;
+    padding: 2px 0;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  #site-nav .site-nav .nav-links::-webkit-scrollbar { display: none; }
+  #site-nav .site-nav .nav-links a { width: auto; }
+  #site-nav .site-nav .nav-right {
+    grid-area: actions;
+    display: flex;
+    justify-self: end;
+    width: auto; max-width: 100%;
+    margin: 0;
+    gap: 6px;
+  }
+  #site-nav .site-nav .nav-right .nav-search { display: none; }
+  #site-nav .site-nav .nav-right #navAuth { max-width: 100%; gap: 6px; }
+  #site-nav .site-nav .nav-auth-login,
+  #site-nav .site-nav .nav-auth-register { padding-left: 10px; padding-right: 10px; }
+  /* JS 仍读取保存的 left 设置；窄屏面板不能继续使用桌面 left>=240px。 */
+  html body[data-nav="left"] .bell-panel {
+    left: auto !important; right: 8px !important;
+  }
+}

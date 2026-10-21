@@ -555,7 +555,11 @@ func initAuth() error {
 	authStore = st
 	// 关键词自动审查：建表 + 种子默认词库 + 加载内存词表 (V8)
 	initCensor(st.db)
-	log.Println("✅ 用户数据库已连接 (qdu-auth.db) 敏感词 " + strconv.Itoa(len(censorWords)) + " 条")
+	dbPath := os.Getenv("AUTH_DB")
+	if dbPath == "" {
+		dbPath = "qdu-auth.db"
+	}
+	log.Println("✅ 用户数据库已连接 (" + dbPath + ") 敏感词 " + strconv.Itoa(len(censorWords)) + " 条")
 	return nil
 }
 

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Wasteland 工具。">
+  <title>工具 · Wasteland</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/common.css">
+  <link id="themesCss" rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/tool/_assets/tool-center.css">
+  <script defer src="/icons.js"></script>
+  <script defer src="/nav.js"></script>
+  <script defer src="/tool/_assets/tool-center.js"></script>
+</head>
+<body class="tools-body">
+  <a class="skip-link" href="#tool-content">跳到工具内容</a>
+  <div id="site-nav"></div>
+  <main class="tools-main" id="tool-content">
+    <header class="tools-heading">
+      <p class="tools-kicker">WASTELAND / TOOLKIT</p>
+      <h1>工具<span>让事情简单一点。</span></h1>
+      {{if .Demo}}<p class="tools-demo-note">独立预览模式。完整站点请从本地主站的「工具」进入。</p>{{end}}
+    </header>
+    <section class="tools-section" aria-label="工具列表">
+      <div class="tool-grid">
+      {{range .Tools}}
+        <article class="tool-card {{if .Enabled}}tool-card-ready{{end}}" data-status="{{if .Enabled}}available{{else}}planned{{end}}">
+          <div class="tool-card-top"><span class="tool-symbol icon-fill" data-icon="{{if eq .Slug "nextjlc"}}layers{{else if eq .Slug "poetrymatrix"}}book{{else if eq .Slug "information"}}fileText{{else if eq .Slug "history"}}clock{{else if eq .Slug "favorite"}}star{{else}}sparkles{{end}}" aria-hidden="true"></span><span class="tool-status {{if .Enabled}}is-ready{{end}}">{{if .Enabled}}可使用{{else}}待接入{{end}}</span></div>
+          <h3>{{.Title}}</h3><p class="tool-summary">{{.Summary}}</p>
+          <div class="tool-card-bottom"><span class="tool-category">{{.Label}}</span>{{if .Enabled}}<a class="tool-open" href="/tool/{{.Slug}}/">打开 <span aria-hidden="true">↗</span></a>{{else}}<span class="tool-pending">准备中</span>{{end}}</div>
+        </article>
+      {{end}}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

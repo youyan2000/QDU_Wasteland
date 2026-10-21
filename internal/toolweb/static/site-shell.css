@@ -1,0 +1,3 @@
+/* Share the site's foundation without overriding Tailwind utilities inside the tool. */
+@layer theme, base, components, utilities;
+@import url('/style.css') layer(base);

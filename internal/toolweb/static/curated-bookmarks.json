@@ -1,0 +1,662 @@
+{
+  "magazine": [
+    {
+      "title": "探索与争鸣",
+      "url": "https://www.tsyzm.com/CN/home",
+      "description": "关注思想交锋与公共议题的学术文化刊物。",
+      "cover": "magazine-001-site",
+      "image": "magazine-001-site.jpg",
+      "imageTheme": "philosophy"
+    },
+    {
+      "title": "文学论衡",
+      "url": "https://www.jclshk.org/News.php",
+      "description": "从文学批评与文化研究角度阅读作品和时代。",
+      "cover": "magazine-002-site",
+      "image": "magazine-002-site.jpg",
+      "imageTheme": "handwriting"
+    },
+    {
+      "title": "全历史",
+      "url": "https://www.allhistory.com/",
+      "description": "用时间线、关系图与专题故事探索历史。",
+      "cover": "magazine-003-site",
+      "image": "magazine-003-site.jpg",
+      "imageTheme": "urban-wall"
+    },
+    {
+      "title": "HaruAir · 电影录音",
+      "url": "https://www.zhihu.com/people/xia-nian-chen-73/posts",
+      "description": "关于电影声音、录音现场与幕后工艺的分享。",
+      "cover": "magazine-004-haruair",
+      "image": "magazine-004-haruair.jpg",
+      "imageTheme": "camera"
+    },
+    {
+      "title": "国家哲学社会科学文献中心",
+      "url": "https://www.ncpssd.cn/",
+      "description": "检索哲学社会科学领域的论文、期刊与学术资源。",
+      "cover": "magazine-005-site",
+      "image": "magazine-005-site.jpg",
+      "imageTheme": "poetry"
+    },
+    {
+      "title": "三联生活周刊",
+      "url": "https://www.lifeweek.com.cn/",
+      "description": "以专题报道记录社会、文化与日常生活。",
+      "cover": "magazine-006-site",
+      "image": "magazine-006-site.jpg",
+      "imageTheme": "city-night"
+    },
+    {
+      "title": "南方周末",
+      "url": "https://www.infzm.com/",
+      "description": "深度报道与评论，观察中国社会现场。",
+      "cover": "magazine-007-site",
+      "image": "magazine-007-site.jpg",
+      "imageTheme": "city-street"
+    },
+    {
+      "title": "中国日报",
+      "url": "https://www.chinadaily.com.cn/",
+      "description": "通过英文新闻了解中国与国际议题。",
+      "cover": "magazine-008-site",
+      "image": "magazine-008-site.jpg",
+      "imageTheme": "art-gallery"
+    },
+    {
+      "title": "哲学研究",
+      "url": "https://zxyj.cbpt.cnki.net/WKG/WebPublication/index.aspx?mid=zxyj",
+      "description": "中国哲学与社会科学研究成果的专业期刊。",
+      "cover": "magazine-009-site",
+      "image": "magazine-009-site.jpg",
+      "imageTheme": "bookshelf-2"
+    },
+    {
+      "title": "Quora",
+      "url": "https://www.quora.com/",
+      "description": "围绕各种问题阅读不同领域用户的经验与观点。",
+      "cover": "magazine-010-quora",
+      "image": "magazine-010-quora.jpg",
+      "imageTheme": "newspaper"
+    },
+    {
+      "title": "Ground News",
+      "url": "https://ground.news/",
+      "description": "从不同媒体来源并置阅读同一新闻事件。",
+      "cover": "magazine-011-ground-news",
+      "image": "magazine-011-ground-news.jpg",
+      "imageTheme": "art-gallery"
+    },
+    {
+      "title": "Psychology Today",
+      "url": "https://www.psychologytoday.com/intl",
+      "description": "心理学、关系与身心健康主题的通俗文章。",
+      "cover": "magazine-012-psychology-today",
+      "image": "magazine-012-psychology-today.jpg",
+      "imageTheme": "urban-wall"
+    },
+    {
+      "title": "Minor Literatures",
+      "url": "https://minorliteratures.com/",
+      "description": "聚焦边缘写作、文化实践与另类声音。",
+      "cover": "magazine-013-minor-literatures",
+      "image": "magazine-013-minor-literatures.jpg",
+      "imageTheme": "architecture-detail"
+    },
+    {
+      "title": "Sydney Review of Books",
+      "url": "https://sydneyreviewofbooks.com/",
+      "description": "长篇书评与文学评论，慢读当代作品。",
+      "cover": "magazine-014-sydney-review-of-books",
+      "image": "magazine-014-sydney-review-of-books.jpg",
+      "imageTheme": "coffee-shop"
+    },
+    {
+      "title": "Equus Press",
+      "url": "https://equuspress.wordpress.com/",
+      "description": "实验文学与独立写作出版项目。",
+      "cover": "magazine-015-equus-press",
+      "image": "magazine-015-equus-press.jpg",
+      "imageTheme": "architecture-detail"
+    },
+    {
+      "title": "Big Think",
+      "url": "https://bigthink.com/",
+      "description": "用短讲与文章讨论科学、思想和社会变化。",
+      "cover": "magazine-016-big-think",
+      "image": "magazine-016-big-think.jpg",
+      "imageTheme": "library"
+    },
+    {
+      "title": "3:AM Magazine",
+      "url": "https://www.3ammagazine.com/3am/",
+      "description": "文学、哲学与文化评论的独立网络杂志。",
+      "cover": "magazine-017-3-am-magazine",
+      "image": "magazine-017-3-am-magazine.jpg",
+      "imageTheme": "science-lab"
+    },
+    {
+      "title": "Poets.org",
+      "url": "https://poets.org/",
+      "description": "美国诗人学会的诗歌作品、诗人资料与阅读资源。",
+      "cover": "magazine-018-poets-org",
+      "image": "magazine-018-poets-org.jpg",
+      "imageTheme": "books"
+    },
+    {
+      "title": "Poetry Foundation",
+      "url": "https://www.poetryfoundation.org/",
+      "description": "诗歌作品、朗读、评论与诗人档案。",
+      "cover": "magazine-019-poetry-foundation",
+      "image": "magazine-019-poetry-foundation.jpg",
+      "imageTheme": "typewriter"
+    },
+    {
+      "title": "Youth Speaks",
+      "url": "https://youthspeaks.org/",
+      "description": "以诗歌和表达项目支持年轻人的声音。",
+      "cover": "magazine-020-youth-speaks",
+      "image": "magazine-020-youth-speaks.jpg",
+      "imageTheme": "coffee-book"
+    },
+    {
+      "title": "斯坦福哲学百科",
+      "url": "https://plato.stanford.edu/",
+      "description": "由学者持续维护的哲学主题参考百科。",
+      "cover": "magazine-021-site",
+      "image": "magazine-021-site.jpg",
+      "imageTheme": "poetry"
+    },
+    {
+      "title": "互联网哲学百科",
+      "url": "https://iep.utm.edu/",
+      "description": "面向读者的哲学概念、人物与学派导览。",
+      "cover": "magazine-022-site",
+      "image": "magazine-022-site.jpg",
+      "imageTheme": "bookshelf-2"
+    },
+    {
+      "title": "1000-Word Philosophy",
+      "url": "https://1000wordphilosophy.com/",
+      "description": "用短篇文章入门哲学问题与思想实验。",
+      "cover": "magazine-023-1000-word-philosophy",
+      "image": "magazine-023-1000-word-philosophy.jpg",
+      "imageTheme": "poetry"
+    },
+    {
+      "title": "Philosopher’s Index",
+      "url": "https://philindex.org/",
+      "description": "哲学研究的索引与学术检索入口。",
+      "cover": "magazine-024-philosopher-s-index",
+      "image": "magazine-024-philosopher-s-index.jpg",
+      "imageTheme": "typewriter"
+    },
+    {
+      "title": "The Pudding",
+      "url": "https://pudding.cool/",
+      "description": "用互动视觉故事解释数据、文化与日常现象。",
+      "cover": "magazine-025-the-pudding",
+      "image": "magazine-025-the-pudding.jpg",
+      "imageTheme": "workspace"
+    },
+    {
+      "title": "Calculating Empires",
+      "url": "https://calculatingempires.net/",
+      "description": "以可探索的视觉时间轴梳理技术与权力的历史。",
+      "cover": "magazine-026-calculating-empires",
+      "image": "magazine-026-calculating-empires.jpg",
+      "imageTheme": "coffee-shop"
+    },
+    {
+      "title": "Cineccentric",
+      "url": "https://cineccentric.com/",
+      "description": "独立电影与作者电影的评论和影像文化观察。",
+      "cover": "magazine-027-cineccentric",
+      "image": "magazine-027-cineccentric.jpg",
+      "imageTheme": "typewriter"
+    },
+    {
+      "title": "Slate",
+      "url": "https://slate.com/",
+      "description": "新闻、文化、政治与生活方式评论。",
+      "cover": "magazine-028-slate",
+      "image": "magazine-028-slate.jpg",
+      "imageTheme": "philosophy"
+    },
+    {
+      "title": "Der Spiegel",
+      "url": "https://www.spiegel.de/",
+      "description": "德国新闻杂志，关注欧洲与国际时事。",
+      "cover": "magazine-029-der-spiegel",
+      "image": "magazine-029-der-spiegel.jpg",
+      "imageTheme": "city-street"
+    },
+    {
+      "title": "Salon",
+      "url": "https://www.salon.com/",
+      "description": "美国公共事务、文化与社会议题评论。",
+      "cover": "magazine-030-salon",
+      "image": "magazine-030-salon.jpg",
+      "imageTheme": "bookshelf-2"
+    },
+    {
+      "title": "Mental Floss",
+      "url": "https://www.mentalfloss.com/",
+      "description": "从历史、科学与文化里挖掘有趣的小知识。",
+      "cover": "magazine-031-mental-floss",
+      "image": "magazine-031-mental-floss.jpg",
+      "imageTheme": "books"
+    },
+    {
+      "title": "Quartz",
+      "url": "https://qz.com/",
+      "description": "以解释型报道观察商业、科技与全球经济。",
+      "cover": "magazine-032-quartz",
+      "image": "magazine-032-quartz.jpg",
+      "imageTheme": "city-night"
+    },
+    {
+      "title": "Vox",
+      "url": "https://www.vox.com/",
+      "description": "通过背景解释和专题报道理解新闻事件。",
+      "cover": "magazine-033-vox",
+      "image": "magazine-033-vox.jpg",
+      "imageTheme": "science-lab"
+    },
+    {
+      "title": "Smithsonian Magazine",
+      "url": "https://www.smithsonianmag.com/",
+      "description": "探索历史、科学、艺术与自然的专题报道。",
+      "cover": "magazine-034-smithsonian-magazine",
+      "image": "magazine-034-smithsonian-magazine.jpg",
+      "imageTheme": "vinyl-record"
+    },
+    {
+      "title": "JSTOR Daily",
+      "url": "https://daily.jstor.org/",
+      "description": "从学术研究出发讲述历史与当代议题。",
+      "cover": "magazine-035-jstor-daily",
+      "image": "magazine-035-jstor-daily.jpg",
+      "imageTheme": "urban-wall"
+    },
+    {
+      "title": "The Atlantic",
+      "url": "https://www.theatlantic.com/",
+      "description": "长篇报道与评论，关注政治、文化和思想。",
+      "cover": "magazine-036-the-atlantic",
+      "image": "magazine-036-the-atlantic.jpg",
+      "imageTheme": "poetry"
+    },
+    {
+      "title": "Foreign Policy",
+      "url": "https://foreignpolicy.com/",
+      "description": "国际关系、外交政策与全球事务分析。",
+      "cover": "magazine-037-foreign-policy",
+      "image": "magazine-037-foreign-policy.jpg",
+      "imageTheme": "books"
+    },
+    {
+      "title": "The Economist",
+      "url": "https://www.economist.com/",
+      "description": "以全球视角报道政治、经济、商业与科技。",
+      "cover": "magazine-038-the-economist",
+      "image": "magazine-038-the-economist.jpg",
+      "imageTheme": "newspaper"
+    },
+    {
+      "title": "Bloomberg Businessweek",
+      "url": "https://www.bloomberg.com/businessweek",
+      "description": "商业、金融与创新领域的深度报道。",
+      "cover": "magazine-039-bloomberg-businessweek",
+      "image": "magazine-039-bloomberg-businessweek.jpg",
+      "imageTheme": "city-street"
+    },
+    {
+      "title": "Fast Company",
+      "url": "https://www.fastcompany.com/",
+      "description": "设计、创新、科技与工作方式的观察。",
+      "cover": "magazine-040-fast-company",
+      "image": "magazine-040-fast-company.jpg",
+      "imageTheme": "paint-texture"
+    },
+    {
+      "title": "The New Yorker",
+      "url": "https://www.newyorker.com/",
+      "description": "长篇报道、小说、文化评论与漫画。",
+      "cover": "magazine-041-the-new-yorker",
+      "image": "magazine-041-the-new-yorker.jpg",
+      "imageTheme": "science-lab"
+    },
+    {
+      "title": "Harper’s Magazine",
+      "url": "https://harpers.org/",
+      "description": "美国老牌杂志，刊载文学、报道与评论。",
+      "cover": "magazine-042-harper-s-magazine",
+      "image": "magazine-042-harper-s-magazine.jpg",
+      "imageTheme": "coffee-book"
+    },
+    {
+      "title": "The Paris Review",
+      "url": "https://www.theparisreview.org/",
+      "description": "文学访谈、小说、诗歌与写作对谈。",
+      "cover": "magazine-043-the-paris-review",
+      "image": "magazine-043-the-paris-review.jpg",
+      "imageTheme": "coffee-book"
+    },
+    {
+      "title": "Discover Magazine",
+      "url": "https://www.discovermagazine.com/",
+      "description": "面向大众的科学发现与研究解读。",
+      "cover": "magazine-044-discover-magazine",
+      "image": "magazine-044-discover-magazine.jpg",
+      "imageTheme": "coffee-shop"
+    },
+    {
+      "title": "Vanity Fair",
+      "url": "https://www.vanityfair.com/",
+      "description": "娱乐、政治、人物与流行文化特写。",
+      "cover": "magazine-045-vanity-fair",
+      "image": "magazine-045-vanity-fair.jpg",
+      "imageTheme": "workspace"
+    },
+    {
+      "title": "National Geographic",
+      "url": "https://www.nationalgeographic.com/",
+      "description": "以影像与报道探索自然、科学和人类社会。",
+      "cover": "magazine-046-national-geographic",
+      "image": "magazine-046-national-geographic.jpg",
+      "imageTheme": "mountains"
+    },
+    {
+      "title": "Quanta Magazine",
+      "url": "https://www.quantamagazine.org/",
+      "description": "深入讲述数学、物理、生命科学与计算机科学。",
+      "cover": "magazine-047-quanta-magazine",
+      "image": "magazine-047-quanta-magazine.jpg",
+      "imageTheme": "electronics"
+    },
+    {
+      "title": "New Statesman",
+      "url": "https://www.newstatesman.com/",
+      "description": "英国政治、时事与文化评论杂志。",
+      "cover": "magazine-048-new-statesman",
+      "image": "magazine-048-new-statesman.jpg",
+      "imageTheme": "handwriting"
+    },
+    {
+      "title": "Prospect Magazine",
+      "url": "https://www.prospectmagazine.co.uk/",
+      "description": "英国公共事务、思想与国际问题的长篇分析。",
+      "cover": "magazine-049-prospect-magazine",
+      "image": "magazine-049-prospect-magazine.jpg",
+      "imageTheme": "philosophy"
+    },
+    {
+      "title": "Paris Match",
+      "url": "https://www.parismatch.com/",
+      "description": "法国新闻杂志，关注时事、人物与影像报道。",
+      "cover": "magazine-050-paris-match",
+      "image": "magazine-050-paris-match.jpg",
+      "imageTheme": "library"
+    },
+    {
+      "title": "LURE Magazine",
+      "url": "https://lurefashionmagazine.com/",
+      "description": "独立时尚与创意文化杂志。",
+      "cover": "magazine-051-lure-magazine",
+      "image": "magazine-051-lure-magazine.jpg",
+      "imageTheme": "paint-texture"
+    },
+    {
+      "title": "The Guardian",
+      "url": "https://www.theguardian.com/us",
+      "description": "国际新闻、评论、文化与环境报道。",
+      "cover": "magazine-052-the-guardian",
+      "image": "magazine-052-the-guardian.jpg",
+      "imageTheme": "architecture-detail"
+    },
+    {
+      "title": "Longreads",
+      "url": "https://longreads.com/",
+      "description": "精选长篇非虚构报道、散文与人物故事。",
+      "cover": "magazine-053-longreads",
+      "image": "magazine-053-longreads.jpg",
+      "imageTheme": "newspaper"
+    },
+    {
+      "title": "Zinio",
+      "url": "https://www.zinio.com/",
+      "description": "数字杂志阅读与订阅平台。",
+      "cover": "magazine-054-zinio",
+      "image": "magazine-054-zinio.jpg",
+      "imageTheme": "city-night"
+    },
+    {
+      "title": "Aeon",
+      "url": "https://aeon.co/",
+      "description": "关于哲学、科学、社会与人类经验的长文。",
+      "cover": "magazine-055-aeon",
+      "image": "magazine-055-aeon.jpg",
+      "imageTheme": "newspaper"
+    },
+    {
+      "title": "Arts & Letters Daily",
+      "url": "https://www.aldaily.com/",
+      "description": "每日精选思想、文学与文化领域的深度文章。",
+      "cover": "magazine-056-arts-letters-daily",
+      "image": "magazine-056-arts-letters-daily.jpg",
+      "imageTheme": "coffee-book"
+    },
+    {
+      "title": "lcamtuf’s thing",
+      "url": "https://lcamtuf.substack.com/",
+      "description": "安全研究者 lcamtuf 分享的技术观察与个人写作。",
+      "cover": "magazine-057-lcamtuf-s-thing",
+      "image": "magazine-057-lcamtuf-s-thing.jpg",
+      "imageTheme": "electronics"
+    },
+    {
+      "title": "Electronic Design",
+      "url": "https://www.electronicdesign.com/",
+      "description": "电子工程、器件、设计方法与行业技术文章。",
+      "cover": "magazine-058-electronic-design",
+      "image": "magazine-058-electronic-design.jpg",
+      "imageTheme": "abstract-art"
+    },
+    {
+      "title": "音频应用",
+      "url": "https://audiobar.cn/",
+      "description": "音频制作、设备、录音与声音技术交流。",
+      "cover": "magazine-059-site",
+      "image": "magazine-059-site.jpg",
+      "imageTheme": "philosophy"
+    },
+    {
+      "title": "Foucault.info",
+      "url": "https://foucault.info/",
+      "description": "米歇尔·福柯相关文本、资料与研究入口。",
+      "cover": "magazine-060-foucault-info",
+      "image": "magazine-060-foucault-info.jpg",
+      "imageTheme": "handwriting"
+    },
+    {
+      "title": "文言文翻译与阅读",
+      "url": "https://wyw.5156edu.com/",
+      "description": "查阅文言文原文、注释与译文，适合读古典文本。",
+      "cover": "magazine-061-site",
+      "image": "magazine-061-site.jpg",
+      "imageTheme": "typewriter"
+    },
+    {
+      "title": "WordHippo",
+      "url": "https://www.wordhippo.com/",
+      "description": "查找英语近义词、反义词、押韵和词语用法。",
+      "cover": "magazine-062-wordhippo",
+      "image": "magazine-062-wordhippo.jpg",
+      "imageTheme": "art-gallery"
+    },
+    {
+      "title": "完美韵脚",
+      "url": "https://www.wanmeiyunjiao.com/",
+      "description": "按韵母查找押韵词语，为写诗、填词提供灵感。",
+      "cover": "magazine-063-site",
+      "image": "magazine-063-site.jpg",
+      "imageTheme": "books"
+    },
+    {
+      "title": "元素周期表",
+      "url": "https://ptable.com/",
+      "description": "交互式浏览元素性质、结构和周期规律。",
+      "cover": "magazine-064-site",
+      "image": "magazine-064-site.jpg",
+      "imageTheme": "library"
+    },
+    {
+      "title": "The Data Visualisation Catalogue",
+      "url": "https://datavizcatalogue.com/",
+      "description": "按数据类型查找合适的图表与可视化表达方式。",
+      "cover": "magazine-065-the-data-visualisation-catalogue",
+      "image": "magazine-065-the-data-visualisation-catalogue.jpg",
+      "imageTheme": "science-lab"
+    },
+    {
+      "title": "国家数据",
+      "url": "https://data.stats.gov.cn/index.htm",
+      "description": "查询国家统计局公开的宏观经济与社会数据。",
+      "cover": "magazine-066-site",
+      "image": "magazine-066-site.jpg",
+      "imageTheme": "workspace"
+    },
+    {
+      "title": "Cmd Markdown",
+      "url": "https://www.zybuluo.com/mdeditor",
+      "description": "在线编写、预览与分享 Markdown 文档。",
+      "cover": "magazine-068-cmd-markdown",
+      "image": "magazine-068-cmd-markdown.jpg",
+      "imageTheme": "library"
+    },
+    {
+      "title": "iFixit 修理指南",
+      "url": "https://zh.ifixit.com/Guide",
+      "description": "社区编写的设备拆解、维修指南与动手教程。",
+      "cover": "magazine-069-ifixit",
+      "image": "magazine-069-ifixit.jpg",
+      "imageTheme": "coffee-shop"
+    },
+    {
+      "title": "Academia.edu",
+      "url": "https://www.academia.edu/",
+      "description": "发现研究者、学术主题与公开研究资料。",
+      "cover": "magazine-070-academia-edu",
+      "image": "magazine-070-academia-edu.jpg",
+      "imageTheme": "electronics"
+    }
+  ],
+  "toy": [
+    {
+      "title": "Mikutap",
+      "url": "https://aidn.jp/mikutap/",
+      "description": "点击或触摸屏幕，和图形一起即兴演奏节奏。",
+      "cover": "toy-001-mikutap",
+      "image": "toy-001-mikutap.jpg",
+      "imageTheme": "night-sky"
+    },
+    {
+      "title": "The Useless Web",
+      "url": "https://theuselessweb.com/",
+      "description": "按一下按钮，随机跳到一个古怪又无用的网站。",
+      "cover": "toy-002-the-useless-web",
+      "image": "toy-002-the-useless-web.jpg",
+      "imageTheme": "clouds"
+    },
+    {
+      "title": "Maze Generator",
+      "url": "http://www.mazegenerator.net/",
+      "description": "生成迷宫并尝试找到出口，也可以定制迷宫。",
+      "cover": "toy-003-maze-generator",
+      "image": "toy-003-maze-generator.jpg",
+      "imageTheme": "city-street"
+    },
+    {
+      "title": "Logoly.Pro",
+      "url": "https://www.logoly.pro/#/",
+      "description": "把流行文化梗做成仿品牌风格的趣味 Logo。",
+      "cover": "toy-004-logoly-pro",
+      "image": "toy-004-logoly-pro.jpg",
+      "imageTheme": "abstract-art"
+    },
+    {
+      "title": "抽象接吻",
+      "url": "http://www.muchbetterthanthis.com/",
+      "description": "一个带点超现实气质的互动小网页。",
+      "cover": "toy-005-site",
+      "image": "toy-005-site.jpg",
+      "imageTheme": "art-gallery"
+    },
+    {
+      "title": "The Blocks",
+      "url": "https://blocks.ovh/",
+      "description": "在浏览器里体验简洁的积木式互动与创作。",
+      "cover": "toy-006-the-blocks",
+      "image": "toy-006-the-blocks.jpg",
+      "imageTheme": "sculpture"
+    },
+    {
+      "title": "This Person Does Not Exist",
+      "url": "https://thispersondoesnotexist.com/",
+      "description": "刷新页面，看看生成模型创造的虚构人像。",
+      "cover": "toy-007-this-person-does-not-exist",
+      "image": "toy-007-this-person-does-not-exist.jpg",
+      "imageTheme": "bookshelf-2"
+    },
+    {
+      "title": "Liveuamap",
+      "url": "https://liveuamap.com/",
+      "description": "在地图上浏览世界各地的即时新闻与事件。",
+      "cover": "toy-008-liveuamap",
+      "image": "toy-008-liveuamap.jpg",
+      "imageTheme": "urban-wall"
+    },
+    {
+      "title": "daedalOS",
+      "url": "https://dustinbrett.com/",
+      "description": "在浏览器中体验一套可交互的桌面式虚拟系统。",
+      "cover": "toy-009-daedalos",
+      "image": "toy-009-daedalos.jpg",
+      "imageTheme": "city-night"
+    },
+    {
+      "title": "网页电脑博物馆",
+      "url": "https://www.compumuseum.com/index.html",
+      "description": "在网页里浏览复古电脑、界面与计算机历史。",
+      "cover": "toy-010-site",
+      "image": "toy-010-site.jpg",
+      "imageTheme": "architecture-detail"
+    },
+    {
+      "title": "Cyanide & Happiness",
+      "url": "https://explosm.net/",
+      "description": "短篇漫画与动画，用黑色幽默观察日常。",
+      "cover": "toy-011-cyanide-happiness",
+      "image": "toy-011-cyanide-happiness.jpg",
+      "imageTheme": "abstract-art"
+    },
+    {
+      "title": "Animagraffs",
+      "url": "https://www.animagraffs.com/",
+      "description": "用动态剖面图拆解机械、交通工具和工程原理。",
+      "cover": "toy-012-animagraffs",
+      "image": "toy-012-animagraffs.jpg",
+      "imageTheme": "workspace"
+    },
+    {
+      "title": "Digitaltruth Photo",
+      "url": "https://www.digitaltruth.com/",
+      "description": "胶片摄影、暗房冲洗与显影配方资料库。",
+      "cover": "toy-013-digitaltruth-photo",
+      "image": "toy-013-digitaltruth-photo.jpg",
+      "imageTheme": "camera"
+    }
+  ]
+}

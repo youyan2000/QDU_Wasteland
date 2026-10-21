@@ -7,6 +7,8 @@ qdu-wasteland-linux~
 *.out
 dist/
 build/
+# 工具运行时数据（每日硬件日报快照等），不随源码提交
+tool-data/
 
 # Node / 前端
 node_modules/

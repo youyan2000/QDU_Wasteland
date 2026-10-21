@@ -1,0 +1,35 @@
+/* Curated external bookmarks: reuse the Wasteland shell and theme tokens. */
+.collection-main { padding-top: 28px; }
+.collection-breadcrumb { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.88rem; margin:0 0 24px; }
+.collection-breadcrumb a { color:var(--magenta-deep); text-decoration:none; min-height:36px; display:inline-flex; align-items:center; }
+.collection-breadcrumb a:hover { text-decoration:underline; }
+.collection-heading { margin-bottom:28px; }
+.collection-heading h1 { margin-bottom:0; }
+.collection-heading h1 span { max-width:760px; }
+.collection-count { color:var(--muted); font-size:.85rem; margin-top:20px; }
+.collection-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.collection-card { min-width:0; background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:var(--radius-md); transition:transform .18s var(--ease),border-color .18s,box-shadow .18s; }
+.collection-card:hover,.collection-card:focus-within { transform:translateY(-2px); border-color:var(--magenta); box-shadow:var(--shadow-sm); }
+.collection-card-link { min-height:290px; height:100%; padding:0 18px 18px; display:flex; flex-direction:column; color:inherit; text-decoration:none; }
+.collection-cover { position:relative; height:155px; margin:0 -18px 16px; overflow:hidden; background:linear-gradient(135deg,#e8d5bd,#b1c7b8 55%,#d1a39a); }
+.collection-cover::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(22,28,37,.02),rgba(22,28,37,.34)); pointer-events:none; }
+.collection-cover-image { width:100%; height:100%; display:block; object-fit:cover; object-position:var(--cover-position,50% 50%); transition:transform .3s ease; }
+.collection-card:hover .collection-cover-image { transform:scale(1.035); }
+.collection-card[data-cover-theme="literature"] .collection-cover { background:#7c5369; }
+.collection-card[data-cover-theme="philosophy"] .collection-cover { background:#314b65; }
+.collection-card[data-cover-theme="science"] .collection-cover { background:#1d5160; }
+.collection-card[data-cover-theme="play"] .collection-cover { background:#b96b96; }
+.collection-card[data-cover-theme="editorial"] .collection-cover { background:#a55c45; }
+.collection-favicon { position:absolute; z-index:2; top:12px; right:12px; width:34px; height:34px; display:grid; place-items:center; overflow:hidden; border:2px solid rgba(255,255,255,.9); border-radius:50%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.16); }
+.collection-favicon img { width:22px; height:22px; object-fit:contain; }
+.collection-favicon img[data-error="1"] { display:none; }
+.collection-favicon:has(img[data-error="1"])::after { content:"↗"; color:#364152; font-size:.9rem; }
+.collection-arrow { position:absolute; z-index:2; top:17px; left:15px; color:#fff; font-size:1rem; text-shadow:0 1px 5px rgba(0,0,0,.55); }
+.collection-card h2 { margin:0 0 8px; font-size:1rem; line-height:1.45; overflow-wrap:anywhere; }
+.collection-card p { margin:0 0 14px; color:var(--muted); font-size:.85rem; line-height:1.75; }
+.collection-domain { display:block; margin-top:auto; color:var(--muted); font: .7rem/1.5 var(--font-mono); overflow-wrap:anywhere; word-break:break-word; }
+body.tools-body[data-theme="github"] .collection-card { border-radius:6px; }
+body.tools-body[data-theme="github"] .collection-card:hover { border-color:var(--ink); }
+@media(max-width:900px) { .collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:540px) { .collection-main { padding-top:22px; } .collection-grid { grid-template-columns:1fr; gap:12px; } .collection-card-link { min-height:160px; padding:16px; } .collection-heading { margin-bottom:22px; } }
+@media(prefers-reduced-motion:reduce) { .collection-card { transition:none; } }

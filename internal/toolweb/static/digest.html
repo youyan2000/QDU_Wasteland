@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="开源日报 · Wasteland">
+  <title>开源日报 · Wasteland</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/common.css">
+  <link id="themesCss" rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/tool/_assets/tool-center.css">
+  <link rel="stylesheet" href="/tool/_assets/digest.css">
+  <script defer src="/icons.js"></script>
+  <script defer src="/nav.js"></script>
+  <script defer src="/tool/_assets/digest.js"></script>
+</head>
+<body class="tools-body digest-body">
+  <a class="skip-link" href="#digest-content">跳到内容</a>
+  <div id="site-nav"></div>
+  <main class="tools-main digest-main" id="digest-content">
+    <nav class="collection-breadcrumb" aria-label="面包屑">
+      <a href="/tool/">返回工具</a><span aria-hidden="true">/</span><span aria-current="page">开源日报</span>
+    </nav>
+    <header class="tools-heading digest-heading">
+      <p class="tools-kicker">GITHUB / DAILY</p>
+      <h1>开源日报</h1>
+      <div class="digest-toolbar">
+        <p class="digest-date">{{if .Date}}<strong>{{.Date}}</strong>{{if .GeneratedAt}} · 生成于 {{.GeneratedAt}}{{end}}{{else}}尚无日报{{end}}</p>
+        <button id="digestRefresh" class="digest-refresh" type="button">立即刷新</button>
+      </div>
+    </header>
+
+    {{if .Empty}}
+    <p class="digest-empty">还没有日报数据。服务器每天会自动抓取一次，也可以点「立即刷新」。</p>
+    {{else}}
+    <ol class="digest-list">
+      {{range .Items}}
+      <li class="digest-item">
+        {{if .Avatar}}<img class="digest-avatar" src="{{.Avatar}}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar>{{else}}<span class="digest-avatar digest-avatar-empty" aria-hidden="true">▣</span>{{end}}
+        <div class="digest-body">
+          <div class="digest-row">
+            <span class="digest-title"><a class="digest-name" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.FullName}}</a>{{if eq .Group "hardware"}}<span class="digest-tag is-hardware">硬件</span>{{else}}<span class="digest-tag is-general">热门</span>{{end}}</span>
+            <span class="digest-stars" title="GitHub Stars">★ {{.Stars}}</span>
+          </div>
+          {{if .Description}}<p class="digest-desc">{{.Description}}</p>{{end}}
+          <div class="digest-meta">
+            {{if .Language}}<span class="digest-lang">{{.Language}}</span>{{end}}
+            {{range .Topics}}<span class="digest-topic">{{.}}</span>{{end}}
+          </div>
+        </div>
+      </li>
+      {{end}}
+    </ol>
+    {{end}}
+
+    {{if .Days}}
+    <nav class="digest-days" aria-label="历史日报">
+      {{range .Days}}<a href="/tool/digest/?date={{.}}" class="{{if eq . $.Date}}active{{end}}">{{.}}</a>{{end}}
+    </nav>
+    {{end}}
+  </main>
+</body>
+</html>
