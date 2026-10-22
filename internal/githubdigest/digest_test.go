@@ -204,8 +204,10 @@ func TestPickFreshCyclesStalestFirst(t *testing.T) {
 // TestRefreshVariesFromPreviousDay pins the promise that the daily digest does
 // not repeat yesterday's repositories while unseen candidates remain.
 func TestRefreshVariesFromPreviousDay(t *testing.T) {
-	items := make([]map[string]any, 0, 30)
-	for i := 1; i <= 30; i++ {
+	// The digest size is 16, so the pool must hold more than two days of
+	// distinct candidates for a no-repeat guarantee to be testable.
+	items := make([]map[string]any, 0, 48)
+	for i := 1; i <= 48; i++ {
 		name := fmt.Sprintf("board-%02d", i)
 		items = append(items, repo("acme/"+name, name, "KiCad PCB library", 500+i*10, []string{"kicad", "pcb"}))
 	}
@@ -217,7 +219,7 @@ func TestRefreshVariesFromPreviousDay(t *testing.T) {
 	store.Client = srv.Client()
 	store.Delay = 0
 	store.RetryDelay = 0
-	store.Queries = []Query{{Name: "kicad", Group: GroupHardware, Kind: "active", Q: "topic:kicad", PerPage: 30, Sort: "stars"}}
+	store.Queries = []Query{{Name: "kicad", Group: GroupHardware, Kind: "active", Q: "topic:kicad", PerPage: 48, Sort: "stars"}}
 
 	day1, err := store.Refresh(context.Background(), true)
 	if err != nil {
@@ -251,5 +253,82 @@ func TestRefreshVariesFromPreviousDay(t *testing.T) {
 	}
 	if len(day2.Items) != len(day1.Items) {
 		t.Fatalf("day2 items = %d, want %d", len(day2.Items), len(day1.Items))
+	}
+}
+
+// TestRefreshBuildsFourSections pins the themed layout: hardware, AI, music
+// and a catch-all popular section, each filled to its quota.
+func TestRefreshBuildsFourSections(t *testing.T) {
+	hw := make([]map[string]any, 0, 10)
+	for i := 1; i <= 10; i++ {
+		name := fmt.Sprintf("board-%02d", i)
+		hw = append(hw, repo("acme/"+name, name, "KiCad PCB library", 900+i*10, []string{"kicad"}))
+	}
+	ai := make([]map[string]any, 0, 8)
+	for i := 1; i <= 8; i++ {
+		name := fmt.Sprintf("model-%02d", i)
+		ai = append(ai, repo("lab/"+name, name, "Large language model training toolkit", 4000+i*10, []string{"llm"}))
+	}
+	music := make([]map[string]any, 0, 5)
+	for i := 1; i <= 5; i++ {
+		name := fmt.Sprintf("synth-%02d", i)
+		music = append(music, repo("band/"+name, name, "Browser based music sequencer", 800+i*10, []string{"music"}))
+	}
+	general := make([]map[string]any, 0, 8)
+	for i := 1; i <= 8; i++ {
+		name := fmt.Sprintf("app-%02d", i)
+		general = append(general, repo("shop/"+name, name, "Note taking app for teams", 3000+i*10, []string{"productivity"}))
+	}
+	srv := newFakeGitHub(t, map[string][]map[string]any{
+		"topic:kicad":    hw,
+		"topic:llm":      ai,
+		"topic:music":    music,
+		"topic:frontend": general,
+	})
+	defer srv.Close()
+
+	store := NewStore(t.TempDir(), "")
+	store.APIBase = srv.URL
+	store.Client = srv.Client()
+	store.Delay = 0
+	store.RetryDelay = 0
+	store.Queries = []Query{
+		{Name: "kicad", Group: GroupHardware, Kind: "active", Q: "topic:kicad", PerPage: 10, Sort: "stars"},
+		{Name: "llm", Group: GroupAI, Kind: "active", Q: "topic:llm", PerPage: 8, Sort: "stars"},
+		{Name: "music", Group: GroupMusic, Kind: "active", Q: "topic:music", PerPage: 5, Sort: "stars"},
+		{Name: "other", Group: GroupGeneral, Kind: "active", Q: "topic:frontend", PerPage: 8, Sort: "stars"},
+	}
+
+	d, err := store.Refresh(context.Background(), true)
+	if err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+	counts := map[string]int{}
+	for _, it := range d.Items {
+		counts[it.Group]++
+	}
+	want := map[string]int{GroupHardware: 6, GroupAI: 4, GroupMusic: 2, GroupGeneral: 4}
+	for _, g := range GroupOrder {
+		if counts[g] != want[g] {
+			t.Fatalf("%s section = %d items, want %d (all: %v)", g, counts[g], want[g], counts)
+		}
+	}
+	if len(d.Items) != 16 {
+		t.Fatalf("total items = %d, want 16", len(d.Items))
+	}
+	// Sections must be stored hardware-first so the page renders in order.
+	var order []string
+	seenGroup := map[string]bool{}
+	for _, it := range d.Items {
+		if seenGroup[it.Group] {
+			continue
+		}
+		seenGroup[it.Group] = true
+		order = append(order, it.Group)
+	}
+	for i, g := range GroupOrder {
+		if order[i] != g {
+			t.Fatalf("section order = %v, want %v", order, GroupOrder)
+		}
 	}
 }

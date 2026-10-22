@@ -36,24 +36,29 @@
     {{if .Empty}}
     <p class="digest-empty">还没有日报数据。服务器每天会自动抓取一次，也可以点「立即刷新」。</p>
     {{else}}
-    <ol class="digest-list">
-      {{range .Items}}
-      <li class="digest-item">
-        {{if .Avatar}}<img class="digest-avatar" src="{{.Avatar}}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar>{{else}}<span class="digest-avatar digest-avatar-empty" aria-hidden="true">▣</span>{{end}}
-        <div class="digest-body">
-          <div class="digest-row">
-            <span class="digest-title"><a class="digest-name" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.FullName}}</a>{{if eq .Group "hardware"}}<span class="digest-tag is-hardware">硬件</span>{{else}}<span class="digest-tag is-general">热门</span>{{end}}</span>
-            <span class="digest-stars" title="GitHub Stars">★ {{.Stars}}</span>
+    {{range .Sections}}
+    <section class="digest-section" aria-labelledby="digest-{{.Key}}">
+      <h2 class="digest-section-title" id="digest-{{.Key}}">{{.Title}}<span>{{len .Items}}</span></h2>
+      <ol class="digest-list">
+        {{range .Items}}
+        <li class="digest-item">
+          {{if .Avatar}}<img class="digest-avatar" src="{{.Avatar}}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar>{{else}}<span class="digest-avatar digest-avatar-empty" aria-hidden="true">▣</span>{{end}}
+          <div class="digest-body">
+            <div class="digest-row">
+              <span class="digest-title"><a class="digest-name" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.FullName}}</a></span>
+              <span class="digest-stars" title="GitHub Stars">★ {{.Stars}}</span>
+            </div>
+            {{if .Description}}<p class="digest-desc">{{.Description}}</p>{{end}}
+            <div class="digest-meta">
+              {{if .Language}}<span class="digest-lang">{{.Language}}</span>{{end}}
+              {{range .Topics}}<span class="digest-topic">{{.}}</span>{{end}}
+            </div>
           </div>
-          {{if .Description}}<p class="digest-desc">{{.Description}}</p>{{end}}
-          <div class="digest-meta">
-            {{if .Language}}<span class="digest-lang">{{.Language}}</span>{{end}}
-            {{range .Topics}}<span class="digest-topic">{{.}}</span>{{end}}
-          </div>
-        </div>
-      </li>
-      {{end}}
-    </ol>
+        </li>
+        {{end}}
+      </ol>
+    </section>
+    {{end}}
     {{end}}
 
     {{if .Days}}

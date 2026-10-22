@@ -86,12 +86,24 @@ func notifyDigest(d *githubdigest.Digest) {
 	}
 
 	var body strings.Builder
-	body.WriteString(`<h3>开源日报 ` + html.EscapeString(d.Date) + `</h3><ol>`)
+	body.WriteString(`<h3>开源日报 ` + html.EscapeString(d.Date) + `</h3>`)
+	byGroup := make(map[string][]githubdigest.Item, len(githubdigest.GroupOrder))
 	for _, it := range d.Items {
-		body.WriteString(`<li><a href="` + html.EscapeString(it.URL) + `">` +
-			html.EscapeString(it.FullName) + `</a>　★` + strconv.Itoa(it.Stars) +
-			`<br><span style="color:#666">` + html.EscapeString(it.Description) + `</span></li>`)
+		byGroup[it.Group] = append(byGroup[it.Group], it)
 	}
-	body.WriteString(`</ol><p>共 ` + strconv.Itoa(len(d.Items)) + ` 个项目。</p>`)
+	for _, g := range githubdigest.GroupOrder {
+		items := byGroup[g]
+		if len(items) == 0 {
+			continue
+		}
+		body.WriteString(`<h4 style="margin:18px 0 6px">` + html.EscapeString(githubdigest.GroupTitle(g)) + `</h4><ol>`)
+		for _, it := range items {
+			body.WriteString(`<li><a href="` + html.EscapeString(it.URL) + `">` +
+				html.EscapeString(it.FullName) + `</a>　★` + strconv.Itoa(it.Stars) +
+				`<br><span style="color:#666">` + html.EscapeString(it.Description) + `</span></li>`)
+		}
+		body.WriteString(`</ol>`)
+	}
+	body.WriteString(`<p>共 ` + strconv.Itoa(len(d.Items)) + ` 个项目。</p>`)
 	sendMail(to, "开源日报 "+d.Date+"（"+strconv.Itoa(len(d.Items))+" 个项目）", body.String())
 }

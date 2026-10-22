@@ -30,8 +30,27 @@ import (
 // Group marks which section a repository belongs to.
 const (
 	GroupHardware = "hardware"
+	GroupAI       = "ai"
+	GroupMusic    = "music"
 	GroupGeneral  = "general"
 )
+
+// GroupOrder is the display order of the digest sections.
+var GroupOrder = []string{GroupHardware, GroupAI, GroupMusic, GroupGeneral}
+
+// GroupTitle is the heading shown for a section.
+func GroupTitle(group string) string {
+	switch group {
+	case GroupHardware:
+		return "硬件"
+	case GroupAI:
+		return "AI"
+	case GroupMusic:
+		return "音乐"
+	default:
+		return "其他热门"
+	}
+}
 
 // Item is one repository in a digest.
 type Item struct {
@@ -66,34 +85,63 @@ type Query struct {
 	Sort    string // "stars" (default) or "updated"; updated makes the pool churn daily
 }
 
-// DefaultQueries mixes a hardware-focused section with general hot projects.
-// Per-page values are deliberately large: a wide candidate pool is what makes
-// the "avoid what we showed recently" rotation able to produce a different
-// digest every day instead of repeating the same handful of repositories.
+// DefaultQueries is the full query set used when a GitHub token is configured
+// (30 searches/minute). Without a token the search budget is 10/minute, so
+// DefaultQueriesCompact keeps the strongest queries of every section instead.
 func DefaultQueries() []Query {
 	return []Query{
+		// 硬件
 		{"kicad", GroupHardware, "active", "topic:kicad", 30, "stars"},
 		{"pcb", GroupHardware, "active", "topic:pcb", 40, "stars"},
 		{"embedded", GroupHardware, "active", "topic:embedded", 50, "stars"},
 		{"fpga", GroupHardware, "active", "topic:fpga", 30, "stars"},
 		{"riscv", GroupHardware, "active", "topic:riscv", 30, "stars"},
-		// Sorted by recent activity so this slice of the pool changes every day.
 		{"embedded-active", GroupHardware, "active", "topic:embedded stars:>=400", 40, "updated"},
+		// AI
+		{"llm", GroupAI, "active", "topic:llm stars:>=800", 40, "stars"},
+		{"ai", GroupAI, "active", "topic:artificial-intelligence stars:>=800", 40, "stars"},
+		{"ai-active", GroupAI, "active", "topic:machine-learning stars:>=2000", 40, "updated"},
+		// 音乐
+		{"music", GroupMusic, "active", "topic:music stars:>=250", 40, "stars"},
+		{"music-active", GroupMusic, "active", "topic:music-player stars:>=250", 40, "updated"},
+		// 其他热门
 		{"hot-week", GroupGeneral, "week", "stars:>=100", 50, "stars"},
 		{"hot-new", GroupGeneral, "new", "stars:>=500", 50, "stars"},
 		{"hot-all", GroupGeneral, "active", "stars:>=12000", 30, "stars"},
 	}
 }
 
+// DefaultQueriesCompact fits the unauthenticated budget of 10 searches/minute.
+func DefaultQueriesCompact() []Query {
+	return []Query{
+		{"embedded", GroupHardware, "active", "topic:embedded", 50, "stars"},
+		{"kicad", GroupHardware, "active", "topic:kicad", 30, "stars"},
+		{"embedded-active", GroupHardware, "active", "topic:embedded stars:>=400", 40, "updated"},
+		{"llm", GroupAI, "active", "topic:llm stars:>=800", 40, "stars"},
+		{"ai-active", GroupAI, "active", "topic:machine-learning stars:>=2000", 40, "updated"},
+		{"music", GroupMusic, "active", "topic:music stars:>=250", 40, "stars"},
+		{"music-active", GroupMusic, "active", "topic:music-player stars:>=250", 40, "updated"},
+		{"hot-week", GroupGeneral, "week", "stars:>=100", 50, "stars"},
+		{"hot-new", GroupGeneral, "new", "stars:>=500", 50, "stars"},
+	}
+}
+
 const (
-	maxItems      = 12
-	hardwareQuota = 8
-	generalQuota  = 4
+	maxItems = 16
 	// Niche topics such as kicad or pcb top out at a few hundred stars, but a
 	// digest that mixes them with 16k-star projects still needs a floor so the
 	// section stays "popular" rather than merely new.
 	minHardwareStars = 250
 )
+
+// groupQuota is the nominal size of each section. Shortfalls are topped up from
+// the other sections, so these are targets rather than hard limits.
+var groupQuota = map[string]int{
+	GroupHardware: 6,
+	GroupAI:       4,
+	GroupMusic:    2,
+	GroupGeneral:  4,
+}
 
 var dayRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
@@ -105,7 +153,8 @@ type Store struct {
 	Queries []Query
 	Client  *http.Client
 	Delay   time.Duration
-	// RetryDelay is how long to wait before retrying a rate-limited query.
+	// RetryDelay is how long to wait before retrying a rate-limited query. It
+	// spans a full rate-limit window so the retry lands in a fresh budget.
 	// Zero disables the wait (tests).
 	RetryDelay time.Duration
 
@@ -179,7 +228,10 @@ func (s *Store) queries() []Query {
 	if len(s.Queries) > 0 {
 		return s.Queries
 	}
-	return DefaultQueries()
+	if s.Token != "" {
+		return DefaultQueries()
+	}
+	return DefaultQueriesCompact()
 }
 
 // Refresh fetches a new digest. force bypasses the 10-minute cooldown that
@@ -236,8 +288,7 @@ func (s *Store) Refresh(ctx context.Context, force bool) (*Digest, error) {
 	wg.Wait()
 
 	seen := make(map[string]Item)
-	hardware := make([]Item, 0, 24)
-	general := make([]Item, 0, 24)
+	pools := make(map[string][]Item, len(GroupOrder))
 	for i, q := range queries {
 		r := results[i]
 		if r.err != nil {
@@ -251,56 +302,61 @@ func (s *Store) Refresh(ctx context.Context, force bool) (*Digest, error) {
 			if _, dup := seen[it.FullName]; dup {
 				continue
 			}
+			// Drop star-farmed repositories: implausibly few forks for the
+			// number of stars recorded on a very young project.
+			if !plausiblePopularity(it) {
+				continue
+			}
 			relevant := isHardwareRelevant(it)
 			switch q.Group {
 			case GroupHardware:
-				if !relevant {
+				// Keep the hardware section genuinely popular and on topic.
+				if !relevant || it.Stars < minHardwareStars {
 					continue
 				}
-				it.Group = GroupHardware
-				hardware = append(hardware, it)
-			default:
-				// Hardware repositories belong in the hardware section only.
+			case GroupGeneral:
+				// A hardware repository belongs in the hardware section only.
 				if relevant {
 					continue
 				}
-				// Keep the hardware section genuinely popular.
-				if it.Stars < minHardwareStars {
-					continue
-				}
-				// Drop star-farmed repositories: implausibly few forks for the
-				// number of stars recorded on a very young project.
-				if !plausiblePopularity(it) {
-					continue
-				}
-				it.Group = GroupGeneral
-				general = append(general, it)
 			}
+			it.Group = q.Group
+			pools[q.Group] = append(pools[q.Group], it)
 			seen[it.FullName] = it
 		}
 	}
-	if len(hardware) == 0 && len(general) == 0 {
+
+	total := 0
+	for _, g := range GroupOrder {
+		total += len(pools[g])
+	}
+	if total == 0 {
 		return nil, errors.New("no repositories returned")
 	}
-
-	sortByScore(hardware)
-	sortByScore(general)
 
 	// Prefer repositories that did not appear in the last ten digests, so the
 	// daily feed stays fresh instead of repeating the same famous projects.
 	recent := s.recentNames(10)
-	pickedHardware := pickFresh(hardware, hardwareQuota, recent)
-	pickedGeneral := pickFresh(general, generalQuota, recent)
-	// Fill any shortfall from the other section.
-	if len(pickedHardware) < hardwareQuota {
-		pickedGeneral = appendUnique(pickedGeneral, pickFresh(general, hardwareQuota-len(pickedHardware)+generalQuota, recent))
+	picked := make(map[string][]Item, len(GroupOrder))
+	count := 0
+	for _, g := range GroupOrder {
+		sortByScore(pools[g])
+		picked[g] = pickFresh(pools[g], groupQuota[g], recent)
+		count += len(picked[g])
 	}
-	if len(pickedGeneral) < generalQuota {
-		pickedHardware = appendUnique(pickedHardware, pickFresh(hardware, generalQuota-len(pickedGeneral)+hardwareQuota, recent))
+	// Top up any shortfall from the sections that still have candidates.
+	for _, g := range GroupOrder {
+		if count >= maxItems {
+			break
+		}
+		extra := fillFrom(pools[g], picked[g], maxItems-count, recent)
+		picked[g] = append(picked[g], extra...)
+		count += len(extra)
 	}
-	items := append(pickedHardware, pickedGeneral...)
-	if len(items) > maxItems {
-		items = items[:maxItems]
+
+	items := make([]Item, 0, count)
+	for _, g := range GroupOrder {
+		items = append(items, picked[g]...)
 	}
 
 	d := &Digest{
@@ -313,6 +369,26 @@ func (s *Store) Refresh(ctx context.Context, force bool) (*Digest, error) {
 	}
 	s.lastAt = time.Now()
 	return d, nil
+}
+
+// fillFrom returns up to need items from pool that are not already in taken.
+func fillFrom(pool, taken []Item, need int, recent map[string]int) []Item {
+	if need <= 0 || len(pool) == 0 {
+		return nil
+	}
+	have := make(map[string]bool, len(taken))
+	for _, it := range taken {
+		have[it.FullName] = true
+	}
+	rest := make([]Item, 0, len(pool))
+	for _, it := range pool {
+		if !have[it.FullName] {
+			rest = append(rest, it)
+		}
+	}
+	// pickFresh keeps unseen candidates ahead of stale ones, so topping up here
+	// never reaches for a recently shown repository while fresh ones remain.
+	return pickFresh(rest, need, recent)
 }
 
 func appendUnique(dst, src []Item) []Item {
@@ -556,7 +632,9 @@ var hardwareWords = []string{
 // repository was created), which surfaces currently hot projects instead of the
 // same all-time famous repositories every day.
 func score(it Item) float64 {
-	if it.Group == GroupGeneral {
+	if it.Group == GroupAI || it.Group == GroupGeneral {
+		// Star velocity: rising projects beat the same all-time giants. The AI
+		// field moves fast enough that this is what "hot" means there.
 		days := 3650.0
 		if t, err := time.Parse(time.RFC3339, it.CreatedAt); err == nil {
 			if d := time.Since(t).Hours() / 24; d >= 1 {
@@ -564,6 +642,14 @@ func score(it Item) float64 {
 			}
 		}
 		return math.Log10(float64(it.Stars)/days + 1)
+	}
+	if it.Group == GroupMusic {
+		// Music tooling matures slowly and the pool is small: rank by reach.
+		value := math.Log10(float64(it.Stars) + 1)
+		if t, err := time.Parse(time.RFC3339, it.PushedAt); err == nil && time.Since(t) < 72*time.Hour {
+			value += 0.6
+		}
+		return value
 	}
 	text := strings.ToLower(it.FullName + " " + it.Description + " " + strings.Join(it.Topics, " "))
 	value := math.Log10(float64(it.Stars) + 1)

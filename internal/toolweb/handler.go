@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -68,9 +69,16 @@ var tools = []Tool{
 
 type digestView struct {
 	Date, GeneratedAt, Today string
-	Items                    []githubdigest.Item
+	Sections                 []digestSection
 	Days                     []string
 	Empty                    bool
+}
+
+// digestSection is one themed block of the digest page.
+type digestSection struct {
+	Key   string
+	Title string
+	Items []githubdigest.Item
 }
 
 type Options struct {
@@ -185,7 +193,36 @@ func New(opts Options) http.Handler {
 			if d == nil || len(d.Items) == 0 {
 				view.Empty = true
 			} else {
-				view.Date, view.GeneratedAt, view.Items = d.Date, d.GeneratedAt, d.Items
+				view.Date, view.GeneratedAt = d.Date, d.GeneratedAt
+				// Group the items by theme, keeping the digest's display order.
+				byGroup := make(map[string][]githubdigest.Item, len(githubdigest.GroupOrder))
+				for _, it := range d.Items {
+					byGroup[it.Group] = append(byGroup[it.Group], it)
+				}
+				for _, g := range githubdigest.GroupOrder {
+					if len(byGroup[g]) == 0 {
+						continue
+					}
+					view.Sections = append(view.Sections, digestSection{
+						Key:   g,
+						Title: githubdigest.GroupTitle(g),
+						Items: byGroup[g],
+					})
+					delete(byGroup, g)
+				}
+				// Never drop an item whose group a newer snapshot introduced.
+				rest := make([]string, 0, len(byGroup))
+				for g := range byGroup {
+					rest = append(rest, g)
+				}
+				sort.Strings(rest)
+				for _, g := range rest {
+					view.Sections = append(view.Sections, digestSection{
+						Key:   g,
+						Title: githubdigest.GroupTitle(g),
+						Items: byGroup[g],
+					})
+				}
 			}
 			if days, err := opts.Digest.Days(); err == nil {
 				if len(days) > 10 {
