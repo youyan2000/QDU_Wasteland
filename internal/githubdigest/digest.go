@@ -63,20 +63,25 @@ type Query struct {
 	Kind    string // "active": pushed recently; "new": created recently
 	Q       string
 	PerPage int
+	Sort    string // "stars" (default) or "updated"; updated makes the pool churn daily
 }
 
 // DefaultQueries mixes a hardware-focused section with general hot projects.
+// Per-page values are deliberately large: a wide candidate pool is what makes
+// the "avoid what we showed recently" rotation able to produce a different
+// digest every day instead of repeating the same handful of repositories.
 func DefaultQueries() []Query {
 	return []Query{
-		{"kicad", GroupHardware, "active", "topic:kicad", 6},
-		{"pcb", GroupHardware, "active", "topic:pcb", 6},
-		{"embedded", GroupHardware, "active", "topic:embedded", 6},
-		{"fpga", GroupHardware, "active", "topic:fpga", 6},
-		{"riscv", GroupHardware, "active", "topic:riscv", 5},
-		{"hot-week", GroupGeneral, "week", "stars:>=100", 12},
-		{"hot-new", GroupGeneral, "new", "stars:>=500", 12},
-		{"hot-all", GroupGeneral, "active", "stars:>=12000", 12},
-		{"llm", GroupGeneral, "active", "topic:llm", 6},
+		{"kicad", GroupHardware, "active", "topic:kicad", 30, "stars"},
+		{"pcb", GroupHardware, "active", "topic:pcb", 40, "stars"},
+		{"embedded", GroupHardware, "active", "topic:embedded", 50, "stars"},
+		{"fpga", GroupHardware, "active", "topic:fpga", 30, "stars"},
+		{"riscv", GroupHardware, "active", "topic:riscv", 30, "stars"},
+		// Sorted by recent activity so this slice of the pool changes every day.
+		{"embedded-active", GroupHardware, "active", "topic:embedded stars:>=400", 40, "updated"},
+		{"hot-week", GroupGeneral, "week", "stars:>=100", 50, "stars"},
+		{"hot-new", GroupGeneral, "new", "stars:>=500", 50, "stars"},
+		{"hot-all", GroupGeneral, "active", "stars:>=12000", 30, "stars"},
 	}
 }
 
@@ -84,6 +89,10 @@ const (
 	maxItems      = 12
 	hardwareQuota = 8
 	generalQuota  = 4
+	// Niche topics such as kicad or pcb top out at a few hundred stars, but a
+	// digest that mixes them with 16k-star projects still needs a floor so the
+	// section stays "popular" rather than merely new.
+	minHardwareStars = 250
 )
 
 var dayRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
@@ -96,6 +105,9 @@ type Store struct {
 	Queries []Query
 	Client  *http.Client
 	Delay   time.Duration
+	// RetryDelay is how long to wait before retrying a rate-limited query.
+	// Zero disables the wait (tests).
+	RetryDelay time.Duration
 
 	mu     sync.Mutex
 	lastAt time.Time
@@ -217,7 +229,7 @@ func (s *Store) Refresh(ctx context.Context, force bool) (*Digest, error) {
 		wg.Add(1)
 		go func(idx int, q Query, qualifier string) {
 			defer wg.Done()
-			items, err := s.search(ctx, q.Q+" "+qualifier, q.PerPage)
+			items, err := s.search(ctx, q.Q+" "+qualifier, q.PerPage, q.Sort)
 			results[idx] = queryResult{items: items, err: err}
 		}(i, q, qualifier)
 	}
@@ -252,6 +264,10 @@ func (s *Store) Refresh(ctx context.Context, force bool) (*Digest, error) {
 				if relevant {
 					continue
 				}
+				// Keep the hardware section genuinely popular.
+				if it.Stars < minHardwareStars {
+					continue
+				}
 				// Drop star-farmed repositories: implausibly few forks for the
 				// number of stars recorded on a very young project.
 				if !plausiblePopularity(it) {
@@ -270,9 +286,9 @@ func (s *Store) Refresh(ctx context.Context, force bool) (*Digest, error) {
 	sortByScore(hardware)
 	sortByScore(general)
 
-	// Prefer repositories that were not in the previous week's digests, so the
+	// Prefer repositories that did not appear in the last ten digests, so the
 	// daily feed stays fresh instead of repeating the same famous projects.
-	recent := s.recentNames(7)
+	recent := s.recentNames(10)
 	pickedHardware := pickFresh(hardware, hardwareQuota, recent)
 	pickedGeneral := pickFresh(general, generalQuota, recent)
 	// Fill any shortfall from the other section.
@@ -315,7 +331,8 @@ func appendUnique(dst, src []Item) []Item {
 }
 
 // pickFresh returns up to n items, preferring ones absent from recent digests.
-func pickFresh(list []Item, n int, recent map[string]bool) []Item {
+// recent maps a repository to how many digests ago it last appeared.
+func pickFresh(list []Item, n int, recent map[string]int) []Item {
 	if n <= 0 || len(list) == 0 {
 		return nil
 	}
@@ -325,18 +342,30 @@ func pickFresh(list []Item, n int, recent map[string]bool) []Item {
 		if len(out) == n {
 			break
 		}
-		if recent[it.FullName] {
+		if _, ok := recent[it.FullName]; ok {
 			continue
 		}
 		out = append(out, it)
 		taken[it.FullName] = true
 	}
+	if len(out) == n {
+		return out
+	}
+	// The unseen pool ran dry: reuse repositories, but always the ones that
+	// were shown longest ago, so a repeat keeps drifting instead of sticking.
+	rest := make([]Item, 0, len(list))
 	for _, it := range list {
-		if len(out) == n {
-			break
-		}
 		if taken[it.FullName] {
 			continue
+		}
+		rest = append(rest, it)
+	}
+	sort.SliceStable(rest, func(i, j int) bool {
+		return recent[rest[i].FullName] > recent[rest[j].FullName]
+	})
+	for _, it := range rest {
+		if len(out) == n {
+			break
 		}
 		out = append(out, it)
 	}
@@ -374,13 +403,16 @@ type searchResponse struct {
 	} `json:"items"`
 }
 
-func (s *Store) search(ctx context.Context, query string, perPage int) ([]Item, error) {
-	if perPage <= 0 || perPage > 20 {
-		perPage = 8
+func (s *Store) search(ctx context.Context, query string, perPage int, sortBy string) ([]Item, error) {
+	if perPage <= 0 || perPage > 100 {
+		perPage = 20
+	}
+	if sortBy == "" {
+		sortBy = "stars"
 	}
 	endpoint := strings.TrimRight(s.APIBase, "/") +
 		"/search/repositories?q=" + url.QueryEscape(query) +
-		"&sort=stars&order=desc&per_page=" + strconv.Itoa(perPage)
+		"&sort=" + url.QueryEscape(sortBy) + "&order=desc&per_page=" + strconv.Itoa(perPage)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -394,6 +426,31 @@ func (s *Store) search(ctx context.Context, query string, perPage int) ([]Item, 
 	resp, err := s.client().Do(req)
 	if err != nil {
 		return nil, err
+	}
+	// One backoff retry keeps a single rate-limited query from silently
+	// degrading the day's digest; the unauthenticated budget is only 10
+	// searches per minute and this run issues nine.
+	if (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests) && s.Token == "" {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 300))
+		resp.Body.Close()
+		if strings.Contains(strings.ToLower(string(body)), "rate limit") {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(s.RetryDelay):
+			}
+			retry, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+			if err != nil {
+				return nil, err
+			}
+			retry.Header = req.Header
+			resp, err = s.client().Do(retry)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("github returned %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		}
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -577,8 +634,10 @@ func (s *Store) prune(dir string, keep int) {
 
 // recentNames collects repository names from the previous n daily digests so
 // the new digest can prefer projects that have not been shown recently.
-func (s *Store) recentNames(n int) map[string]bool {
-	out := make(map[string]bool)
+// recentNames maps repository full names shown in the last n digests (today
+// excluded) to how many digests ago they appeared. Smaller means more recent.
+func (s *Store) recentNames(n int) map[string]int {
+	out := make(map[string]int)
 	days, err := s.Days()
 	if err != nil {
 		return out
@@ -592,10 +651,12 @@ func (s *Store) recentNames(n int) map[string]bool {
 		if err != nil {
 			continue
 		}
-		for _, it := range d.Items {
-			out[it.FullName] = true
-		}
 		count++
+		for _, it := range d.Items {
+			if prev, ok := out[it.FullName]; !ok || count < prev {
+				out[it.FullName] = count
+			}
+		}
 		if count >= n {
 			break
 		}

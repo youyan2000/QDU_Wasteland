@@ -86,12 +86,12 @@ func notifyDigest(d *githubdigest.Digest) {
 	}
 
 	var body strings.Builder
-	body.WriteString(`<h3>硬件日报 ` + html.EscapeString(d.Date) + `</h3><ol>`)
+	body.WriteString(`<h3>开源日报 ` + html.EscapeString(d.Date) + `</h3><ol>`)
 	for _, it := range d.Items {
 		body.WriteString(`<li><a href="` + html.EscapeString(it.URL) + `">` +
 			html.EscapeString(it.FullName) + `</a>　★` + strconv.Itoa(it.Stars) +
 			`<br><span style="color:#666">` + html.EscapeString(it.Description) + `</span></li>`)
 	}
 	body.WriteString(`</ol><p>共 ` + strconv.Itoa(len(d.Items)) + ` 个项目。</p>`)
-	sendMail(to, "硬件日报 "+d.Date+"（"+strconv.Itoa(len(d.Items))+" 个项目）", body.String())
+	sendMail(to, "开源日报 "+d.Date+"（"+strconv.Itoa(len(d.Items))+" 个项目）", body.String())
 }

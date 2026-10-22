@@ -1,8 +1,5 @@
 /* Curated external bookmarks: reuse the Wasteland shell and theme tokens. */
 .collection-main { padding-top: 28px; }
-.collection-breadcrumb { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.88rem; margin:0 0 24px; }
-.collection-breadcrumb a { color:var(--magenta-deep); text-decoration:none; min-height:36px; display:inline-flex; align-items:center; }
-.collection-breadcrumb a:hover { text-decoration:underline; }
 .collection-heading { margin-bottom:28px; }
 .collection-heading h1 { margin-bottom:0; }
 .collection-heading h1 span { max-width:760px; }

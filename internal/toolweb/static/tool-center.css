@@ -31,6 +31,13 @@ body.tools-body[data-theme="github"], body.nextjlc-body[data-theme="github"] {
 .tools-heading h1 { font: 700 clamp(1.9rem,3.5vw,2.7rem)/1.35 var(--font-sans); letter-spacing: -.03em; margin: 0 0 16px; }
 .tools-heading h1 span { display: block; font-size: clamp(1.3rem, 2.6vw, 1.8rem); line-height: 1.5; letter-spacing: 0; font-weight: 500; color: var(--tool-muted); margin-top: 10px; }
 .tools-demo-note { color: var(--tool-muted); background: var(--surface-2); border-left: 3px solid var(--magenta); padding: 10px 14px; font-size: .85rem; margin-top: 18px; }
+/* Shared back link used by every tool sub-page, so they match the card styling. */
+.tools-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 22px; }
+.tools-breadcrumb a { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 14px; background: var(--surface); color: var(--tool-accent-text); border: 1px solid var(--border); border-radius: var(--tool-control-radius); font-size: .85rem; font-weight: 600; text-decoration: none; transition: background-color .18s, border-color .18s, color .18s; }
+.tools-breadcrumb a::before { content: "\2190"; font-size: .95em; line-height: 1; }
+.tools-breadcrumb a:hover { background: var(--tool-accent-soft); border-color: var(--tool-accent-text); }
+.tools-breadcrumb a:focus-visible { outline: 2px solid var(--tool-accent-text); outline-offset: 3px; }
+.tools-breadcrumb-current { font-size: .85rem; color: var(--tool-muted); }
 .tools-section { margin-bottom: 40px; }
 .tool-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
 .tool-card { min-width: 0; display: flex; flex-direction: column; padding: 25px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-md); transition: border-color .18s,box-shadow .18s; }
