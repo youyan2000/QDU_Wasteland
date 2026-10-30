@@ -366,11 +366,16 @@ func migrateUsersTable(db *sql.DB) error {
 		return err
 	}
 	if cnt == 0 {
-		_, err := db.Exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0")
-		return err
+		if _, err := db.Exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0"); err != nil {
+			return err
+		}
+		// 只在「首次加列」这一瞬间把存量老账号视为已验证。
+		// 早期实现把这条 UPDATE 放在加列分支之外，于是每次启动都对所有用户执行一次，
+		// 一个重启就能把刚注册、尚未验证的账号洗成已验证（P0-3）。稳态库不应再有任何 UPDATE。
+		if _, err := db.Exec("UPDATE users SET email_verified=1 WHERE email_verified=0"); err != nil {
+			return err
+		}
 	}
-	// 存量用户视为已验证（避免老账号被邮箱验证卡住；新注册用户默认未验证）
-	_, _ = db.Exec("UPDATE users SET email_verified=1 WHERE email_verified=0")
 	// 个人资料：性别/年龄/籍贯 (V14)
 	for _, col := range []string{"gender", "age", "native_place", "bio"} {
 		if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='`+col+`'`).Scan(&cnt); err != nil {

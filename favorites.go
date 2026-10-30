@@ -208,6 +208,47 @@ func handleAlbumDelete() http.HandlerFunc {
 	}
 }
 
+// albumTargetTypes 允许放进相册的内容类型。
+// 早期版本直接信任前端传来的 targetType/targetId 并原样回显成 <img src>，
+// 于是 targetId 里塞一个引号就能在相册页注入 HTML（P1-1，免点击存储型 XSS）。
+var albumTargetTypes = map[string]bool{
+	"post":    true,
+	"article": true,
+	"file":    true,
+	"course":  true,
+	"photo":   true,
+}
+
+// isDigits 判断是否全为数字（用于 post/article/file 的自增 ID）。
+func isDigits(s string) bool {
+	if s == "" || len(s) > 19 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// isPhotoName 判断是否形如上传照片的随机文件名（仅字母数字与 ._-）。
+func isPhotoName(s string) bool {
+	if s == "" || len(s) > 64 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9':
+		case c == '.' || c == '_' || c == '-':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // handleAlbumAddItem 把内容加入相册
 // POST /api/albums/add-item  body:{albumId,targetType,targetId}
 func handleAlbumAddItem() http.HandlerFunc {
@@ -221,6 +262,24 @@ func handleAlbumAddItem() http.HandlerFunc {
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			apiErr(w, 400, "请求格式错误"); return
+		}
+		// 白名单 + 格式校验：只允许已知类型与受限字符集，
+		// 从源头保证 targetId 不可能带引号/尖括号等可注入字符。
+		body.TargetType = strings.TrimSpace(body.TargetType)
+		body.TargetID = strings.TrimSpace(body.TargetID)
+		if !albumTargetTypes[body.TargetType] {
+			apiErr(w, 400, "不支持的内容类型"); return
+		}
+		if body.TargetType == "photo" {
+			if !isPhotoName(body.TargetID) {
+				apiErr(w, 400, "照片标识不合法"); return
+			}
+		} else if body.TargetType == "course" {
+			if body.TargetID == "" || len(body.TargetID) > 40 {
+				apiErr(w, 400, "课程编号不合法"); return
+			}
+		} else if !isDigits(body.TargetID) {
+			apiErr(w, 400, "内容 ID 不合法"); return
 		}
 		var owner int64
 		authStore.db.QueryRow(`SELECT user_id FROM albums WHERE id=?`, body.AlbumID).Scan(&owner)

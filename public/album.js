@@ -35,8 +35,8 @@ function renderItems(items) {
   photos.forEach(p => {
     const div = document.createElement('div');
     div.className = 'photo-item';
-    div.innerHTML = '<img src="' + p.photoUrl + '" alt="" loading="lazy">' +
-      (isOwner ? '<button class="photo-del" data-del-photo="' + p.id + '">删除</button>' : '');
+    div.innerHTML = '<img src="' + escape(p.photoUrl) + '" alt="" loading="lazy">' +
+      (isOwner ? '<button class="photo-del" data-del-photo="' + escape(p.id) + '">删除</button>' : '');
     div.querySelector('img').onclick = () => openLightbox(p.photoUrl);
     const del = div.querySelector('[data-del-photo]');
     if (del) del.onclick = (e) => { e.stopPropagation(); delPhoto(p.id); };
@@ -53,7 +53,7 @@ function renderItems(items) {
       else if (o.targetType === 'file') { href = '/viewer.html?id=' + o.targetId; label = '资料 #' + o.targetId; }
       else if (o.targetType === 'course') { href = '/course.html?code=' + encodeURIComponent(o.targetId); label = '课程'; }
       return '<div class="act-item"><span class="act-badge badge-article">藏</span>' +
-        '<a class="act-main" href="' + href + '" target="_blank">' + escape(label) + '</a>' +
+        '<a class="act-main" href="' + escape(href) + '" target="_blank">' + escape(label) + '</a>' +
         '<span class="act-sub">' + escape(o.targetType) + ' · ' + escape(o.createdAt) + '</span></div>';
     }).join('');
     grid.appendChild(listBox);

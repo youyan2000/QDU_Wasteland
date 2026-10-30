@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -32,19 +33,40 @@ const (
 	mailQuota    = 2             // 未验证用户每小时配额次数（第3次触发锁）
 )
 
-// clientIP 提取客户端 IP
+// clientIP 提取客户端 IP。
+//
+// 安全约定：只信 r.RemoteAddr。入站的 X-Forwarded-For 完全由客户端决定，
+// 任何"取第一段"的实现都会让每个请求落到新的计数桶（=限流失效）。
+//
+// 唯一例外：当对端就是本机（nginx 反代固定 127.0.0.1）时，采信 nginx 写入的
+// X-Real-IP —— 该头由 nginx 覆盖赋值（proxy_set_header X-Real-IP $remote_addr），
+// 客户端无法伪造。若将来直接对公网监听，本分支必须去掉。
 func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := indexByte(xff, ','); i > 0 {
-			return trimSpace(xff[:i])
-		}
-		return trimSpace(xff)
-	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if isLocalPeer(host) {
+		if real := strings.TrimSpace(r.Header.Get("X-Real-IP")); real != "" && net.ParseIP(real) != nil {
+			return real
+		}
 	}
 	return host
+}
+
+// isLocalPeer 判断是否来自本机反代。
+func isLocalPeer(host string) bool {
+	if host == "" {
+		return false
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback()
 }
 
 func indexByte(s string, b byte) int {

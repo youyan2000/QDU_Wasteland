@@ -113,39 +113,16 @@ func handleAlbumSaveImage() http.HandlerFunc {
 			authStore.db.QueryRow(`SELECT user_id FROM albums WHERE id=?`, body.AlbumID).Scan(&owner)
 			if owner == 0 || owner != uid { apiErr(w, 403, "无权操作"); return }
 		}
-		// 拉取图片（站内路径转完整地址；站外直接下载）
-		fullURL := body.URL
-		if strings.HasPrefix(body.URL, "/") {
-			fullURL = "http://" + r.Host + body.URL
-		}
-		client := &http.Client{Timeout: 30 * time.Second}
-		resp, err := client.Get(fullURL)
+		// 取图：站内路径直接读本地文件（不再用 http://+r.Host 打回自己），
+		// 站外地址只允许公网目标（P1-2：早期实现可被用来探测内网与云元数据）。
+		data, err := loadAlbumImageSource(body.URL)
 		if err != nil {
-			apiErr(w, 502, "图片获取失败"); return
+			apiErr(w, 400, err.Error()); return
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 { apiErr(w, 502, "图片获取失败（状态 "+fmt.Sprint(resp.StatusCode)+"）"); return }
-		// 类型判断
-		ct := resp.Header.Get("Content-Type")
-		var ext string
-		switch {
-		case strings.Contains(ct, "jpeg") || strings.Contains(ct, "jpg"): ext = ".jpg"
-		case strings.Contains(ct, "png"): ext = ".png"
-		case strings.Contains(ct, "gif"): ext = ".gif"
-		case strings.Contains(ct, "webp"): ext = ".webp"
-		default: ext = ".jpg"
-		}
-		data, err := io.ReadAll(io.LimitReader(resp.Body, 8*1024*1024))
-		if err != nil || len(data) == 0 { apiErr(w, 400, "图片为空"); return }
+		if len(data) == 0 { apiErr(w, 400, "图片为空"); return }
 		if len(data) > 8*1024*1024 { apiErr(w, 400, "图片超过 8MB"); return }
-		// 魔数嗅探
-		head := data
-		if len(head) > 12 { head = head[:12] }
-		isImg := strings.HasPrefix(string(head), "\xff\xd8") ||
-			strings.HasPrefix(string(head), "\x89PNG") ||
-			strings.HasPrefix(string(head), "GIF8") ||
-			(strings.HasPrefix(string(head), "RIFF") && len(head) > 8 && string(head[8:12]) == "WEBP")
-		if !isImg { apiErr(w, 400, "内容不是有效图片"); return }
+		ext := extForImage(data)
+		if ext == "" { apiErr(w, 400, "内容不是有效图片"); return }
 		// 存盘
 		dir := filepath.Join("uploads", "albums")
 		if err := os.MkdirAll(dir, 0o755); err != nil { apiErr(w, 500, "存储失败"); return }
