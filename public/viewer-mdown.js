@@ -33,7 +33,11 @@ function renderMarkdown(md) {
   // 图片 ![alt](url)
   s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
   // 链接 [text](url)
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function (m, text, href) {
+    // 只放行 http/https 与站内相对路径，挡掉 javascript: / data: 这类可执行 scheme
+    var safe = /^(https?:\/\/|\/)/i.test(href.trim()) ? href.trim() : '#';
+    return '<a href="' + safe + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+  });
 
   // 粗体/斜体/删除线
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');

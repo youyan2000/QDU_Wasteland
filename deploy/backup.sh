@@ -146,3 +146,7 @@ say "  备份轮转: 现有 $COUNT 份，保留上限 $KEEP，本次清理 $PRUN
 # ---------- 5. 汇总 ----------
 ls -lt "$BACKUP_DIR" 2>/dev/null | head -6 | sed 's/^/  /'
 say "===== 备份完成 ✓ ====="
+
+# 备份产物含全部邮箱、私信与密码哈希，权限收到仅 root 可读（审计低危项）
+chmod 600 "$BACKUP_DIR"/*.db* 2>/dev/null || true
+chmod 600 "$BACKUP_DIR"/*.zip 2>/dev/null || true

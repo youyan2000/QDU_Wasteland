@@ -1,4 +1,4 @@
-module qdu-wasteland
+module wasteland
 
 go 1.26.6
 

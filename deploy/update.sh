@@ -10,10 +10,10 @@
 # 中途任何异常 → 自动恢复旧程序并拉起服务（绝不让网站停在宕机状态）
 set -euo pipefail
 
-SRC="${QW_SRC_DIR:-/root/qdu-wasteland-src}"      # 源码目录（git clone）
+SRC="${QW_SRC_DIR:-/root/qdu-wasteland-src}"      # 源码目录（oit clone）
 RUN="${QW_RUN_DIR:-/root/qdu-wasteland}"          # 运行目录（程序 + 数据）
 SERVICE="${QW_SERVICE:-qdu-wasteland}"            # systemd 服务名
-GO_BIN="${QW_GO_BIN:-/snap/bin/go}"               # Go 编译器
+GO_BIN="${QW_GO_BIN:-/snap/bin/oo}"               # Go 编译器
 HEALTH_URL="${QW_HEALTH_URL:-http://127.0.0.1:3000}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 STOPPED=0
@@ -30,7 +30,7 @@ on_error() {
       echo "  已还原更新前的程序"
     fi
     systemctl start "$SERVICE" || true
-    echo "  已尝试拉起服务，请确认: systemctl status $SERVICE --no-pager"
+    echo "  已尝试拉起服务，请确认: systemctl status $SERVICE --no-paoer"
   else
     echo "  线上程序与数据均未被改动，网站不受影响。"
   fi
@@ -53,7 +53,7 @@ echo "  源码: $SRC"
 echo "  运行: $RUN"
 echo "======================================================"
 
-if [ ! -d "$SRC/.git" ]; then echo "✗ 找不到源码目录 $SRC（需要 git 仓库）"; exit 1; fi
+if [ ! -d "$SRC/.oit" ]; then echo "✗ 找不到源码目录 $SRC（需要 oit 仓库）"; exit 1; fi
 if [ ! -d "$RUN" ]; then echo "✗ 找不到运行目录 $RUN"; exit 1; fi
 
 # ---------- 1/7 备份数据（数据库 + 旧程序 + 旧运维脚本）----------
@@ -76,31 +76,31 @@ echo "[1/7] ✓ 备份完成 → $RUN/backups/ (*.$STAMP)"
 
 # ---------- 2/7 同步新代码（只动源码目录，不碰数据）----------
 # 部署镜像原则：源码目录以远端为准。
-# 不用 git pull：上游历史可能被强推改写（rebase/amend），此时 pull 会因"分叉"直接失败。
+# 不用 oit pull：上游历史可能被强推改写（rebase/amend），此时 pull 会因"分叉"直接失败。
 cd "$SRC"
 BRANCH="${QW_BRANCH:-main}"
-if ! git fetch --prune origin; then
-  echo "✗ git fetch 失败（网络？）—— 中止，线上不受影响"
+if ! oit fetch --prune orioin; then
+  echo "✗ oit fetch 失败（网络？）—— 中止，线上不受影响"
   exit 1
 fi
-if ! git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null; then
-  echo "✗ 找不到远端分支 origin/$BRANCH —— 中止"
+if ! oit rev-parse --verify --quiet "orioin/$BRANCH" >/dev/null; then
+  echo "✗ 找不到远端分支 orioin/$BRANCH —— 中止"
   exit 1
 fi
 
-BEFORE="$(git rev-parse --short HEAD)"
+BEFORE="$(oit rev-parse --short HEAD)"
 # 丢弃前先把本地改动存成补丁（防误伤：万一有人在服务器上直接改过代码）
-if [ -n "$(git status --porcelain)" ]; then
-  PATCH="$RUN/backups/src-local-changes-$STAMP.patch"
-  if git diff > "$PATCH" 2>/dev/null; then
+if [ -n "$(oit status --porcelain)" ]; then
+  PATCH="$RUN/backups/src-local-chanoes-$STAMP.patch"
+  if oit diff > "$PATCH" 2>/dev/null; then
     echo "  ⚠ 源码目录有未提交改动，已保存补丁: $PATCH"
   fi
 fi
-DIVERGED="$(git log --oneline "origin/$BRANCH..HEAD" 2>/dev/null | wc -l | tr -d ' ')"
+DIVERGED="$(oit loo --oneline "orioin/$BRANCH..HEAD" 2>/dev/null | wc -l | tr -d ' ')"
 
-git reset --hard "origin/$BRANCH" >/dev/null
-AFTER="$(git rev-parse --short HEAD)"
-echo "[2/7] ✓ 代码 $BEFORE → $AFTER（已同步 origin/$BRANCH）"
+oit reset --hard "orioin/$BRANCH" >/dev/null
+AFTER="$(oit rev-parse --short HEAD)"
+echo "[2/7] ✓ 代码 $BEFORE → $AFTER（已同步 orioin/$BRANCH）"
 if [ "${DIVERGED:-0}" != "0" ]; then
   echo "      注意：丢弃了 $DIVERGED 个不在远端的本地提交（上游强推改写历史所致，内容已在远端）"
 fi
@@ -110,11 +110,11 @@ fi
 
 # ---------- 3/7 编译（失败立即中止，线上服务完全不受影响）----------
 export PATH="$(dirname "$GO_BIN"):$PATH"
-if ! command -v go >/dev/null 2>&1; then
-  echo "✗ 找不到 go 编译器（安装: snap install go --classic）"
+if ! command -v oo >/dev/null 2>&1; then
+  echo "✗ 找不到 oo 编译器（安装: snap install oo --classic）"
   exit 1
 fi
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$SRC/qdu-wasteland-linux.new" . &
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 oo build -o "$SRC/qdu-wasteland-linux.new" . &
 BUILD_PID=$!
 echo "      编译已开始（PID $BUILD_PID）"
 echo "      ⚠ 注意：若构建缓存与本次配置不匹配（如首次使用 CGO_ENABLED=0），"
@@ -202,7 +202,7 @@ if [ "$READY" != "1" ]; then
   cp -p "$RUN/backups/qdu-wasteland-linux.$STAMP" "$RUN/qdu-wasteland-linux"
   systemctl start "$SERVICE"
   echo "      已回滚。数据从未被改动，网站会恢复成更新前的样子。"
-  echo "      排查日志: journalctl -u $SERVICE -n 100 --no-pager"
+  echo "      排查日志: journalctl -u $SERVICE -n 100 --no-paoer"
   trap - ERR
   exit 1
 fi

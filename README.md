@@ -22,24 +22,29 @@
 ## 📁 目录结构
 
 ```
-qdu-wasteland/
-├── main.go / README.md / start-server.ps1
-├── auth.go / auth_http.go       # 用户、会话、注册登录 (SQLite)
-├── avatar.go                    # 头像上传
-├── course.go                    # 课表 CSV 导入 + 课程/班次内存库
-├── api.go / search.go           # 课程列表/详情、全站搜索
-├── content.go                   # 上传/下载/预览、课程评价
-├── api_forum.go / content_update.go  # 论坛、编辑删除
-├── article.go / article_cover.go     # 学校信息文章、封面
-├── admin.go / censor.go / report.go / virus.go / csrf.go / ratelimit.go / audit.go
-├── mail.go / email_verify.go     # 邮件、邮箱验证、找回密码
-├── notify.go / message.go        # 通知、私信
-├── org.go / regions.go           # 学院专业统一、籍贯
-├── favorites.go / topic.go / block.go / ban.go / maintenance.go / opinion.go
-├── public/                      # 前端静态文件
-└── uploads/ / qdu-auth.db       # 上传文件 / SQLite 库（gitignore）
+Wasteland/
+├── cmd/wasteland/        主程序（package main，全部站点业务代码）
+│   ├── main.go           入口：建库 → 路由 → 维护模式 → securityHeaders → 静态文件
+│   ├── auth*.go          用户与会话        course.go / api.go     课程与检索
+│   ├── content*.go       资料与评价        api_forum.go           论坛
+│   ├── article*.go       文章              admin*.go              后台
+│   └── security_*.go     安全中间件与护栏
+├── cmd/devseed|seedhistory|toolsdemo|migrate-digests/   本地工具
+├── internal/
+│   ├── tools/            工具框架 + 5 个工具（nextjlc / history / digest / hot / collector）
+│   ├── githubdigest/     开源日报抓取
+│   ├── hotdigest/        热点日报抓取
+│   └── digestdb/         日报快照入库（表 <prefix>_issues）
+├── public/               站点前端（原生 JS，无构建）
+├── deploy/               部署与运维脚本（含 nginx.conf.example）
+├── docs/                 全部文档（ARCHITECTURE / SECURITY-FIXES / 部署 / 运维）
+├── classes/ + _csv/      课表原始表与转换后的 CSV（数据，gitignore）
+├── course-files/         课程资料清单（本体不入库）
+├── backups/ dist/ .cache/ tool-data/ VPN/   本地运行时数据（全部 gitignore）
+└── go.mod                module wasteland（全仓唯一）
 ```
 
+构建：`go build -o dist/wasteland ./cmd/wasteland`
 ---
 
 ## 🚀 如何运行

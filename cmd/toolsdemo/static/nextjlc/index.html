@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeXTJLC · 演示</title>
+<style>
+body{margin:0;background:#faf9f6;color:#16181d;font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif}
+.w{max-width:760px;margin:0 auto;padding:48px 24px}
+.tag{font:11px/1 ui-monospace,monospace;letter-spacing:.1em;color:#6b7280}
+h1{font-size:28px;margin:0 0 16px}
+.drop{margin:24px 0;padding:36px;border:2px dashed #d1d5db;border-radius:16px;text-align:center;color:#6b7280}
+ul{padding-left:20px}
+a{color:#304cff}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="w">
+<p class="tag">PCB / GERBER</p>
+<h1>NeXTJLC</h1>
+<p>把 Gerber / 钻孔文件拖进来，整理后导出 JLC 下单格式。</p>
+<div class="drop">把文件拖到这里（占位）</div>
+<h2 style="font-size:18px">这一页在演示什么</h2>
+<ul>
+<li>静态前端由 <code>tools.Static</code> 从 <code>go:embed</code> 提供，没有外部目录依赖</li>
+<li>路径已由框架剥掉 <code>/tool/nextjlc</code> 前缀，页面里只写相对路径</li>
+<li>响应头固定 <code>Cache-Control: no-store</code> 与 <code>X-Content-Type-Options: nosniff</code></li>
+</ul>
+<p style="margin-top:32px"><a href="/tool/">← 回到工具中心</a></p>
+</div>
+</body>
+</html>

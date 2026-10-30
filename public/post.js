@@ -82,7 +82,7 @@ function render(p) {
     const r = await fetch('/api/me');
     const me = await r.json();
     if (!me.loggedIn) { location.href = '/login.html'; return; }
-    await fetch('/api/forum/like?id=' + p.id);
+    await fetch('/api/forum/like?id=' + p.id, { method: 'POST' });
     load();
   };
 

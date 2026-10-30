@@ -38,5 +38,5 @@ if (Test-Path $db) {
 }
 Write-Host 'This account exists only in this local test database. CAPTCHA bypass is enabled only for this localhost process.'
 Write-Host 'Press Ctrl+C to stop.'
-& $exe
+  $exe
 if ($LASTEXITCODE -ne 0) { throw "Test server exited with $LASTEXITCODE" }

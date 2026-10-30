@@ -1,4 +1,4 @@
-﻿# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
+# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
 # 说明：
 #   1. 若杀毒软件误报 qdu-wasteland.exe 为 Backdoor/W64.CobaltStrike：
 #      请把本目录加入杀毒白名单，或自查误报（源码与依赖哈希已校验，见 PLAN.md 安全说明）。
@@ -37,11 +37,11 @@ if ($env:MAIL_HOST) {
 
 # —— 构建：默认 qdu-wasteland.exe；若被占用则自动换名 ——
 $exeName = 'qdu-wasteland.exe'
-go build -o $exeName . 2>$null
+go build -o $exeName ./cmd/wasteland/cmd/wasteland 2>$null
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exeName)) {
     Write-Host '⚠️ qdu-wasteland.exe 被占用（残留句柄/杀软拦截），改用 qdu-wasteland-new.exe'
     $exeName = 'qdu-wasteland-new.exe'
-    go build -o $exeName .
+    go build -o $exeName ./cmd/wasteland
     if ($LASTEXITCODE -ne 0) { Write-Error '编译失败'; exit 1 }
 }
 Write-Host "📦 使用 $exeName 启动"

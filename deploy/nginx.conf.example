@@ -1,0 +1,53 @@
+# nginx 反代配置（QDU Wasteland）
+
+> 应用自身已发安全响应头（CSP / X-Frame-Options / HSTS / Referrer-Policy / Permissions-Policy），
+> 这里不再重复添加，避免出现两份互相矛盾的策略。
+> 但下面三项**必须**由 nginx 负责，否则应用内有对应缺陷。
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name qdwasteland.top;
+
+    # 证书由 certbot 自动续期
+    ssl_certificate     /etc/letsencrypt/live/qdwasteland.top/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/qdwasteland.top/privkey.pem;
+
+    # ① 上传上限：资料允许 200MB
+    client_max_body_size 220m;
+    client_body_timeout 300s;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+
+        # ② 真实客户端 IP：应用只信本机对端发来的 X-Real-IP。
+        #    绝对不要用 $proxy_add_x_forwarded_for —— 它会把客户端自带的 XFF 追加在前，
+        #    应用取第一段就等于把伪造权交给攻击者（审计 P0-2）。
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_read_timeout 300s;
+        proxy_buffering off;          # 大文件下载不落盘
+    }
+
+    # 静态资源交给 nginx 更省 CPU（可选；不配也能跑）
+    location /static/ {
+        alias /root/qdu-wasteland/public/;
+        expires 7d;
+        access_log off;
+    }
+}
+```
+
+## 反向检查清单
+
+| 检查 | 命令 | 期望 |
+|---|---|---|
+| 真实 IP 生效 | 连续 6 次错误登录 | 第 6 次 429 |
+| 响应头存在 | `curl -I https://域名/` | 有 `Content-Security-Policy`、`X-Frame-Options`、`Strict-Transport-Security` |
+| 上传上限 | 传 210MB 文件 | 被拒（nginx 层） |
+| 大 JSON 被拒 | 传 3MB JSON 到任意 `/api/` | 应用层 400 |
+| 备份权限 | `ls -l` 备份目录 | `-rw-------`（`chmod 600`） |

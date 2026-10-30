@@ -16,9 +16,9 @@ if (-not (Test-Path (Join-Path $NextJlcPath 'pkg\nextjlc_bg.wasm'))) {
 }
 Push-Location $NextJlcPath
 try {
-    & $bunExe run typecheck
+      $bunExe run typecheck
     if ($LASTEXITCODE -ne 0) { throw 'NeXTJLC typecheck failed.' }
-    & $bunExe run build:web
+      $bunExe run build:web
     if ($LASTEXITCODE -ne 0) { throw 'NeXTJLC build failed.' }
 } finally { Pop-Location }
 $bundlePath = Join-Path $projectDir 'dist\tools\nextjlc'
@@ -31,7 +31,7 @@ foreach ($name in 'PORT','CSV_DIR','TOOLS_ROOT','ADMIN_EMAIL','ADMIN_PASSWORD') 
     $savedEnv[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
 }
 try {
-    & go build -o $exePath .
+      go build -o $exePath .
     if ($LASTEXITCODE -ne 0) { throw 'Local website build failed.' }
     $env:PORT = "127.0.0.1:$Port"
     $env:CSV_DIR = Join-Path (Split-Path $projectDir -Parent) '_csv'
@@ -41,7 +41,7 @@ try {
     $env:ADMIN_PASSWORD = ''
     Write-Host "Starting the complete local website. After course loading, open http://localhost:$Port/tool/"
     Write-Host 'Press Ctrl+C to stop. No online deployment is performed.'
-    & $exePath
+      $exePath
     if ($LASTEXITCODE -ne 0) { throw "Local website exited with code $LASTEXITCODE." }
 } finally {
     foreach ($name in $savedEnv.Keys) {
