@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="热点日报 · 哲学理论、思想散文、当代诗歌、电力电子、嵌入式、AI、潮流音乐七个方向的每日推荐。">
+  <title>热点日报 · Wasteland</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/common.css">
+  <link id="themesCss" rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/tool/_assets/tool-center.css">
+  <link rel="stylesheet" href="/tool/_assets/hot.css">
+  <script defer src="/icons.js"></script>
+  <script defer src="/nav.js"></script>
+  <script defer src="/tool/_assets/hot.js"></script>
+</head>
+<body class="tools-body hot-body">
+  <a class="skip-link" href="#hot-content">跳到内容</a>
+  <div id="site-nav"></div>
+  <main class="tools-main hot-main" id="hot-content">
+    <nav class="tools-breadcrumb" aria-label="面包屑">
+      <a href="/tool/">返回工具</a>
+    </nav>
+    <header class="tools-heading hot-heading">
+      <p class="tools-kicker">SEVEN FIELDS / DAILY</p>
+      <h1>热点日报</h1>
+    </header>
+
+    {{if .Empty}}
+    <p class="hot-empty">还没有日报数据。服务器每天会自动抓取一次{{if .CanRefresh}}，也可以点「立即刷新」{{end}}。</p>
+    {{else}}
+
+    <nav class="hot-tabs" aria-label="方向切换">
+      {{range .Tabs}}
+      <a class="hot-tab{{if .Active}} is-active{{end}}" href="{{.Href}}"{{if .Active}} aria-current="page"{{end}}>{{.Title}}<span>{{.Count}}</span></a>
+      {{end}}
+    </nav>
+
+    {{if .Tracks}}
+    <nav class="hot-tracks" aria-label="语言切换">
+      {{range .Tracks}}
+      <a class="hot-track{{if .Active}} is-active{{end}}" href="{{.Href}}"{{if .Active}} aria-current="true"{{end}}>{{.Title}}<span>{{.Count}}</span></a>
+      {{end}}
+    </nav>
+    {{end}}
+
+    <div class="hot-bar">
+      <p class="hot-date">{{if .Date}}<strong>{{.Date}}</strong>{{if .GeneratedAt}} · 生成于 {{.GeneratedAt}}{{end}}{{end}}</p>
+      <p class="hot-count">共 {{len .Items}} 条{{if .PaperCount}} · 论文 {{.PaperCount}} 篇{{end}}</p>
+      {{if .CanRefresh}}<button id="hotRefresh" class="hot-refresh" type="button">立即刷新</button>{{end}}
+    </div>
+    {{if .SourceTotal}}
+    <p class="hot-source-note">本期汇总 {{.SourceTotal}} 个信源{{if .SourceFailed}}，其中 {{.SourceFailed}} 个暂时未取到（{{range $i, $name := .Failed}}{{if $i}}、{{end}}{{$name}}{{end}}）{{end}}。</p>
+    {{end}}
+
+    {{if .Items}}
+    <ol class="hot-list">
+      {{range .Items}}
+      <li class="hot-item">
+        <h3 class="hot-title"><a href="{{.URL}}" target="_blank" rel="noopener noreferrer nofollow">{{.Title}}</a></h3>
+        {{if .Summary}}<p class="hot-summary">{{.Summary}}</p>{{end}}
+        <p class="hot-meta">
+          {{if eq .Kind "paper"}}<span class="hot-kind">论文</span>{{end}}
+          <span class="hot-source">{{.Source}}</span>
+          {{if gt .SourceCount 1}}<span class="hot-coverage">{{.SourceCount}} 家信源</span>{{end}}
+          {{if .Citations}}<span class="hot-cites">被引 {{.Citations}}</span>{{end}}
+          {{if .Translated}}<span class="hot-orig" title="{{.TitleOrig}}">原文直译</span>{{else if .TitleOrig}}<span class="hot-orig" title="{{.TitleOrig}}">已改写</span>{{end}}
+          {{if eq .Lang "zh"}}<span class="hot-lang">中文</span>{{end}}
+          {{if .Issue}}<span class="hot-when">{{.Issue}}</span>{{else}}<time class="hot-when" datetime="{{.PublishedAt}}">{{when .PublishedAt}}</time>{{end}}
+        </p>
+      </li>
+      {{end}}
+    </ol>
+    {{else}}
+    <p class="hot-empty">这一栏今天没有取到内容。华语哲学与诗歌目前缺可用的 RSS 源，见文档第 12 节。</p>
+    {{end}}
+    {{end}}
+
+    {{if .Days}}
+    <nav class="hot-days" aria-label="历史日报">
+      {{range .Days}}<a href="/tool/hot/?group={{$.Active.Key}}{{if $.ActiveTrack.Key}}&track={{$.ActiveTrack.Key}}{{end}}&date={{.}}" class="{{if eq . $.Date}}active{{end}}">{{.}}</a>{{end}}
+    </nav>
+    {{end}}
+  </main>
+</body>
+</html>

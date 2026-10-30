@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="把 Gerber 与钻孔整理成 JLC 下单格式。">
+  <title>NeXTJLC · 工具 · Wasteland</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/common.css">
+  <link id="themesCss" rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/tool/_assets/tool-center.css">
+  <script defer src="/icons.js"></script>
+  <script defer src="/nav.js"></script>
+  <style>
+    .nw-grid{display:grid;grid-template-columns:1fr;gap:28px}
+    @media(min-width:900px){.nw-grid{grid-template-columns:1fr 1fr}}
+    .nw-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
+    .nw-head h2{font-size:16px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .badge{font-size:11px;padding:1px 8px;border-radius:999px;background:#eef2ff;color:#3730a3}
+    .nw-btn{padding:4px 14px;background:var(--ink,#16181d);color:#fff;font-size:13px;font-weight:600;border:0;border-radius:6px;cursor:pointer}
+    .nw-btn[disabled]{background:#c9ced6;cursor:not-allowed}
+    .nw-box{border:2px dashed #d1d5db;border-radius:10px;height:380px;padding:14px;display:flex;flex-direction:column;background:#fff}
+    .nw-box ul{flex:1;overflow-y:auto;margin:0;padding:0;list-style:none}
+    .nw-box li{display:flex;justify-content:space-between;align-items:center;padding:2px 8px;border-radius:4px}
+    .nw-box li:hover{background:#f6f7f9}
+    .nw-box li span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .nw-box li button{opacity:0;border:0;background:none;color:#6b7280;cursor:pointer;font-size:14px;padding:0 4px}
+    .nw-box li:hover button{opacity:1}
+    .nw-box li button:hover{color:#b91c1c}
+    .nw-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:13px;text-align:center}
+    .nw-drop{margin-top:26px}
+    .nw-bar{height:6px;background:#eef0f3;border-radius:999px;overflow:hidden;margin:14px 0 6px}
+    .nw-bar>i{display:block;height:100%;width:0;background:var(--ink,#16181d);transition:width .18s}
+    .nw-meta{font-size:13px;color:#6b7280;margin:0}
+    .nw-err{color:#b91c1c;font-size:13px;margin-top:10px;white-space:pre-wrap}
+  </style>
+</head>
+<body class="tools-body">
+  <a class="skip-link" href="#nj">跳到工具内容</a>
+  <div id="site-nav"></div>
+  <main class="tools-main" id="nj">
+    <nav class="tools-breadcrumb" aria-label="面包屑"><a href="/tool/">返回工具</a></nav>
+    <header class="tools-heading">
+      <p class="tools-kicker">PCB / GERBER</p>
+      <h1>NeXTJLC</h1>
+    </header>
+
+    <div id="drop" class="nw-drop" style="border:2px dashed #d1d5db;border-radius:12px;padding:44px 24px;text-align:center;cursor:pointer;background:#fff">
+      <strong style="display:block;font-size:17px;margin-bottom:6px">拖入 zip 或选择 Gerber 文件</strong>
+      <span style="font-size:13px;color:#6b7280">支持 Altium / KiCad / EasyEDA 导出的 Gerber 与钻孔</span>
+      <input id="file" type="file" multiple hidden style="display:none">
+    </div>
+
+    <div class="nw-grid" style="margin-top:26px">
+      <section>
+        <div class="nw-head">
+          <h2>&#128269; Gerber Files<span id="badges"></span></h2>
+          <button class="nw-btn" id="processBtn" disabled>Process</button>
+        </div>
+        <div class="nw-box">
+          <ul id="inputList"></ul>
+          <div class="nw-empty" id="inputEmpty">还没有文件</div>
+        </div>
+      </section>
+
+      <section>
+        <div class="nw-head">
+          <h2>&#128230; Export Preview</h2>
+          <button class="nw-btn" id="downloadBtn" disabled>Download</button>
+        </div>
+        <div class="nw-box">
+          <ul id="outputList"></ul>
+          <div class="nw-empty" id="outputEmpty">尚未处理</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="nw-bar"><i id="barFill"></i></div>
+    <p class="nw-meta" id="status"></p>
+    <div class="nw-err" id="err"></div>
+  </main>
+
+<script>
+(function () {
+  var drop = document.getElementById('drop');
+  var input = document.getElementById('file');
+  var inputList = document.getElementById('inputList');
+  var inputEmpty = document.getElementById('inputEmpty');
+  var outputList = document.getElementById('outputList');
+  var outputEmpty = document.getElementById('outputEmpty');
+  var badges = document.getElementById('badges');
+  var processBtn = document.getElementById('processBtn');
+  var downloadBtn = document.getElementById('downloadBtn');
+  var barFill = document.getElementById('barFill');
+  var statusEl = document.getElementById('status');
+  var errEl = document.getElementById('err');
+
+  var files = [];       // File 对象
+  var session = '';
+  var outputs = [];     // {originalName, newName}
+  var ready = true;
+  var inputs = [];
+
+  drop.onclick = function () { input.click(); };
+  input.onchange = function () { addFiles(input.files); };
+  ['dragenter', 'dragover'].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); });
+  });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    addFiles((e.dataTransfer && e.dataTransfer.files) || []);
+  });
+
+  function addFiles(list) {
+    for (var i = 0; i < list.length; i++) files.push(list[i]);
+    renderInputs();
+  }
+
+  function renderInputs() {
+    inputList.innerHTML = '';
+    inputEmpty.style.display = files.length ? 'none' : 'flex';
+    files.forEach(function (f) {
+      var li = document.createElement('li');
+      li.innerHTML = '<span>' + esc(f.name) + '</span><button title="复制到导出列表">&#8594;</button>';
+      li.querySelector('button').onclick = function () { copyFile(f.name); };
+      inputList.appendChild(li);
+    });
+    // 徽章由服务端识别结果渲染（见 renderBadges），这里先清空
+    badges.innerHTML = '';
+    processBtn.disabled = files.length === 0 || !ready;
+  }
+
+  function renderBadges() {
+    var counts = {};
+    inputs.forEach(function (i) {
+      var sw = i.software || 'None';
+      counts[sw] = (counts[sw] || 0) + 1;
+    });
+    badges.innerHTML = Object.keys(counts).map(function (k) {
+      return '<span class="badge">' + esc(k) + ' ×' + counts[k] + '</span>';
+    }).join('');
+  }
+
+  function renderOutputs() {
+    outputList.innerHTML = '';
+    outputEmpty.style.display = outputs.length ? 'none' : 'flex';
+    outputs.forEach(function (o) {
+      var li = document.createElement('li');
+      li.innerHTML = '<span>' + esc(o.newName) + '</span><button title="从导出列表移除">&#10005;</button>';
+      li.querySelector('button').onclick = function () { removeFile(o.newName); };
+      outputList.appendChild(li);
+    });
+    downloadBtn.disabled = outputs.length === 0;
+  }
+
+  processBtn.onclick = function () {
+    if (!files.length) return;
+    errEl.textContent = '';
+    ready = false; processBtn.disabled = true;
+    barFill.style.width = '10%';
+    statusEl.textContent = '正在处理…';
+    var fd = new FormData();
+    files.forEach(function (f) { fd.append('files', f, f.name); });
+    fetch('/tool/nextjlc/api/process', { method: 'POST', body: fd })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        ready = true;
+        barFill.style.width = '100%';
+        if (!res.ok) throw new Error(res.d.error || '处理失败');
+        if ((res.d.errors || []).length) {
+          errEl.textContent = 'Gerber file validation failed:\n\n' + res.d.errors.join('\n');
+          session = ''; outputs = []; renderOutputs();
+          statusEl.textContent = '';
+          return;
+        }
+        session = res.d.session;
+        inputs = res.d.inputs || [];
+        outputs = res.d.files || [];
+        renderBadges();
+        renderOutputs();
+        statusEl.textContent = '完成：' + outputs.length + ' 个文件 · ' + res.d.layers + ' 层 · 下载名 ' + res.d.zipName;
+        if ((res.d.warnings || []).length) console.warn(res.d.warnings.join('\n'));
+      })
+      .catch(function (e) {
+        ready = true; processBtn.disabled = files.length === 0;
+        barFill.style.width = '0';
+        statusEl.textContent = '';
+        errEl.textContent = e.message || String(e);
+      });
+  };
+
+  function copyFile(name) {
+    if (!session) { alert('请先点 Process'); return; }
+    post('/tool/nextjlc/api/copy', { session: session, name: name }, function (d) {
+      outputs = d.files || []; renderOutputs();
+    });
+  }
+
+  function removeFile(name) {
+    post('/tool/nextjlc/api/remove', { session: session, name: name }, function (d) {
+      outputs = d.files || []; renderOutputs();
+    });
+  }
+
+  downloadBtn.onclick = function () {
+    errEl.textContent = '';
+    fetch('/tool/nextjlc/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session: session })
+    }).then(function (r) {
+      if (!r.ok) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          throw new Error(d.error || '下载失败');
+        });
+      }
+      return r.blob().then(function (blob) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'download.zip';
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      });
+    }).catch(function (e) { errEl.textContent = e.message || String(e); });
+  };
+
+  function post(url, body, cb) {
+    fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); }).then(cb)
+      .catch(function (e) { errEl.textContent = e.message || String(e); });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
+  }
+})();
+</script>
+</body>
+</html>

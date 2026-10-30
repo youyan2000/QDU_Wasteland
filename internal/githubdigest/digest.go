@@ -8,6 +8,7 @@
 package githubdigest
 
 import (
+	"database/sql"
 	"context"
 	"encoding/json"
 	"errors"
@@ -17,6 +18,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"wasteland/internal/digestdb"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -147,6 +149,8 @@ var dayRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 // Store reads and writes digest snapshots under Dir and queries the GitHub API.
 type Store struct {
+	// DB 非空时快照写入 SQLite（表 digest_issues），否则退回 tool-data 下的 JSON 文件。
+	DB *sql.DB
 	Dir     string
 	APIBase string
 	Token   string
@@ -667,6 +671,20 @@ func score(it Item) float64 {
 func (s *Store) digestDir() string { return filepath.Join(s.Dir, "digest") }
 
 func (s *Store) save(d *Digest) error {
+	if s.DB != nil {
+		raw, err := json.MarshalIndent(d, "", "  ")
+		if err != nil {
+			return err
+		}
+		kv := digestdb.Store{DB: s.DB, Prefix: "digest"}
+		if err := kv.Save(d.Date, raw); err != nil {
+			return err
+		}
+		if err := kv.Save("latest", raw); err != nil {
+			return err
+		}
+		return kv.Prune(60)
+	}
 	dir := s.digestDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -775,6 +793,13 @@ func (s *Store) Latest() (*Digest, error) {
 }
 
 func (s *Store) readLatest() (*Digest, error) {
+	if s.DB != nil {
+		raw, err := (digestdb.Store{DB: s.DB, Prefix: "digest"}).Load("latest")
+		if err != nil {
+			return nil, err
+		}
+		return decodeDigest(raw)
+	}
 	return readDigest(filepath.Join(s.digestDir(), "latest.json"))
 }
 
@@ -783,11 +808,21 @@ func (s *Store) Get(day string) (*Digest, error) {
 	if !dayRe.MatchString(day) {
 		return nil, errors.New("invalid date")
 	}
+	if s.DB != nil {
+		raw, err := (digestdb.Store{DB: s.DB, Prefix: "digest"}).Load(day)
+		if err != nil {
+			return nil, err
+		}
+		return decodeDigest(raw)
+	}
 	return readDigest(filepath.Join(s.digestDir(), day+".json"))
 }
 
 // Days returns saved days, newest first.
 func (s *Store) Days() ([]string, error) {
+	if s.DB != nil {
+		return (digestdb.Store{DB: s.DB, Prefix: "digest"}).Names(10)
+	}
 	days, err := listDays(s.digestDir())
 	if err != nil {
 		return nil, err
@@ -801,6 +836,15 @@ func readDigest(path string) (*Digest, error) {
 	if err != nil {
 		return nil, err
 	}
+	var d Digest
+	if err := json.Unmarshal(raw, &d); err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
+// decodeDigest 把库里的 JSON 解成 Digest。
+func decodeDigest(raw []byte) (*Digest, error) {
 	var d Digest
 	if err := json.Unmarshal(raw, &d); err != nil {
 		return nil, err
