@@ -204,9 +204,14 @@ func handleFileDownload() http.HandlerFunc {
 		var id int64
 		seg := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/files/"), "/")
 		fmt.Sscanf(seg[0], "%d", &id)
-		var stored, fname string
-		err := authStore.db.QueryRow("SELECT stored_name, file_name FROM files WHERE id = ?", id).Scan(&stored, &fname)
+		var stored, fname, status string
+		err := authStore.db.QueryRow("SELECT stored_name, file_name, COALESCE(status,'') FROM files WHERE id = ?", id).Scan(&stored, &fname, &status)
 		if err != nil {
+			apiErr(w, 404, "文件不存在")
+			return
+		}
+		// 读取侧统一拦「待复核 / 已下架」：否则被判违规的资料靠自增 ID 反而传播得更稳（审计 P1-4）。
+		if !fileReadableBy(r, id, status) {
 			apiErr(w, 404, "文件不存在")
 			return
 		}
@@ -228,9 +233,14 @@ func handleFilePreview() http.HandlerFunc {
 		seg := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/files/"), "/")
 		var id int64
 		fmt.Sscanf(seg[0], "%d", &id)
-		var stored, fname string
-		err := authStore.db.QueryRow("SELECT stored_name, file_name FROM files WHERE id = ?", id).Scan(&stored, &fname)
+		var stored, fname, status string
+		err := authStore.db.QueryRow("SELECT stored_name, file_name, COALESCE(status,'') FROM files WHERE id = ?", id).Scan(&stored, &fname, &status)
 		if err != nil {
+			apiErr(w, 404, "文件不存在")
+			return
+		}
+		// 读取侧统一拦「待复核 / 已下架」：否则被判违规的资料靠自增 ID 反而传播得更稳（审计 P1-4）。
+		if !fileReadableBy(r, id, status) {
 			apiErr(w, 404, "文件不存在")
 			return
 		}

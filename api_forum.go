@@ -232,20 +232,10 @@ func handlePostDetail() http.HandlerFunc {
 			apiErr(w, 404, "帖子不存在")
 			return
 		}
-		// C1 草稿箱：草稿仅作者或管理员可见
-		if pStatus == "draft" {
-			me := currentUserID(r)
-			if me != uid {
-				canSee := false
-				if me != 0 {
-					u, _ := authStore.GetByID(me)
-					canSee = u != nil && u.IsAdmin == 1
-				}
-				if !canSee {
-					apiErr(w, 404, "帖子不存在")
-					return
-				}
-			}
+		// 草稿 / 待复核 / 已下架：仅作者或管理员可见（审计 P1-4）
+		if !contentVisibleTo(r, pStatus, uid, 0) {
+			apiErr(w, 404, "帖子不存在")
+			return
 		}
 		// 作者名
 		var author string

@@ -36,18 +36,44 @@ func currentUserMuted(r *http.Request) bool {
 func handleAdminUserMute(auth *AuthStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if requireAdmin(auth, w, r) == 0 { return }
-		p := strings.TrimPrefix(r.URL.Path, "/api/admin/userban/")
-		p = strings.TrimSuffix(p, "/mute")
-		id, err := strconv.ParseInt(p, 10, 64)
-		if err != nil || id == 0 { apiErr(w, 400, "无效用户"); return }
+		// 路由注册在 /api/admin/userban/mute/{id}，同时兼容旧的 /api/admin/userban/{id}/mute。
+		// 早期实现只做了 TrimPrefix("/api/admin/userban/") + TrimSuffix("/mute")，
+		// 得到 "mute/5" 再 ParseInt 必然失败 —— 后台"禁言"按钮实际从未生效（审计低危项）。
+		id, ok := parseUserbanID(r.URL.Path, "mute")
+		if !ok { apiErr(w, 400, "无效用户"); return }
 		if id == currentUserID(r) { apiErr(w, 400, "不能禁言自己"); return }
 		var body struct{ Muted int `json:"muted"` }
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apiErr(w, 400, "请求格式错误"); return }
 		v := 0
 		if body.Muted != 0 { v = 1 }
-		_, err = auth.db.Exec("UPDATE users SET muted=? WHERE id=?", v, id)
+		_, err := auth.db.Exec("UPDATE users SET muted=? WHERE id=?", v, id)
 		if err != nil { apiErr(w, 500, "操作失败"); return }
 		logAudit(auth.db, currentUserID(r), "禁言用户", "用户ID="+strconv.FormatInt(id, 10)+" muted="+strconv.Itoa(v))
 		apiJSON(w, 200, map[string]any{"ok": true, "id": id, "muted": v})
 	}
+}
+
+// parseUserbanID 从后台路径里取出用户 ID，兼容三种写法：
+//
+//	/api/admin/userban/mute/{id}   当前注册的路由
+//	/api/admin/userban/{id}/mute   旧写法
+//	/api/admin/userban/{id}        封禁/解封
+//
+// action 传 "mute" / "ban"，没有动作段时传空串。
+func parseUserbanID(path, action string) (int64, bool) {
+	p := strings.Trim(strings.TrimPrefix(path, "/"), "/")
+	p = strings.TrimPrefix(p, "api/admin/userban/")
+	if action != "" {
+		if rest, ok := strings.CutPrefix(p, action+"/"); ok {
+			p = rest
+		} else {
+			p = strings.TrimSuffix(p, "/"+action)
+		}
+	}
+	p = strings.Trim(p, "/")
+	id, err := strconv.ParseInt(p, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, false
+	}
+	return id, true
 }

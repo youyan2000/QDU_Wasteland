@@ -71,6 +71,32 @@ func destroySession(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// destroyUserSessions 让某个用户的所有会话立即失效。
+// 封禁、改密、重置密码都必须调用它：会话存在内存里，只改库不动会话，
+// 被处罚者手里的旧 Cookie 还能继续用（审计 P1-5）。
+func destroyUserSessions(userID int64) int {
+	if userID == 0 {
+		return 0
+	}
+	sessionsMu.Lock()
+	defer sessionsMu.Unlock()
+	n := 0
+	for sid, uid := range sessions {
+		if uid == userID {
+			delete(sessions, sid)
+			n++
+		}
+	}
+	return n
+}
+
+// sessionCount 返回当前会话数（测试与后台巡检用）。
+func sessionCount() int {
+	sessionsMu.Lock()
+	defer sessionsMu.Unlock()
+	return len(sessions)
+}
+
 // ---- 工具 ----
 var emailRe = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 

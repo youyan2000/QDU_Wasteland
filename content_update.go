@@ -21,6 +21,39 @@ func canModifyContent(ownerID int64, r *http.Request) bool {
 	return u != nil && u.IsAdmin == 1
 }
 
+// requireWritableUser 统一写操作前置校验：登录 + 未封禁 + 未禁言。
+// 早期只有"创建"接口做了这些检查，编辑接口漏做，于是被封禁/禁言的人
+// 拿着旧会话仍能改稿并重新发布（审计 P1-5）。
+func requireWritableUser(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	uid := currentUserID(r)
+	if uid == 0 {
+		apiErr(w, 401, "请先登录")
+		return 0, false
+	}
+	if currentUserBanned(r) {
+		destroyUserSessions(uid)
+		apiErr(w, 403, "账号已被封禁")
+		return 0, false
+	}
+	if currentUserMuted(r) {
+		apiErr(w, 403, "账号已被禁言，暂时不能发布或修改内容")
+		return 0, false
+	}
+	return uid, true
+}
+
+// canRestoreContent 判断能否把内容从「已下架/已驳回/待复核」改回「正常」。
+// 只有管理员可以——否则作者自己调一次 update 就把处罚撤销了。
+func canRestoreContent(currentStatus string, r *http.Request) bool {
+	switch currentStatus {
+	case "已下架", "已驳回", "待复核":
+		u, _ := authStore.GetByID(currentUserID(r))
+		return u != nil && u.IsAdmin == 1
+	default:
+		return true
+	}
+}
+
 // normalizeStatus 校验状态值：只能 draft 或 正常
 func normalizeStatus(s string) string {
 	s = strings.TrimSpace(s)
@@ -43,19 +76,27 @@ func handleUpdatePost() http.HandlerFunc {
 			apiErr(w, 400, "请求格式错误")
 			return
 		}
+		if _, ok := requireWritableUser(w, r); !ok {
+			return
+		}
 		st := normalizeStatus(body.Status)
 		if st == "" {
 			apiErr(w, 400, "状态无效")
 			return
 		}
 		var owner int64
-		err := authStore.db.QueryRow("SELECT user_id FROM posts WHERE id=?", body.ID).Scan(&owner)
+		var curStatus string
+		err := authStore.db.QueryRow("SELECT user_id, COALESCE(status,'') FROM posts WHERE id=?", body.ID).Scan(&owner, &curStatus)
 		if err != nil {
 			apiErr(w, 404, "帖子不存在")
 			return
 		}
 		if !canModifyContent(owner, r) {
 			apiErr(w, 403, "无权限编辑该帖子")
+			return
+		}
+		if st == "正常" && !canRestoreContent(curStatus, r) {
+			apiErr(w, 403, "该帖子已被下架或待复核，只有管理员可以恢复")
 			return
 		}
 		body.Title = strings.TrimSpace(body.Title)
@@ -88,6 +129,9 @@ func handleUpdatePost() http.HandlerFunc {
 // handleDeletePost 帖子删除：已发布→转草稿；已是草稿→彻底删除
 func handleDeletePost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := requireWritableUser(w, r); !ok {
+			return
+		}
 		var body struct{ ID int64 `json:"id"` }
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			apiErr(w, 400, "请求格式错误")
@@ -140,19 +184,27 @@ func handleUpdateArticle() http.HandlerFunc {
 			apiErr(w, 400, "请求格式错误")
 			return
 		}
+		if _, ok := requireWritableUser(w, r); !ok {
+			return
+		}
 		st := normalizeStatus(body.Status)
 		if st == "" {
 			apiErr(w, 400, "状态无效")
 			return
 		}
 		var owner int64
-		err := authStore.db.QueryRow("SELECT user_id FROM articles WHERE id=?", body.ID).Scan(&owner)
+		var curStatus string
+		err := authStore.db.QueryRow("SELECT user_id, COALESCE(status,'') FROM articles WHERE id=?", body.ID).Scan(&owner, &curStatus)
 		if err != nil {
 			apiErr(w, 404, "文章不存在")
 			return
 		}
 		if !canModifyContent(owner, r) {
 			apiErr(w, 403, "无权限编辑该文章")
+			return
+		}
+		if st == "正常" && !canRestoreContent(curStatus, r) {
+			apiErr(w, 403, "该文章已被下架或待复核，只有管理员可以恢复")
 			return
 		}
 		body.Title = strings.TrimSpace(body.Title)
@@ -187,6 +239,9 @@ func handleUpdateArticle() http.HandlerFunc {
 // handleDeleteArticle 文章删除：已发布→转草稿；已是草稿→彻底删除
 func handleDeleteArticle() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := requireWritableUser(w, r); !ok {
+			return
+		}
 		var body struct{ ID int64 `json:"id"` }
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			apiErr(w, 400, "请求格式错误")

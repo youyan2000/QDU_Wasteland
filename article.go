@@ -117,6 +117,10 @@ func getArticleDetail(w http.ResponseWriter, r *http.Request, id int64) {
 		}
 	}
 	a.Anonymous = anonI == 1
+	if a.Anonymous {
+		// 匿名文章不得下发真实作者 ID，否则枚举详情就能反查到学院/专业（审计 P1-3 C）。
+		a.UserID = 0
+	}
 	if a.Anonymous || nick == "" { a.Author = "匿名" } else { a.Author = nick }
 	// 阅读量：公开文章每被打开一次 +1
 	if a.Status == "正常" {

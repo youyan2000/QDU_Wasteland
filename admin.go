@@ -28,6 +28,13 @@ func requireAdmin(s *AuthStore, w http.ResponseWriter, r *http.Request) int64 {
 		apiErr(w, 403, "无权限：仅管理员可访问后台")
 		return 0
 	}
+	// 被封禁的管理员必须立刻失去后台权限：
+	// 早期实现只挡登录，被封的人拿着旧 Cookie 仍然能进后台操作（审计 P1-5）。
+	if u.Banned != 0 {
+		destroyUserSessions(uid)
+		apiErr(w, 403, "账号已被封禁")
+		return 0
+	}
 	return uid
 }
 
@@ -281,19 +288,27 @@ func handleAdminReports(s *AuthStore) http.HandlerFunc {
 // PATCH /api/admin/users/{id}/ban  body: {"banned":0|1}
 func handleAdminUserBan(auth *AuthStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if requireAdmin(auth, w, r) == 0 { return }
-		p := strings.TrimPrefix(r.URL.Path, "/api/admin/userban/")
-		idStr := strings.TrimSuffix(p, "/ban")
-		id, err := strconv.ParseInt(idStr, 10, 64)
-		if err != nil || id == 0 { apiErr(w, 400, "无效用户"); return }
-		if id == currentUserID(r) { apiErr(w, 400, "不能封禁自己"); return }
+		adminID := requireAdmin(auth, w, r)
+		if adminID == 0 { return }
+		// 路由是 /api/admin/userban/{id}（兼容尾部 /ban）。
+		id, ok := parseUserbanID(r.URL.Path, "ban")
+		if !ok { apiErr(w, 400, "无效用户"); return }
+		if id == adminID { apiErr(w, 400, "不能封禁自己"); return }
 		var body struct{ Banned int `json:"banned"` }
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil { apiErr(w, 400, "请求格式错误"); return }
 		v := 0
 		if body.Banned != 0 { v = 1 }
-		_, err = auth.db.Exec("UPDATE users SET banned=? WHERE id=?", v, id)
+		_, err := auth.db.Exec("UPDATE users SET banned=? WHERE id=?", v, id)
 		if err != nil { apiErr(w, 500, "操作失败"); return }
-		apiJSON(w, 200, map[string]any{"ok": true, "id": id, "banned": v})
+		killed := 0
+		if v == 1 {
+			// 封禁即踢线：否则对方拿着旧 Cookie 还能继续发帖改稿（审计 P1-5）。
+			killed = destroyUserSessions(id)
+			logAudit(auth.db, adminID, "封禁用户", "用户ID="+strconv.FormatInt(id, 10)+" 清除会话="+strconv.Itoa(killed))
+		} else {
+			logAudit(auth.db, adminID, "解封用户", "用户ID="+strconv.FormatInt(id, 10))
+		}
+		apiJSON(w, 200, map[string]any{"ok": true, "id": id, "banned": v, "sessionsCleared": killed})
 	}
 }
 
