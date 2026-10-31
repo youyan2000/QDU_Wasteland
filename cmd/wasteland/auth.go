@@ -79,8 +79,8 @@ type AuthStore struct {
 
 // openAuthStore 打开/初始化用户数据库
 func openAuthStore() (*AuthStore, error) {
-	// 数据库文件路径
-	dbPath := "qdu-auth.db"
+	// 数据库文件路径：默认落在站点根目录，避免从别的目录启动时另开一个空库
+	dbPath := defaultAuthDBPath()
 	if os.Getenv("AUTH_DB") != "" {
 		dbPath = os.Getenv("AUTH_DB")
 	}
@@ -562,7 +562,7 @@ func initAuth() error {
 	initCensor(st.db)
 	dbPath := os.Getenv("AUTH_DB")
 	if dbPath == "" {
-		dbPath = "qdu-auth.db"
+		dbPath = defaultAuthDBPath()
 	}
 	log.Println("✅ 用户数据库已连接 (" + dbPath + ") 敏感词 " + strconv.Itoa(len(censorWords)) + " 条")
 	return nil

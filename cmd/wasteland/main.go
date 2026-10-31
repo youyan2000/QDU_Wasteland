@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 )
 
 var db *DB
@@ -17,6 +15,15 @@ var db *DB
 func srv(pattern string, h http.HandlerFunc) { http.HandleFunc(pattern, csrfGuard(h)) }
 
 func main() {
+	// 先确定站点根目录：public/、tool-data/、dist/、_csv/、qdu-auth.db 全部相对它解析。
+	// 找不到就直接退出，避免"工具能用、页面全 404"的半空壳状态。
+	base, err := resolveBaseDir()
+	if err != nil {
+		log.Fatalf("❌ %v", err)
+	}
+	baseDir = base
+	log.Printf("🗂 站点根目录: %s", baseDir)
+
 	// 初始化用户认证（SQLite）
 	if err := initAuth(); err != nil {
 		log.Fatalf("用户数据库初始化失败: %v", err)
@@ -57,14 +64,16 @@ func main() {
 
 	db = NewDB()
 
-	// 课表 CSV 目录：优先从环境变量，默认 ../_csv
+	// 课表 CSV 目录：优先从环境变量，默认站点根目录上一级的 _csv
 	csvDir := os.Getenv("CSV_DIR")
 	if csvDir == "" {
-		csvDir = filepath.Join("..", "_csv")
+		csvDir = defaultCSVDir()
 	}
 	log.Printf("📚 正在加载课表数据: %s", csvDir)
 	if err := db.loadAll(csvDir); err != nil {
-		log.Fatalf("课表加载失败: %v", err)
+		log.Fatalf("❌ 课表加载失败（CSV_DIR=%s）：%v\n"+
+			"   课表 CSV 不在代码仓里。请把 CSV_DIR 指向包含 *.csv 的目录（默认 %s）",
+			csvDir, err, defaultCSVDir())
 	}
 	log.Printf("✅ 已加载课程 %d 门, 开课班次 %d 条, 学院 %d 个",
 		len(db.Courses), len(db.Offerings), len(db.CollegeSet))
@@ -239,33 +248,8 @@ func main() {
 	registerToolRoutes(http.DefaultServeMux)
 
 	// 静态前端 + 自定义 404（挂到 DefaultServeMux，与 srv() 注册的 /api 路由同源）
-	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 禁止路径遍历
-		p := r.URL.Path
-		if strings.Contains(p, "..") {
-			http.NotFound(w, r)
-			return
-		}
-		// 若请求的静态文件存在则提供，否则返回品牌 404 页
-		filePath := filepath.Join("public", filepath.Clean(p))
-		fi, err := os.Stat(filePath)
-		if err == nil && fi.IsDir() {
-			// 请求的是目录（含根路径 /）：提供该目录的 index.html
-			filePath = filepath.Join(filePath, "index.html")
-			if fi2, err2 := os.Stat(filePath); err2 == nil && !fi2.IsDir() {
-				http.ServeFile(w, r, filePath)
-				return
-			}
-			http.ServeFile(w, r, "public/404.html")
-			return
-		}
-		if err == nil && !fi.IsDir() {
-			fs.ServeHTTP(w, r)
-			return
-		}
-		http.ServeFile(w, r, "public/404.html")
-	}))
+	// 目录由 baseDir 决定，不再受进程工作目录影响。
+	http.Handle("/", newStaticHandler(publicDir()))
 	// 维护模式中间件（普通访问者拦截，管理员/API 放行），包装 DefaultServeMux
 	handler := securityHeaders(maintenanceInterceptor(authStore.db, http.DefaultServeMux))
 

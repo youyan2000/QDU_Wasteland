@@ -32,7 +32,7 @@ import (
 func registerToolRoutes(mux *http.ServeMux) {
 	root := os.Getenv("TOOLS_ROOT")
 	if root == "" {
-		root = filepath.Join("dist", "tools")
+		root = toolsRootDir()
 	}
 	ownerID, _ := strconv.ParseInt(os.Getenv("TOOL_OWNER_USER_ID"), 10, 64)
 	canViewPrivate := func(r *http.Request) bool {
@@ -59,7 +59,7 @@ func registerToolRoutes(mux *http.ServeMux) {
 	// GITHUB_TOKEN 可选，用于把搜索 API 配额从 10 次/分钟提高到 30 次/分钟。
 	digestDir := os.Getenv("TOOLS_DATA_DIR")
 	if digestDir == "" {
-		digestDir = "tool-data"
+		digestDir = dataDir()
 	}
 	digests := githubdigest.NewStore(digestDir, strings.TrimSpace(os.Getenv("GITHUB_TOKEN")))
 	digests.DB = authStore.db // 快照入单库（表 digest_issues），不再散落 JSON 文件
