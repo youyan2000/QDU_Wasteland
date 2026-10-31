@@ -35,14 +35,23 @@ if ($env:MAIL_HOST) {
     Write-Host '⚠️ 未设置 MAIL_HOST 等环境变量，邮件将走日志模式（验证码/链接打印到 server.log）'
 }
 
-# —— 构建：默认 qdu-wasteland.exe；若被占用则自动换名 ——
-$exeName = 'qdu-wasteland.exe'
-go build -o $exeName ./cmd/wasteland/cmd/wasteland 2>$null
+# —— 构建：入口在 cmd/wasteland/（2026-10 重构后仓库根目录已没有 main 包）——
+$repoDir = $PSScriptRoot
+$exeName = Join-Path $repoDir 'qdu-wasteland.exe'
+go build -o $exeName ./cmd/wasteland
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exeName)) {
-    Write-Host '⚠️ qdu-wasteland.exe 被占用（残留句柄/杀软拦截），改用 qdu-wasteland-new.exe'
-    $exeName = 'qdu-wasteland-new.exe'
+    # 旧进程占着 exe 时换名重试：这是"文件占用"，不是路径问题
+    Write-Host '⚠️ 未产出 qdu-wasteland.exe，改用 qdu-wasteland-new.exe 重试'
+    $exeName = Join-Path $repoDir 'qdu-wasteland-new.exe'
     go build -o $exeName ./cmd/wasteland
-    if ($LASTEXITCODE -ne 0) { Write-Error '编译失败'; exit 1 }
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $exeName)) {
+        Write-Host ''
+        Write-Host '❌ 构建失败。先看上面的 go 输出，常见原因：'
+        Write-Host '   · no Go files / package ... is not in std → 入口必须是 ./cmd/wasteland（本脚本已用）'
+        Write-Host '   · Access is denied，或 exe 刚生成就被删掉 → 杀毒软件（火绒/Defender）拦截，'
+        Write-Host "     请把 $repoDir 加入信任区后重试"
+        exit 1
+    }
 }
 Write-Host "📦 使用 $exeName 启动"
 
@@ -50,19 +59,25 @@ Write-Host "📦 使用 $exeName 启动"
 Get-Process qdu-wasteland, 'qdu-wasteland-new' -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep 1
 
-# 启动服务器：用 PowerShell 重定向并强制 UTF-8 输出，避免中文日志乱码；
-# 路径含空格也能正确工作（& 调用操作符 + 引号包裹）。
-$proc = Start-Process -FilePath "$PSScriptRoot\$exeName" `
-    -WorkingDirectory $PSScriptRoot `
-    -RedirectStandardOutput "$PSScriptRoot\server.log" `
-    -RedirectStandardError "$PSScriptRoot\server.err.log" `
+# 启动服务器。APP_DIR 显式指向仓库根：即使工作目录不对，public/ 也能找到
+# （缺它时站点会只剩工具页能开、其余页面全 404，很难看出是路径问题）。
+$env:APP_DIR = $repoDir
+$logOut = Join-Path $repoDir 'server.log'
+$logErr = Join-Path $repoDir 'server.err.log'
+$proc = Start-Process -FilePath $exeName `
+    -WorkingDirectory $repoDir `
+    -RedirectStandardOutput $logOut `
+    -RedirectStandardError $logErr `
     -WindowStyle Hidden -PassThru
 Start-Sleep 3
 
 $running = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
 if ($running) {
     Write-Host "✅ 服务器已启动 PID=$($proc.Id) http://localhost:3000"
-    Write-Host "   日志: server.log"
+    Write-Host "   日志: $logOut"
 } else {
-    Write-Host '❌ 启动失败，请查看 server.log / server.err.log（也可能是杀软拦截）'
+    Write-Host '❌ 进程启动后立刻退出。请依次检查：'
+    Write-Host "   1) 错误日志 $logErr（端口被占、CSV_DIR 不存在等）"
+    if (Test-Path $logErr) { Get-Content $logErr -Tail 12 | ForEach-Object { Write-Host "      $_" } }
+    Write-Host '   2) 若日志为空且 exe 已消失 → 杀毒软件拦截（火绒/Defender），把仓库目录加入信任区'
 }

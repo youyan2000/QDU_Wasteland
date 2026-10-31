@@ -26,7 +26,7 @@ $env:TOOL_OWNER_USER_ID = '1'
 # Test-only CAPTCHA bypass applies only to this isolated localhost process.
 $env:DISABLE_CAPTCHA = '1'
 
-go build -o $exe .
+go build -o $exe ./cmd/wasteland
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 Write-Host "Starting isolated local admin test at http://localhost:$port"
 Write-Host "Database: $db"
@@ -38,5 +38,5 @@ if (Test-Path $db) {
 }
 Write-Host 'This account exists only in this local test database. CAPTCHA bypass is enabled only for this localhost process.'
 Write-Host 'Press Ctrl+C to stop.'
-  $exe
+& $exe
 if ($LASTEXITCODE -ne 0) { throw "Test server exited with $LASTEXITCODE" }

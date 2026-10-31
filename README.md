@@ -57,7 +57,7 @@ powershell -ExecutionPolicy Bypass -File start-server.ps1
 set CSV_DIR=F:\My_Projects\Wasteland\_csv
 set ADMIN_EMAIL=admin@qdu.edu.cn
 set ADMIN_PASSWORD=你的密码
-go build -o qdu-wasteland.exe .
+go build -o qdu-wasteland.exe ./cmd/wasteland
 qdu-wasteland.exe
 ```
 

@@ -184,7 +184,7 @@ systemctl status nginx                # active (running)
 ```powershell
 cd F:\My_Projects\Wasteland\qdu-wasteland
 $env:GOOS="linux"; $env:GOARCH="amd64"
-go build -o qdu-wasteland-linux .
+go build -o qdu-wasteland-linux ./cmd/wasteland
 $env:GOOS=""; $env:GOARCH=""
 ```
 生成 `qdu-wasteland-linux`（约 16MB）。
