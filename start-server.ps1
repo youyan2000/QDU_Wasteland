@@ -1,4 +1,4 @@
-# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
+﻿# start-server.ps1 — 一键重建并启动 QDU Wasteland 服务器
 # 说明：
 #   1. 若杀毒软件误报 qdu-wasteland.exe 为 Backdoor/W64.CobaltStrike：
 #      请把本目录加入杀毒白名单，或自查误报（源码与依赖哈希已校验，见 PLAN.md 安全说明）。
@@ -78,6 +78,6 @@ if ($running) {
 } else {
     Write-Host '❌ 进程启动后立刻退出。请依次检查：'
     Write-Host "   1) 错误日志 $logErr（端口被占、CSV_DIR 不存在等）"
-    if (Test-Path $logErr) { Get-Content $logErr -Tail 12 | ForEach-Object { Write-Host "      $_" } }
+    if (Test-Path $logErr) { Get-Content $logErr -Tail 12 -Encoding UTF8 | ForEach-Object { Write-Host "      $_" } }
     Write-Host '   2) 若日志为空且 exe 已消失 → 杀毒软件拦截（火绒/Defender），把仓库目录加入信任区'
 }

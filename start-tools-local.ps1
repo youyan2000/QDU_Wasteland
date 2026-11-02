@@ -1,4 +1,4 @@
-# Start the complete LOCAL website, including /tool/ and NeXTJLC.
+﻿# Start the complete LOCAL website, including /tool/ and NeXTJLC.
 # Does not deploy, publish, replace online files, or reset accounts.
 param(
     [string]$NextJlcPath = 'F:\My_Projects\Open_Source\nextjlc',

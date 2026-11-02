@@ -80,3 +80,37 @@ func TestBuildEntrypointsUseCmdWasteland(t *testing.T) {
 		}
 	}
 }
+
+// TestPowerShellScriptsHaveBOMAndCRLF 守住 .ps1 的编码约定（见 .gitattributes）：
+//   - 必须 UTF-8 BOM：Windows PowerShell 5.1 没有 BOM 时会按 ANSI 解码，
+//     中文全变乱码，字节还可能被误判成引号而报"字符串缺少终止符"；
+//   - 必须 CRLF：与 .gitattributes 的约定一致。
+//
+// 这条检查有来由：编辑器或脚本重写文件时最容易把 BOM 吃掉，改完看着没差别，
+// 用户双击运行时才炸。
+func TestPowerShellScriptsHaveBOMAndCRLF(t *testing.T) {
+	root := repoRoot(t)
+	files, err := filepath.Glob(filepath.Join(root, "*.ps1"))
+	if err != nil {
+		t.Fatalf("列举 *.ps1: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatal("仓库根没有找到任何 .ps1")
+	}
+	for _, p := range files {
+		name := filepath.Base(p)
+		raw, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatalf("读 %s: %v", name, err)
+		}
+		if len(raw) < 3 || raw[0] != 0xEF || raw[1] != 0xBB || raw[2] != 0xBF {
+			t.Errorf("%s 缺少 UTF-8 BOM（PowerShell 5.1 会按 ANSI 解码，中文变乱码）", name)
+		}
+		for i := 1; i < len(raw); i++ {
+			if raw[i] == '\n' && raw[i-1] != '\r' {
+				t.Errorf("%s 存在裸 LF 行尾（应为 CRLF），首个位置在字节 %d", name, i)
+				break
+			}
+		}
+	}
+}

@@ -1,4 +1,4 @@
-# Start isolated localhost-only admin test instance for tools UI.
+﻿# Start isolated localhost-only admin test instance for tools UI.
 # Uses a dedicated SQLite database, never the existing qdu-auth.db.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
