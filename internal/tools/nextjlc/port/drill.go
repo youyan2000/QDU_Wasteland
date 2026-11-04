@@ -71,6 +71,8 @@ var (
 	fileFormatRe = regexp.MustCompile(`FILE_FORMAT=(\d+):(\d+)`)
 	// 有的导出（EasyEDA、部分 Altium）刀表就是 "T1C0.800"，且出现在内容中间。
 	toolDefLoose = regexp.MustCompile(`(?m)^T\d+C[\d.]+`)
+	// AD 刀表（T01F00S00C0.8）也常常不在文件第一行。
+	adToolLoose = regexp.MustCompile(`(?m)^T\d+F\d+S\d+C[\d.]+`)
 )
 
 // IsDrillFile 对应 is_drill_file。
@@ -145,7 +147,7 @@ func DetectDrillEDA(content string) DrillEdaType {
 	if strings.Contains(lower, "kicad") {
 		return DrillEDAKiCad
 	}
-	if adToolRe.MatchString(content) {
+	if adToolRe.MatchString(content) || adToolLoose.MatchString(content) {
 		return DrillEDAAltium
 	}
 	if toolDefLoose.MatchString(content) {

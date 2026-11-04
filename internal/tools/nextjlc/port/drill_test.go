@@ -54,9 +54,9 @@ M30
 
 func TestIsDrillFileAndThrough(t *testing.T) {
 	cases := []struct {
-		name     string
-		isDrill  bool
-		isThru   bool
+		name    string
+		isDrill bool
+		isThru  bool
 	}{
 		{"board.drl", true, true},
 		{"board-holes.txt", true, true},
@@ -77,16 +77,17 @@ func TestDetectDrillEDA(t *testing.T) {
 	if got := DetectDrillEDA(kicadPTHDrill); got != DrillEDAKiCad {
 		t.Errorf("应识别为 KiCad，实际 %v", got)
 	}
-	// 原实现的 ^T\d+F\d+S\d+C 没有 (?m)，只能匹配整份内容的开头；
-	// 真实 AD 文件因此落到 Unknown 分支，仍然走 parse_ad_excellon（行为等价）。
-	if got := DetectDrillEDA(adDrill); got != DrillEDAUnknown {
-		t.Errorf("按原实现语义应为 Unknown，实际 %v", got)
+	// AD 的刀表行不总在内容开头，这里改为任意位置匹配，避免真实文件落到 Unknown。
+	if got := DetectDrillEDA(adDrill); got != DrillEDAAltium {
+		t.Errorf("AD 文件应识别为 Altium，实际 %v", got)
 	}
 	if got := DetectDrillEDA("T01F00S00C0.8\nM48\n%\nT01\nX1Y1\n"); got != DrillEDAAltium {
 		t.Errorf("内容以 T01F00S00C 开头时应识别为 Altium，实际 %v", got)
 	}
-	if got := DetectDrillEDA("M48\nMETRIC\n%\nT1C0.8\nM30\n"); got != DrillEDAUnknown {
-		t.Errorf("应识别为 Unknown，实际 %v", got)
+	// EasyEDA / 部分 Altium 的刀表是 T1C0.8（没有 F00S00 段），
+	// 必须按 Altium 解析，否则整个钻孔文件会被静默丢弃。
+	if got := DetectDrillEDA("M48\nMETRIC\n%\nT1C0.8\nM30\n"); got != DrillEDAAltium {
+		t.Errorf("T1C 刀表应识别为 Altium，实际 %v", got)
 	}
 }
 
