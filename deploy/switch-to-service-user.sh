@@ -61,9 +61,56 @@ chown -R qdu:qdu "$DST"
 chmod 750 "$DST"
 say "已同步到 $DST 并授权 qdu"
 
-# ---------- 3. 环境文件 ----------
+# ---------- 3. 环境文件 + 数据路径迁移 ----------
 install -m 0640 -o root -g qdu "$ENV_OLD" "$ENV_NEW"
+
+# qdu 用户读不到 /root（目录本身 700），而 unit 又开了 ProtectHome=true。
+# 所以 CSV_DIR / TOOLS_DATA_DIR / TOOLS_ROOT / AUTH_DB 只要指向 /root 下，就必须搬到 $DST。
+migrate_dir() {
+  local key="$1" src="$2" dst="$3"
+  if [ -d "$src" ]; then
+    mkdir -p "$dst"
+    rsync -a "$src/" "$dst/"
+    chown -R qdu:qdu "$dst"
+    sed -i "s|^$key=.*|$key=$dst|" "$ENV_NEW"
+    say "  $key: $src → $dst"
+  fi
+}
+
+csv_old="$(grep -E '^CSV_DIR=' "$ENV_NEW" | head -1 | cut -d= -f2- || true)"
+if [ -n "$csv_old" ] && [ "${csv_old#/root}" != "$csv_old" ]; then
+  migrate_dir CSV_DIR "$csv_old" "$DST/csv"
+fi
+tools_data_old="$(grep -E '^TOOLS_DATA_DIR=' "$ENV_NEW" | head -1 | cut -d= -f2- || true)"
+if [ -n "$tools_data_old" ] && [ "${tools_data_old#/root}" != "$tools_data_old" ]; then
+  migrate_dir TOOLS_DATA_DIR "$tools_data_old" "$DST/tool-data"
+fi
+tools_root_old="$(grep -E '^TOOLS_ROOT=' "$ENV_NEW" | head -1 | cut -d= -f2- || true)"
+if [ -n "$tools_root_old" ] && [ "${tools_root_old#/root}" != "$tools_root_old" ]; then
+  migrate_dir TOOLS_ROOT "$tools_root_old" "$DST/tools"
+fi
+authdb_old="$(grep -E '^AUTH_DB=' "$ENV_NEW" | head -1 | cut -d= -f2- || true)"
+if [ -n "$authdb_old" ] && [ "${authdb_old#/root}" != "$authdb_old" ] && [ -f "$authdb_old" ]; then
+  cp -a "$authdb_old" "$DST/qdu-auth.db"
+  cp -a "$authdb_old-wal" "$DST/qdu-auth.db-wal" 2>/dev/null || true
+  cp -a "$authdb_old-shm" "$DST/qdu-auth.db-shm" 2>/dev/null || true
+  chown qdu:qdu "$DST"/qdu-auth.db* 2>/dev/null || true
+  sed -i "s|^AUTH_DB=.*|AUTH_DB=$DST/qdu-auth.db|" "$ENV_NEW"
+  say "  AUTH_DB: $authdb_old → $DST/qdu-auth.db"
+fi
+chown qdu:qdu "$DST"/* 2>/dev/null || true
 say "环境文件已安装: $ENV_NEW"
+
+# 预检：用 qdu 身份实际跑一次，能在 10 秒内起来才算环境正确。
+if ! sudo -u qdu bash -c "set -a; . '$ENV_NEW'; set +a; cd '$DST' && timeout 12 ./qdu-wasteland-linux" >/tmp/qdu-preflight.log 2>&1; then
+  if ! grep -qiE '已启动|listening|3000' /tmp/qdu-preflight.log; then
+    say "✗ 以 qdu 身份启动预检失败，最后 20 行："
+    tail -20 /tmp/qdu-preflight.log | sed 's/^/        /'
+    say "  未改动 systemd 单元，服务仍在原状态。修复上面的问题后重跑。"
+    exit 1
+  fi
+fi
+say "预检通过（qdu 身份可正常启动）"
 
 # ---------- 4. 单元文件 ----------
 if [ -f "$UNIT" ]; then
@@ -85,6 +132,8 @@ done
 
 if [ "$READY" != "1" ]; then
   say "✗ 健康检查失败，回滚到迁移前状态"
+  say "  本次启动日志（最后 25 行）："
+  journalctl -u "$SERVICE" --since "-4 min" --no-pager 2>/dev/null | tail -25 | sed 's/^/        /'
   systemctl stop "$SERVICE"
   rm -f "$UNIT"
   if ls "$UNIT".bak.* >/dev/null 2>&1; then
