@@ -1,0 +1,40 @@
+[Unit]
+Description=QDU Wasteland
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# 关键：不要用 root 跑。迁移脚本 deploy/switch-to-service-user.sh 会建好 qdu 用户和目录权限。
+Type=simple
+User=qdu
+Group=qdu
+WorkingDirectory=/srv/qdu-wasteland
+# 环境变量放在 /etc 下、600，不写进 unit（ADMIN_PASSWORD 这类不要出现在 systemctl cat 里）
+EnvironmentFile=/etc/qdu-wasteland.env
+ExecStart=/srv/qdu-wasteland/qdu-wasteland-linux
+Restart=always
+RestartSec=3
+
+# ---- 最小权限加固 ----
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+# 只有运行目录可写（数据库、uploads、tool-data 都在这里）
+ReadWritePaths=/srv/qdu-wasteland
+# 上传/备份体积较大，限制单进程内存，避免异常请求把机器打满
+MemoryMax=1G
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

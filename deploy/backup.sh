@@ -28,6 +28,43 @@ STAMP="$(date '+%Y-%m-%d-%H%M%S')"
 say() { echo "[$(date '+%F %T')] $*"; }
 die() { echo "[$(date '+%F %T')] ✗ $*" >&2; exit 1; }
 
+# 备份里有全体用户的邮箱、私信、密码哈希和浏览足迹，落盘必须加密。
+# 密钥单独存放（默认 $RUN/backup.key），不要和备份放在同一块盘/同一个仓库。
+KEY_FILE="${QW_BACKUP_KEY_FILE:-$RUN/backup.key}"
+
+ensure_key() {
+  if [ -f "$KEY_FILE" ]; then
+    chmod 600 "$KEY_FILE" 2>/dev/null || true
+    return 0
+  fi
+  if ! command -v openssl >/dev/null 2>&1; then
+    say "  ⚠ 未安装 openssl，跳过加密（建议: apt install -y openssl）"
+    return 1
+  fi
+  mkdir -p "$(dirname "$KEY_FILE")"
+  ( umask 077; openssl rand -base64 48 > "$KEY_FILE" )
+  chmod 600 "$KEY_FILE"
+  say "  已生成备份密钥: $KEY_FILE"
+  say "  ⚠ 请立刻把该文件另存到离线介质；丢失密钥 = 备份无法恢复"
+  return 0
+}
+
+# encrypt_file <明文路径> → 输出 <路径>.enc 并删除明文
+encrypt_file() {
+  local src="$1"
+  if ! ensure_key; then
+    return 1
+  fi
+  if ! openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+      -in "$src" -out "$src.enc" -pass "file:$KEY_FILE" >/dev/null 2>&1; then
+    rm -f "$src.enc"
+    return 1
+  fi
+  rm -f "$src"
+  chmod 600 "$src.enc" 2>/dev/null || true
+  return 0
+}
+
 say "===== 开始备份 ($STAMP) ====="
 
 # ---------- 0. 环境检查 ----------
@@ -102,6 +139,11 @@ if [ "$MISMATCH" != "0" ]; then
   die "快照与源库数据不一致，已删除该快照"
 fi
 say "  快照验证通过（integrity=ok，$SNAP_TABLES 张表，关键表行数一致）"
+if encrypt_file "$SNAP"; then
+  say "  数据库快照已加密: $(basename "$SNAP").enc"
+else
+  say "  ⚠ 加密失败，保留明文快照（请人工处理后加密）"
+fi
 
 # ---------- 3. 打包 uploads/ ----------
 UP_FILE=""
@@ -114,6 +156,11 @@ if [ -d "$RUN/uploads" ] && [ -n "$(ls -A "$RUN/uploads" 2>/dev/null || true)" ]
     tar -czf "$UP_FILE" -C "$RUN" uploads
   fi
   say "  上传目录已打包: $(basename "$UP_FILE")（$(( $(stat -c%s "$UP_FILE")/1024 )) KB）"
+  if encrypt_file "$UP_FILE"; then
+    say "  上传包已加密: $(basename "$UP_FILE").enc"
+  else
+    say "  ⚠ 加密失败，保留明文上传包"
+  fi
 else
   say "  跳过 uploads/（目录不存在或为空）"
 fi
@@ -126,8 +173,8 @@ while IFS= read -r line; do
   [ -n "$line" ] && BATCHES+=("$line")
 done < <(
   cd "$BACKUP_DIR" && ls -1 2>/dev/null \
-    | sed -nE 's/^qdu-([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6})\.db$/\1/p
-               s/^uploads-([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6})\.(zip|tar\.gz)$/\1/p' \
+    | sed -nE 's/^qdu-([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6})\.db(\.enc)?$/\1/p
+               s/^uploads-([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6})\.(zip|tar\.gz)(\.enc)?$/\1/p' \
     | sort -u
 )
 COUNT="${#BATCHES[@]}"
@@ -136,7 +183,9 @@ if [ "$COUNT" -gt "$KEEP" ]; then
   DEL=$((COUNT-KEEP))
   for ((i=0; i<DEL; i++)); do
     old="${BATCHES[$i]}"
-    rm -f "$BACKUP_DIR/qdu-$old.db" "$BACKUP_DIR/uploads-$old.zip" "$BACKUP_DIR/uploads-$old.tar.gz"
+    rm -f "$BACKUP_DIR/qdu-$old.db" "$BACKUP_DIR/qdu-$old.db.enc" \
+          "$BACKUP_DIR/uploads-$old.zip" "$BACKUP_DIR/uploads-$old.zip.enc" \
+          "$BACKUP_DIR/uploads-$old.tar.gz" "$BACKUP_DIR/uploads-$old.tar.gz.enc"
     say "  已清理旧备份: $old"
     PRUNED=$((PRUNED+1))
   done
@@ -149,4 +198,4 @@ say "===== 备份完成 ✓ ====="
 
 # 备份产物含全部邮箱、私信与密码哈希，权限收到仅 root 可读（审计低危项）
 chmod 600 "$BACKUP_DIR"/*.db* 2>/dev/null || true
-chmod 600 "$BACKUP_DIR"/*.zip 2>/dev/null || true
+chmod 600 "$BACKUP_DIR"/*.zip "$BACKUP_DIR"/*.enc 2>/dev/null || true

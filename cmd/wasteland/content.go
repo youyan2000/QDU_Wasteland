@@ -86,6 +86,11 @@ func listFiles(courseCode string) ([]fileDTO, error) {
 // ---- 列出某课程的资料 ----
 func handleListFilesAPI(_ *DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 资料列表含文件原名（可能带姓名/学号），不再对匿名用户开放。
+		if currentUserID(r) == 0 {
+			apiErr(w, 401, "请先登录后查看资料")
+			return
+		}
 		code := r.URL.Query().Get("code")
 		if code == "" {
 			apiErr(w, 400, "缺少课程")
@@ -126,7 +131,7 @@ func handleUpload() http.HandlerFunc {
 
 		courseCode := strings.TrimSpace(r.FormValue("course_code"))
 		title := strings.TrimSpace(r.FormValue("title"))
-		category := strings.TrimSpace(r.FormValue("category"))   // 历年试卷/课程作业/学习笔记
+		category := strings.TrimSpace(r.FormValue("category")) // 历年试卷/课程作业/学习笔记
 		teacher := strings.TrimSpace(r.FormValue("teacher"))
 		semester := strings.TrimSpace(r.FormValue("semester"))
 		description := strings.TrimSpace(r.FormValue("description"))
@@ -200,6 +205,11 @@ func handleFilesRouter() http.HandlerFunc {
 
 func handleFileDownload() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 文件下载要求登录：原始文件名可能含姓名/学号，匿名+自增 ID 等于公开可枚举。
+		if currentUserID(r) == 0 {
+			apiErr(w, 401, "请先登录后下载资料")
+			return
+		}
 		// /api/files/{id}/download
 		var id int64
 		seg := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/files/"), "/")
@@ -230,6 +240,10 @@ func handleFileDownload() http.HandlerFunc {
 // /api/files/{id}/preview
 func handleFilePreview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if currentUserID(r) == 0 {
+			apiErr(w, 401, "请先登录后预览资料")
+			return
+		}
 		seg := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/files/"), "/")
 		var id int64
 		fmt.Sscanf(seg[0], "%d", &id)
@@ -294,6 +308,11 @@ func mimeByExt(name string) string {
 // ---- 评价 ----
 func handleListReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 资料列表含文件原名（可能带姓名/学号），不再对匿名用户开放。
+		if currentUserID(r) == 0 {
+			apiErr(w, 401, "请先登录后查看资料")
+			return
+		}
 		code := r.URL.Query().Get("code")
 		if code == "" {
 			apiErr(w, 400, "缺少课程")
@@ -316,7 +335,9 @@ func handleListReviews() http.HandlerFunc {
 			var anonI int
 			rows.Scan(&id, &rating, &content, &anonI, &created, &nickname)
 			name := nickname
-			if anonI == 1 || nickname == "" { name = "匿名" }
+			if anonI == 1 || nickname == "" {
+				name = "匿名"
+			}
 			out = append(out, map[string]any{
 				"id": id, "rating": rating, "content": content,
 				"author": name, "anonymous": anonI == 1, "createdAt": created,
@@ -387,11 +408,11 @@ func handleAddReview() http.HandlerFunc {
 
 // ---- 工具 ----
 func b2i(b bool) int {
-	if b { return 1 }
+	if b {
+		return 1
+	}
 	return 0
 }
-
-
 
 // ============ V6 后台资料管理 ============
 
@@ -403,9 +424,13 @@ func handleAdminListFiles(auth *AuthStore) http.HandlerFunc {
 		}
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		page := atoi(r.URL.Query().Get("page"))
-		if page < 1 { page = 1 }
+		if page < 1 {
+			page = 1
+		}
 		pageSize := atoi(r.URL.Query().Get("pageSize"))
-		if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+		if pageSize < 1 || pageSize > 100 {
+			pageSize = 30
+		}
 		where := ""
 		args := []any{}
 		if q != "" {
@@ -498,9 +523,13 @@ func handleAdminListReviews(auth *AuthStore) http.HandlerFunc {
 		}
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		page := atoi(r.URL.Query().Get("page"))
-		if page < 1 { page = 1 }
+		if page < 1 {
+			page = 1
+		}
 		pageSize := atoi(r.URL.Query().Get("pageSize"))
-		if pageSize < 1 || pageSize > 100 { pageSize = 30 }
+		if pageSize < 1 || pageSize > 100 {
+			pageSize = 30
+		}
 		where := ""
 		args := []any{}
 		if q != "" {
@@ -578,6 +607,7 @@ func handleAdminReviewStatus(auth *AuthStore) http.HandlerFunc {
 		apiJSON(w, 200, map[string]any{"ok": true, "id": id, "status": body.Status})
 	}
 }
+
 // sanitizeFilename 清洗文件名用于 HTTP Header：移除 CR/LF（防响应头注入）和引号（防破坏 filename 结构）
 func sanitizeFilename(s string) string {
 	s = strings.ReplaceAll(s, "\r", "")

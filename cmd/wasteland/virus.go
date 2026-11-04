@@ -1,8 +1,8 @@
 // virus.go — V12 上传文件安全防护
 // 三层防护：
-//   1. 危险扩展名黑名单（exe/dll/bat/vbs/… 直接拒绝）
-//   2. 文件头魔数嗅探（伪装成图片/PDF 的可执行文件截获）
-//   3. ClamAV 病毒扫描（可选：设置环境变量 CLAMAV_CMD 指向 clamscan 后自动启用）
+//  1. 危险扩展名黑名单（exe/dll/bat/vbs/… 直接拒绝）
+//  2. 文件头魔数嗅探（伪装成图片/PDF 的可执行文件截获）
+//  3. ClamAV 病毒扫描（可选：设置环境变量 CLAMAV_CMD 指向 clamscan 后自动启用）
 package main
 
 import (
@@ -35,7 +35,7 @@ var dangerousMagics = []struct {
 	head []byte
 	name string
 }{
-	{[]byte("MZ"), "Windows 可执行程序(PE)"},          // 0x4D 0x5A
+	{[]byte("MZ"), "Windows 可执行程序(PE)"}, // 0x4D 0x5A
 	{[]byte{0x7F, 'E', 'L', 'F'}, "Linux 可执行文件(ELF)"},
 	{[]byte{0xCA, 0xFE, 0xBA, 0xBE}, "Java 字节码"},
 	{[]byte{0xFE, 0xED, 0xFA, 0xCE}, "macOS 可执行文件(Mach-O)"},
@@ -73,11 +73,34 @@ func checkDangerousFile(fileName string, data []byte) (bool, string) {
 			return true, "文件内容为 " + m.name + "，禁止上传"
 		}
 	}
+	// 老式 OLE 文档（.doc/.xls/.ppt）按内容判断是否带 VBA 宏。
+	if oleHasMacro(data) {
+		return true, "检测到老式 Office 文档内的 VBA 宏，禁止上传"
+	}
 	// zip 容器（docx/xlsx/pptx/zip…）深度嗅探 OLE 宏条目
 	if zipHasMacro(data) {
 		return true, "检测到 Office 宏(vbaProject)，禁止上传"
 	}
 	return false, ""
+}
+
+// oleMagic 是 OLE 复合文档（老式 .doc/.xls/.ppt）的文件头。
+var oleMagic = []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}
+
+// oleHasMacro 检查老式 OLE 文档里是否带 VBA 宏工程。
+// 老式 .doc/.xls 是二进制容器，zip 嗅探看不到，需要单独按内容判断。
+func oleHasMacro(data []byte) bool {
+	if !bytes.HasPrefix(data, oleMagic) {
+		return false
+	}
+	lower := bytes.ToLower(data)
+	if bytes.Contains(lower, []byte("_vba_project")) || bytes.Contains(lower, []byte("vbaproject")) ||
+		bytes.Contains(lower, []byte("vba_data")) {
+		return true
+	}
+	// VBA 在 OLE 目录里常以 UTF-16LE 出现
+	utf16 := []byte{'V', 0, 'B', 0, 'A', 0}
+	return bytes.Contains(data, utf16)
 }
 
 // zipHasMacro 检查 zip 包里是否含 OLE 宏条目（vbaProject.bin / vbaProjectSignature.bin）
