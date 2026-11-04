@@ -278,9 +278,12 @@ async function sync(trigger) {
   const now = Date.now();
 
   await api.storage.local.set({ syncProgress: { phase: 'history', at: Date.now() } });
+  console.log('[history-sync] phase=history since=' + new Date(since).toISOString());
   const history = await collectHistory(cfg, since);
+  console.log('[history-sync] history=' + history.length);
   await api.storage.local.set({ syncProgress: { phase: 'bookmarks', items: history.length, at: Date.now() } });
   const favorites = await collectBookmarks(cfg);
+  console.log('[history-sync] favorites=' + favorites.length);
 
   let bili = [];
   let biliError = '';
@@ -290,6 +293,7 @@ async function sync(trigger) {
       const r = await collectBilibili(cfg, since);
       bili = r.items;
       biliMeta = { pages: r.pages, done: r.done, backfill: r.backfill, debug: r.debug };
+      console.log('[history-sync] bili=' + bili.length + ' pages=' + r.pages + ' stop=' + (r.debug && r.debug.stopReason));
     } catch (error) {
       biliError = String((error && error.message) || error);
     }
@@ -319,6 +323,7 @@ async function sync(trigger) {
       data,
     }),
   }, 90000);
+  console.log('[history-sync] upload status=' + res.status);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(body.error || '同步失败（HTTP ' + res.status + '）');

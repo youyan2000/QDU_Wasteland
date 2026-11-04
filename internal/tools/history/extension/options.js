@@ -8,6 +8,17 @@ function fmt(ts) {
   return new Date(ts).toLocaleString('zh-CN');
 }
 
+function phaseText(p) {
+  if (!p) return '正在同步…';
+  switch (p.phase) {
+    case 'history': return '正在读取浏览器历史…';
+    case 'bookmarks': return '正在读取书签…（历史 ' + (p.items || 0) + ' 条）';
+    case 'bilibili': return '正在补 B站历史：第 ' + (p.pages || 0) + ' 页，已取 ' + (p.items || 0) + ' 条';
+    case 'upload': return '正在上传：' + (p.items || 0) + ' 条';
+    default: return '正在同步…';
+  }
+}
+
 async function load() {
   $('version').textContent = '扩展版本：' + api.runtime.getManifest().version;
   const cfg = await api.storage.local.get({
@@ -27,8 +38,7 @@ async function load() {
 
   const lines = ['最近同步：' + fmt(cfg.lastSync)];
   if (cfg.syncProgress) {
-    lines.push('正在同步：' + (cfg.syncProgress.phase || '') + 
-      (cfg.syncProgress.phase === 'bilibili' ? '第 ' + (cfg.syncProgress.pages || 0) + ' 页 / 已取 ' + (cfg.syncProgress.items || 0) + ' 条' : ''));
+    lines.push('当前进度：' + phaseText(cfg.syncProgress));
   }
   if (cfg.lastResult) {
     const r = cfg.lastResult;
@@ -78,42 +88,53 @@ $('save').onclick = async () => {
   $('status').textContent = '已保存。点「立即同步」验证一次。';
 };
 
-$('sync').onclick = async () => {
-  $('status').className = 'status';
-  $('status').textContent = '正在同步…';
-  const res = await api.runtime.sendMessage({ type: 'sync-now' });
+// 同步可能持续几十秒到几分钟：轮询 storage 里的进度，避免页面一直停在"正在同步…"。
+async function runSync(resetFirst) {
+  const status = $('status');
+  status.className = 'status';
+  status.textContent = resetFirst ? '正在全量同步…' : '正在同步…';
+
+  if (resetFirst) {
+    await api.storage.local.set({ lastSync: 0, biliCursor: null, biliDone: false, lastError: '' });
+  }
+
+  const started = Date.now();
+  const timer = setInterval(async () => {
+    const s = await api.storage.local.get({ syncProgress: null });
+    const secs = Math.round((Date.now() - started) / 1000);
+    status.textContent = phaseText(s.syncProgress) + '（' + secs + 's）';
+    if (secs > 420) {
+      status.className = 'status err';
+      status.textContent = '同步超过 7 分钟仍未返回：打开扩展的 Service worker 控制台查看卡在哪一步。';
+    }
+  }, 800);
+
+  let res = null;
+  try {
+    res = await api.runtime.sendMessage({ type: 'sync-now' });
+  } finally {
+    clearInterval(timer);
+  }
+
   if (!res || !res.ok) {
-    $('status').className = 'status err';
-    $('status').textContent = '同步失败：' + ((res && res.error) || '未知错误');
+    status.className = 'status err';
+    status.textContent = '同步失败：' + ((res && res.error) || '未知错误');
     return;
   }
   const r = res.result || {};
   if (r.skipped === 'unconfigured') {
-    $('status').className = 'status err';
-    $('status').textContent = '还没配置站点地址或配对码';
+    status.className = 'status err';
+    status.textContent = '还没配置站点地址或配对码';
     return;
   }
-  $('status').className = 'status ok';
-  $('status').textContent = '同步完成，新增 ' + (r.imported || 0) + ' 条' + (r.biliError ? '（B站：' + r.biliError + '）' : '');
+  status.className = 'status ok';
+  status.textContent =
+    (resetFirst ? '全量同步完成' : '同步完成') + '，新增 ' + (r.imported || 0) + ' 条' +
+    (r.biliError ? '（B站：' + r.biliError + '）' : '');
   load();
-};
+}
 
-$('resync').onclick = async () => {
-  $('status').className = 'status';
-  $('status').textContent = '正在全量同步（B站可能要多翻几页，请稍等）…';
-  // 清掉增量游标：下一次同步按"首次"处理，B站翻到底，浏览器历史回溯 7 天。
-  await api.storage.local.set({ lastSync: 0, biliCursor: null, biliDone: false, lastError: '' });
-  const res = await api.runtime.sendMessage({ type: 'sync-now' });
-  if (!res || !res.ok) {
-    $('status').className = 'status err';
-    $('status').textContent = '同步失败：' + ((res && res.error) || '未知错误');
-    return;
-  }
-  const r = res.result || {};
-  $('status').className = 'status ok';
-  $('status').textContent =
-    '全量同步完成，新增 ' + (r.imported || 0) + ' 条' + (r.biliError ? '（B站：' + r.biliError + '）' : '');
-  load();
-};
+$('sync').onclick = () => runSync(false);
+$('resync').onclick = () => runSync(true);
 
 load();
