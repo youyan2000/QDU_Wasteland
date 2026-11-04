@@ -1,0 +1,17 @@
+# Install as /etc/logrotate.d/nginx-qdu-wasteland after checking file paths.
+# Application logs go to journald by default; configure dedicated file logs before
+# enabling the optional application stanza below. Never log credentials/full headers.
+/var/log/nginx/qdu-wasteland*.log {
+    daily
+    rotate 14
+    size 100M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        nginx -s reopen 2>/dev/null || true
+    endscript
+}

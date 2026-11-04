@@ -64,6 +64,7 @@
     .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
     .modal-close:hover { color: var(--magenta); }
   </style>
+  <script src="/themeboot.js"></script>
 </head>
 <body class="admin-body">
   <!-- 独立后台：不加载主站导航，不提供返回主站的入口 -->
@@ -85,15 +86,7 @@
   <script src="icons.js"></script>
   <script src="viewer-mdown.js?v=20260818d"></script>
   <script src="admin.js?v=20260818s"></script>
-  <script>
-    // 顶部显示当前管理员昵称 + 退出登录（不提供主站入口，保持后台隔离）
-    fetch('/api/me').then(function (r) { return r.json(); }).then(function (d) {
-      if (d.loggedIn && d.user) document.getElementById('eugeneWho').textContent = d.user.nickname + ' · 管理员';
-    }).catch(function () {});
-    document.getElementById('eugeneLogout').onclick = async function () {
-      await fetch('/api/logout', { method: 'POST' });
-      location.href = '/login.html';
-    };
-  </script>
+  <script src="/eugene-boot.js"></script>
+  <script src="/wordbar.js" defer></script>
 </body>
 </html>

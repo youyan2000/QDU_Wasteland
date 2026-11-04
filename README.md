@@ -36,7 +36,7 @@ Wasteland/
 │   ├── hotdigest/        热点日报抓取
 │   └── digestdb/         日报快照入库（表 <prefix>_issues）
 ├── public/               站点前端（原生 JS，无构建）
-├── deploy/               部署与运维脚本（含 nginx.conf.example）
+├── deploy/               部署与运维脚本（含 Tunnel/直连 Nginx 安全模板与本机审计）
 ├── docs/                 全部文档（ARCHITECTURE / SECURITY-FIXES / 部署 / 运维）
 ├── classes/ + _csv/      课表原始表与转换后的 CSV（数据，gitignore）
 ├── course-files/         课程资料清单（本体不入库）
@@ -45,6 +45,8 @@ Wasteland/
 ```
 
 构建：`go build -o dist/wasteland ./cmd/wasteland`
+
+生产入口推荐 `Cloudflare Tunnel → loopback Nginx → 应用`，应用默认绑定 `127.0.0.1:3000`。Tunnel 不等于 VPN 或物理隔离；上线前须审阅 [DEPLOY-GUIDE.md](DEPLOY-GUIDE.md) 和 `deploy/` 模板，尤其是真实 IP 信任边界、防火墙、日志轮转及固定 commit 的显式部署批准。模板不会自动改变现有公网服务。
 ---
 
 ## 🚀 如何运行
@@ -73,8 +75,43 @@ qdu-wasteland.exe
 |------|------|
 | `CSV_DIR` | 课表 csv 目录（默认 `../_csv`） |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 首启播种站长（幂等） |
-| `MAIL_HOST`/`MAIL_PORT`/`MAIL_USER`/`MAIL_PASS`/`MAIL_FROM` | SMTP 邮件；未配置时验证码/链接打印到 server.log（日志模式） |
+| `MAIL_HOST`/`MAIL_PORT`/`MAIL_USER`/`MAIL_PASS`/`MAIL_FROM` | SMTP 邮件；587 等端口要求 STARTTLS，465 使用隐式 TLS；未配置时正文默认不入日志 |
+| `MAIL_ALLOW_PLAINTEXT` | 仅可信本地 SMTP relay 且已确认链路隔离时设置 `1`，允许无 STARTTLS（默认禁止） |
+| `AI_API_URL` / `AI_ALLOWED_HOSTS` | AI 接口 HTTPS URL；内建 OpenAI/DeepSeek 主机，其他供应商须用逗号分隔精确配置主机名 |
+| `HSTS_INCLUDE_SUBDOMAINS` | 默认只启用当前站点 HSTS；确认所有子域均支持 HTTPS 后才设 `true` |
 | `CLAMAV_CMD` | ClamAV clamscan 路径（设置后启用病毒扫描） |
+
+---
+
+## 🧭 浏览足迹与浏览器扩展
+
+浏览器不允许网页直接读取本机完整历史，所以「浏览器历史 / B站历史 / 书签」由配套扩展同步：
+
+1. 登录站点 → `工具 → 浏览足迹 → 数据备份`；
+2. 按浏览器下载对应扩展包：
+   - Chrome / Edge：`chrome://extensions` 开启开发者模式 →「加载已解压的扩展程序」；
+   - Firefox：`about:debugging#/runtime/this-firefox` →「临时载入附加组件」选中 manifest.json
+     （正式版 Firefox 只允许临时载入未签名扩展，重启后需再载入一次；Developer Edition / Nightly 可关闭签名校验后永久安装）；
+3. 页面上「生成配对码」，把**站点地址 + 配对码**填进扩展设置，点「立即同步」。
+
+之后扩展每 30 分钟自动增量同步，不需要每次手动导入。扩展源码在 `internal/tools/history/extension/`，
+服务端接口是 `POST /api/history/sync`（Bearer 设备令牌，令牌只存 SHA-256，可逐设备撤销）。
+## 📖 全站单词条（Word Atlas 词库）每页顶部与底部会显示一个随机雅思单词和英文释义（首页整屏封面除外），数据来自
+[Word Atlas](https://github.com/designfuchen/word-atlas)（词库内容 CC BY 4.0，署名 "Word Atlas contributors"）。
+
+- **运行时零外部依赖**：词库经 `cmd/wordbankgen` 精简后写入 `internal/wordbank/words.json`，
+  编译时嵌入二进制；生产环境不需要本地目录，也不需要联网。
+- 前端通过 `GET /api/words/random?n=2` 取词，点击「换一个」可换词。
+- 需要更新词库时（手动，不是定时任务）：
+
+```powershell
+# 从 GitHub 拉取最新词库并重新生成内置数据
+powershell -ExecutionPolicy Bypass -File deploy/sync-wordbank.ps1
+# 或使用本地副本
+powershell -ExecutionPolicy Bypass -File deploy/sync-wordbank.ps1 -Source "F:\path\to\word-atlas.json"
+```
+
+生成后重新编译部署即可生效。词库体积约 900 KB（7298 词），只增加二进制大小，不占页面带宽。
 
 ---
 

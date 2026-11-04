@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="nav.css">
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="forum.css">
+  <script src="/themeboot.js"></script>
 </head>
 <body class="forum-body">
   <div id="site-nav"></div>
@@ -68,10 +69,10 @@
       <div class="pf-row">
         <label>验证码</label>
         <div class="captcha-row">
-          <img id="pfCapImg" class="captcha-img" alt="验证码" onclick="loadPfCaptcha(this)">
+          <img id="pfCapImg" class="captcha-img" alt="验证码" data-pf-captcha>
           <input id="pfCaptcha" type="text" placeholder="输入验证码" maxlength="6" autocomplete="off">
           <input type="hidden" id="pfCaptchaId">
-          <button type="button" onclick="loadPfCaptcha(document.getElementById(&quot;pfCapImg&quot;))">换一张</button>
+          <button type="button" data-pf-captcha-refresh>换一张</button>
         </div>
       </div>
       <div class="pf-row">
@@ -85,17 +86,11 @@
   </div>
 
   <script src="icons.js"></script>
-<script>document.querySelectorAll(".icon-fill").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(18);});</script>
-  <script src="nav.js?v=20260818t"></script>
+<script src="/icon-boot.js"></script>
+  <script src="nav.js?v=20261103a"></script>
   <style>.captcha-row{display:flex;gap:8px;align-items:center}.captcha-img{width:110px;height:40px;border:1px solid rgba(26,26,46,.15);border-radius:8px;cursor:pointer}.captcha-row input{flex:1}.captcha-row button{white-space:nowrap;padding:.35rem .6rem;border:1px solid rgba(26,26,46,.15);border-radius:8px;background:#fff;cursor:pointer;font-size:.8rem}</style>
-  <script>
-    window.loadPfCaptcha = async function (img){
-      try{ const d=await (await fetch("/api/captcha")).json(); if(!d.id) return;
-        document.getElementById("pfCaptchaId").value=d.id;
-        if(img) img.src="/api/captcha/"+d.id+".svg";
-      }catch(e){}
-    };
-  </script>
+  <script src="/forum-boot.js"></script>
   <script src="forum.js?v=20260818b"></script>
+  <script src="/wordbar.js" defer></script>
 </body>
 </html>

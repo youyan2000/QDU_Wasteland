@@ -1,72 +1,106 @@
-/* auth.css — 登录/注册页，品红主色，login-flow skill 规范 */
+/* auth.css — 登录 / 注册页
+   与全站同一套排版语言：纸感底色、细描边卡片、衬线标题、单一强调色。
+   颜色全部走主题变量，暗黑 / 赛博 / 简约主题下自动换色。 */
+
 .auth-body {
-  background:
-    radial-gradient(1200px 600px at 80% -10%, var(--magenta-soft, #ffd1e5), transparent 60%),
-    var(--paper, #faf6f2);
+  background: var(--paper);
+  color: var(--ink);
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem var(--space-page);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 3rem var(--space-page);
 }
-.auth-shell { width: 100%; max-width: 420px; }
+/* 顶部/底部单词条是 body 的直接子元素：用纵向布局把它们固定到两端 */
+.auth-body > .wordline-top { order: -1; margin: -3rem calc(var(--space-page) * -1) 0; }
+.auth-body > .wordline-bottom { margin: 0 calc(var(--space-page) * -1) -3rem; }
+.auth-body .auth-shell { margin: auto; }
+
+.auth-shell { width: 100%; max-width: 460px; }
+
 .auth-logo {
   display: block;
   text-align: center;
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--ink, #1a1a2e);
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
   text-decoration: none;
-  margin-bottom: 1.6rem;
-  background: linear-gradient(90deg, var(--magenta), var(--sunrise));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.35rem;
 }
+.auth-tagline {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.5rem;
+}
+
 .auth-card {
   background: var(--surface);
-  border-radius: 16px;
-  padding: 2rem 2.2rem;
-  box-shadow: var(--shadow-lg, 0 12px 32px rgba(26,26,46,0.12));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.6rem 1.7rem 1.8rem;
+  box-shadow: none;
 }
-.auth-tabs { display: flex; gap: 8px; margin-bottom: 1.6rem; }
+
+/* 标签页改成下划线式，和工具页/导航保持同一种语言 */
+.auth-tabs {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 1.4rem;
+  border-bottom: 1px solid var(--border);
+}
 .auth-tab {
-  flex: 1;
-  padding: 0.65rem;
+  position: relative;
+  padding: 0 2px 0.7rem;
   border: none;
-  border-radius: 10px;
-  background: var(--fill-ghost);
+  background: none;
   color: var(--muted);
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
 }
-.auth-tab.active { background: linear-gradient(90deg, var(--magenta), var(--sunrise)); color: #fff; }
+.auth-tab.active { color: var(--ink); }
+.auth-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--magenta);
+}
 
 .auth-form-panel { display: block; }
 .auth-form-panel.hidden { display: none; }
 
-.field { margin-bottom: 1.1rem; }
-.field label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--ink); }
-.field input {
-  width: 100%;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  background: var(--surface-2);
+.field { margin-bottom: 0.95rem; }
+.field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
   color: var(--ink);
 }
-.field input:focus, .field select:focus { outline: 2px solid var(--magenta-soft); border-color: var(--magenta); }
+.field input,
 .field select {
   width: 100%;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  font-size: 1rem;
-  background: var(--surface-2);
-  appearance: auto;
+  padding: 0.68rem 0.8rem;
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--surface-2, var(--paper));
+  color: var(--ink);
+}
+.field select { appearance: auto; }
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--magenta-soft);
+  outline-offset: 0;
+  border-color: var(--magenta);
 }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
@@ -76,24 +110,73 @@
 .pw-wrap input { padding-right: 44px; }
 .pw-toggle {
   position: absolute;
-  right: 6px; top: 50%;
+  right: 6px;
+  top: 50%;
   transform: translateY(-50%);
-  background: none; border: none;
-  cursor: pointer; font-size: 1.1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
   padding: 6px;
+  display: inline-flex;
 }
+.pw-toggle:hover { color: var(--ink); }
 
-.err { color: var(--error); font-size: 0.85rem; min-height: 1.2em; margin-bottom: 0.6rem; }
+.err { color: #c44536; font-size: 0.82rem; min-height: 1.2em; margin-bottom: 0.5rem; }
+
 .auth-submit {
   width: 100%;
-  padding: 0.85rem;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(90deg, var(--magenta), var(--sunrise));
+  padding: 0.78rem;
+  border: 1px solid var(--magenta);
+  border-radius: 8px;
+  background: var(--magenta);
   color: #fff;
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 600;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.auth-submit:hover:not(:disabled) { background: var(--magenta-deep); }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* 验证码行：与输入框同一套边框，不再写死白底 */
+.captcha-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.captcha-img {
+  width: 110px;
+  height: 40px;
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 8px;
+  background: var(--surface-2, var(--paper));
   cursor: pointer;
 }
-.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-.auth-foot { text-align: center; color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 1.4rem; }
+.captcha-row input { flex: 1; }
+.captcha-row button {
+  white-space: nowrap;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+.captcha-row button:hover { color: var(--ink); border-color: var(--magenta); }
+
+.auth-foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.9;
+  margin-top: 1.3rem;
+}
+.auth-foot a { color: var(--muted); }
+.auth-foot a:hover { color: var(--ink); }
+
+@media (max-width: 520px) {
+  .auth-body { padding: 1.6rem var(--space-page); }
+  .auth-card { padding: 1.3rem 1.2rem 1.5rem; }
+}

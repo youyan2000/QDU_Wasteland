@@ -7,7 +7,7 @@ package history
 // History 是一条历史记录：B站观看历史或浏览器访问记录。
 type History struct {
 	ID        string `json:"id"`
-	Source    string `json:"source"` // bilibili | browser
+	Source    string `json:"source"` // bilibili | browser | site
 	Title     string `json:"title"`
 	URL       string `json:"url"`
 	VisitedAt int64  `json:"visited_at"` // 毫秒

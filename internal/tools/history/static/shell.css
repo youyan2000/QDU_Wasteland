@@ -1,0 +1,269 @@
+/* shell.css — 把浏览足迹页接入站点外壳与主题变量。
+   工具页原本自带一套蓝色配色；这里把它的主变量映射到站点主题变量，
+   因此默认 / 暗黑 / 赛博 / 简约四个主题都会自动换色。
+   注意：只映射到字面量主题变量（--ink/--paper/--border/--magenta…），
+   不要映射到 --surface/--theme-* 这类彼此引用的变量，否则会形成循环。 */
+
+body.history-tool-body {
+  --bg: var(--paper);
+  --text: var(--ink);
+  --line: var(--border);
+  --blue: var(--magenta);
+  --blue-dark: var(--magenta-deep);
+  --green: var(--sea);
+  --shadow: none;
+  background: var(--bg);
+  color: var(--text);
+}
+body.history-tool-body:not([data-theme]) {
+  --muted: #596565;
+}
+
+.history-tool-body .history-site-main {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 22px 0 44px;
+}
+.history-site-main .tools-breadcrumb {
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+.history-site-main .tools-breadcrumb a { color: var(--muted); }
+.history-site-main .tools-breadcrumb a:hover { color: var(--blue); }
+.history-site-main .history-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.history-site-main .history-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  text-decoration: none;
+}
+.history-site-main .history-tabs a[aria-current="page"] {
+  color: var(--text);
+  border-color: var(--blue);
+  font-weight: 600;
+}
+.history-site-main .history-tabs a:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.history-site-main .main-area {
+  margin: 0;
+  width: 100%;
+  background: transparent;
+}
+.history-site-main .sidebar { display: none; }
+.history-site-main .topbar {
+  height: auto;
+  min-height: 44px;
+  padding: 0 0 14px;
+  justify-content: flex-end;
+  background: transparent;
+  border: 0;
+}
+.history-site-main .content-wrap {
+  max-width: none;
+  padding: 0;
+}
+.history-site-main .app-shell { min-height: 0; }
+
+/* 页面标题沿用站点标题字体，避免"另一个产品"的观感 */
+.history-site-main .page-heading h1 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.history-site-main .page-heading p { margin-top: 6px; color: var(--muted); }
+
+/* 记录卡片沿用站点描边风格，而不是工具页默认的阴影块 */
+.history-site-main .record-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  box-shadow: none;
+}
+.history-site-main .record-card:hover { border-color: var(--blue); }
+.history-site-main .record-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+  color: var(--blue);
+  font-size: 13px;
+}
+.history-site-main .record-title { color: var(--text); font-weight: 600; }
+.history-site-main .record-meta { color: var(--muted); }
+.history-site-main .record-open { color: var(--blue); }
+.history-site-main .day-title { color: var(--text); }
+.history-site-main .day-count,
+.history-site-main .list-summary { color: var(--muted); }
+.history-site-main .empty-state {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+.history-site-main .message.info { color: var(--muted); }
+/* 提示条 / 徽标 / 空状态：原本写死浅色，这里改由主题色混合，暗色下不再突兀 */
+.history-site-main .demo-notice {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--muted);
+}
+.history-site-main .demo-notice .notice-copy strong { color: var(--text); }
+.history-site-main .demo-notice.error {
+  border-color: color-mix(in srgb, #c44536 35%, var(--line));
+  background: color-mix(in srgb, #c44536 8%, transparent);
+  color: var(--muted);
+}
+.history-site-main .demo-notice.error .notice-copy strong { color: #c44536; }
+.history-site-main .local-badge {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  border-color: color-mix(in srgb, var(--green) 28%, transparent);
+}
+.history-site-main .local-badge .status-dot { background: var(--green); }
+.history-site-main .local-badge.is-error {
+  color: #c44536;
+  background: color-mix(in srgb, #c44536 10%, transparent);
+  border-color: color-mix(in srgb, #c44536 30%, transparent);
+}
+.history-site-main .local-badge.is-error .status-dot { background: #c44536; }
+.history-site-main .empty-state {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  color: var(--muted);
+}
+.history-site-main .empty-state h3,
+.history-site-main .empty-symbol { color: var(--text); }
+.history-site-main .list-summary,
+.history-site-main .summary-source { color: var(--muted); }
+.history-site-main .day-title,
+.history-site-main .record-host { color: var(--text); }
+.history-site-main .day-count {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border-color: transparent;
+}
+
+/* 本站足迹页顶部的"已导入"入口 */
+.history-site-main .imported-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  font-size: 13px;
+}
+.history-site-main .imported-label { color: var(--muted); }
+.history-site-main .imported-link { color: var(--blue); text-decoration: none; font-weight: 600; }
+.history-site-main .imported-link:hover { text-decoration: underline; }
+/* 使用说明：默认收起，没有记录时展开 */
+.history-site-main .history-guide {
+  margin: 0 0 22px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  color: var(--muted);
+  font-size: 13px;
+}
+.history-site-main .history-guide summary {
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 600;
+  list-style: none;
+}
+.history-site-main .history-guide summary::-webkit-details-marker { display: none; }
+.history-site-main .history-guide summary::before {
+  content: "＋";
+  display: inline-block;
+  width: 1.1em;
+  color: var(--blue);
+}
+.history-site-main .history-guide[open] summary::before { content: "－"; }
+.history-site-main .history-guide-steps {
+  margin: 10px 0 2px;
+  padding-left: 1.35em;
+  display: grid;
+  gap: 6px;
+}
+.history-site-main .history-guide-steps li { line-height: 1.7; }
+
+/* 扩展配对：步骤、配对码、设备列表 */
+.history-site-main .extension-steps {
+  margin: 4px 0 16px;
+  padding-left: 1.35em;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.history-site-main .extension-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.history-site-main .token-box {
+  margin: 4px 0 16px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  display: grid;
+  gap: 8px;
+}
+.history-site-main .token-label { font-size: 12px; color: var(--muted); }
+.history-site-main .token-value {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+}
+.history-site-main .device-list {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+.history-site-main .device-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.history-site-main .device-name { color: var(--text); font-weight: 600; }
+.history-site-main .device-sync { color: var(--muted); margin-left: auto; }
+.history-site-footer {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 18px 0 28px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .history-tool-body .history-site-main,
+  .history-site-footer { width: min(100% - 28px, 1200px); }
+  .history-site-main .history-tabs { gap: 0; }
+  .history-site-main .history-tabs a { flex: 1 1 33%; justify-content: center; padding: 0 6px; font-size: 13px; }
+}

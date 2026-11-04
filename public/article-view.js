@@ -9,6 +9,7 @@ async function load() {
     if (r.status === 404) { wrap.innerHTML = '<div class="empty">文章不存在或已下架</div>'; return; }
     const d = await r.json();
     render(d.article);
+    recordVisit('article', d.article.id, d.article.title);
   } catch (e) { wrap.innerHTML = '<div class="empty">加载失败</div>'; }
 }
 
@@ -41,6 +42,11 @@ function render(a) {
     else { fb(); done(); }
   };
   attachSaveToAlbum(wrap);
+}
+
+function recordVisit(kind, recordId, title) {
+  const path = location.pathname + location.search;
+  fetch('/api/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id: String(recordId || ''), path, title }), keepalive: true }).catch(() => {});
 }
 
 function escape(s) { return (s == null ? '' : String(s)).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }

@@ -56,7 +56,7 @@
 }
 .btn-newpost:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(255, 46, 136, 0.4);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--magenta) 40%, transparent);
 }
 
 /* 帖子列表 */

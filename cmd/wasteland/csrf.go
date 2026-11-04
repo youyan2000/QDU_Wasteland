@@ -1,7 +1,8 @@
 // csrf.go — V12 (A3) CSRF 防护中间件
 // 策略（对无状态 JSON API 最稳的组合）：
-//   1. 所有非安全方法(POST/PATCH/DELETE/PUT)校验 Origin / Referer 与 Host 同源
-//   2. 会话 Cookie 使用 SameSite=Strict（登录接口处设置）
+//  1. 所有非安全方法(POST/PATCH/DELETE/PUT)校验 Origin / Referer 与 Host 同源
+//  2. 会话 Cookie 使用 SameSite=Strict（登录接口处设置）
+//
 // 说明：浏览器跨站请求会带 Origin；同源请求(或本地 curl/node 无来源头)不受影响。
 package main
 
@@ -55,4 +56,25 @@ func csrfGuard(h http.HandlerFunc) http.HandlerFunc {
 		}
 		h(w, r)
 	}
+}
+
+// sameOriginGuard 把同源校验扩到全站（含 /tool/* 等未走 srv() 的路由）。
+// /api/history/sync 例外：它用设备令牌鉴权，由扩展直接调用，没有浏览器来源头。
+func sameOriginGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+			next.ServeHTTP(w, r)
+			return
+		}
+		if r.URL.Path == "/api/history/sync" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if !isSameOrigin(r) {
+			apiErr(w, 403, "请求来源校验失败")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

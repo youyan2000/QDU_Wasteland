@@ -47,6 +47,11 @@ func newStaticHandler(dir string) http.Handler {
 			return
 		}
 		if err == nil {
+			// 前端没有构建步骤，改完 CSS/JS 必须让浏览器重新校验，
+			// 否则用户会长时间看到旧样式（"换了颜色没反应"大多是这个原因）。
+			if ext := strings.ToLower(filepath.Ext(target)); ext == ".css" || ext == ".js" || ext == ".html" || ext == ".json" {
+				w.Header().Set("Cache-Control", "no-cache")
+			}
 			files.ServeHTTP(w, r)
 			return
 		}

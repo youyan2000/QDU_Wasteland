@@ -53,9 +53,9 @@
   border: none; border-radius: var(--radius-pill);
   background: linear-gradient(90deg, var(--magenta), var(--sunrise, #ff9a62));
   color: #fff; font-weight: 700; font-size: .88rem;
-  cursor: pointer; box-shadow: 0 4px 14px rgba(255,46,136,.22);
+  cursor: pointer; box-shadow: 0 4px 14px color-mix(in srgb, var(--magenta) 22%, transparent);
   transition: transform .15s, box-shadow .15s, opacity .15s;
 }
-.u-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,46,136,.34); }
+.u-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--magenta) 34%, transparent); }
 .u-send-btn:active { transform: translateY(0) scale(.98); }
 .u-send-btn:disabled { opacity: .6; cursor: default; transform: none; }

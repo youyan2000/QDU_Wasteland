@@ -28,7 +28,7 @@
         </div>
       </div>
       <div class="nav-right">
-        <form class="nav-search" action="/search.html" method="get" onsubmit="event.preventDefault();location.href='/search.html?q='+encodeURIComponent(this.q.value.trim())">
+        <form class="nav-search" action="/search.html" method="get">
           <input type="search" name="q" placeholder="搜索…" autocomplete="off">
         </form>
         <button class="nav-bell" id="navBell" title="公告 / 通知 / 私信">
@@ -38,6 +38,16 @@
         <span id="navAuth"></span>
       </div>
     </nav>`;
+
+  // 站内搜索：CSP 禁止内联 onsubmit，这里统一绑定（回车即跳转）。
+  const navSearch = holder.querySelector('.nav-search');
+  if (navSearch) {
+    navSearch.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const q = (navSearch.querySelector('input[name="q"]') || {}).value || '';
+      location.href = '/search.html?q=' + encodeURIComponent(q.trim());
+    });
+  }
 
   // ---- 登录态 ----
   const authEl = document.getElementById('navAuth');
@@ -165,27 +175,16 @@
     document.head.appendChild(l);
   })();
 
-  // 从 localStorage 应用已保存设置
+  // 从 localStorage 应用已保存设置（调色板逻辑统一放在 themeboot.js）
   function applySettings() {
+    if (window.QWTheme) {
+      window.QWTheme.apply();
+      return;
+    }
     const t = localStorage.getItem('qwTheme') || '';
     const nav = localStorage.getItem('qwNav') || '';
-    const color = localStorage.getItem('qwColor') || '';
     if (t) document.body.setAttribute('data-theme', t); else document.body.removeAttribute('data-theme');
     if (nav === 'left') document.body.setAttribute('data-nav', 'left'); else document.body.removeAttribute('data-nav');
-    if (color) {
-      const valid = /^#[0-9a-fA-F]{6}$/.test(color);
-      if (!valid) return;
-      document.body.style.setProperty('--magenta', color);
-      // 派生深色
-      document.body.style.setProperty('--magenta-deep', color);
-      document.body.style.setProperty('--magenta-soft', hexSoft(color));
-    }
-  }
-  function hexSoft(hex) {
-    const n = parseInt(hex.slice(1), 16);
-    const r = (n>>16)&255, g=(n>>8)&255, b=n&255;
-    const sr = Math.round(r*0.25+230*0.75), sg=Math.round(g*0.1+245*0.9), sb=Math.round(b*0.2+235*0.8);
-    return `#${((1<<24)+(sr<<16)+(sg<<8)+sb).toString(16).slice(1)}`;
   }
   applySettings();
 
@@ -200,7 +199,17 @@
     { key:'cyber', label:'赛博朋克' },
     { key:'github', label:'简约' }
   ];
-  const COLORS = ['#ff2e88','#2ec4b6','#6366f1','#f59e0b','#10b981','#ef4444'];
+  // 站点调色板：都做过明度校准，能当按钮底色且白字可读。
+  const COLORS = [
+    { hex:'#b63d32', name:'品红' },
+    { hex:'#8f4a3a', name:'赭石' },
+    { hex:'#277f78', name:'松绿' },
+    { hex:'#2f5f8f', name:'靛蓝' },
+    { hex:'#5b4a86', name:'暮紫' },
+    { hex:'#8a6a2f', name:'芥黄' },
+    { hex:'#7a3b52', name:'绛红' },
+    { hex:'#3a3f45', name:'石墨' }
+  ];
 
   function initSettings() {
     // 设置只在"我的风采"(me.html) 页面提供入口
@@ -223,6 +232,7 @@
     const curTheme = document.body.getAttribute('data-theme') || '';
     const curNav = document.body.getAttribute('data-nav') || '';
     const curColor = localStorage.getItem('qwColor') || '';
+
     const panel = document.createElement('div');
     panel.id = 'settingsPanel'; panel.className = 'settings-panel';
     panel.innerHTML = `
@@ -235,9 +245,10 @@
         </div>
       </div>
       <div class="set-group">
-        <div class="set-label">主题色</div>
-        <div class="set-row">
-          ${COLORS.map(c => `<button class="set-color ${curColor===c?'active':''}" data-color="${c}" style="background:${c}"></button>`).join('')}
+        <div class="set-label">主题色 <span class="set-hint">按钮、导航、链接、标签会一起换；「跟随主题」恢复该主题的默认色</span></div>
+        <div class="set-row set-row-colors">
+          <button class="set-color-auto ${curColor ? '' : 'active'}" data-color="" title="跟随主题（默认色）">跟随主题 · 使用该主题默认色</button>
+          ${COLORS.map(c => `<button class="set-color ${curColor===c.hex?'active':''}" data-color="${c.hex}" style="background:${c.hex}" title="${c.name}"></button>`).join('')}
         </div>
       </div>
       <div class="set-group">
@@ -259,7 +270,8 @@
     // 主题色
     panel.querySelectorAll('.set-color').forEach(b => b.onclick = () => {
       const c = b.dataset.color;
-      if (curColor === c) { localStorage.removeItem('qwColor'); }
+      if (!c) { localStorage.removeItem('qwColor'); }
+      else if (curColor === c) { localStorage.removeItem('qwColor'); }
       else { localStorage.setItem('qwColor', c); }
       applySettings(); togglePanel();
     });

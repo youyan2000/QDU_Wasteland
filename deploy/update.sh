@@ -15,6 +15,11 @@ RUN="${QW_RUN_DIR:-/root/qdu-wasteland}"          # 运行目录（程序 + 数�
 SERVICE="${QW_SERVICE:-qdu-wasteland}"            # systemd 服务名
 GO_BIN="${QW_GO_BIN:-/snap/bin/go}"               # Go 编译器
 HEALTH_URL="${QW_HEALTH_URL:-http://127.0.0.1:3000}"
+# Supply-chain gate: an operator must approve one exact immutable commit.
+# No branch tip (including origin/main) is deployed implicitly.
+APPROVED_COMMIT="${QW_APPROVED_COMMIT:-}"
+APPROVE_DEPLOY="${QW_APPROVE_DEPLOY:-}"
+BRANCH="${QW_BRANCH:-main}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 STOPPED=0
 
@@ -48,13 +53,19 @@ if ! bash -n "$0" 2>/dev/null; then
 fi
 
 echo "======================================================"
-echo " QDU Wasteland 安全更新  $STAMP"
-echo "  源码: $SRC"
-echo "  运行: $RUN"
+echo " QDU Wasteland 审批式更新  $STAMP"
 echo "======================================================"
 
-if [ ! -d "$SRC/.git" ]; then echo "✗ 找不到源码目录 $SRC（需要 git 仓库）"; exit 1; fi
-if [ ! -d "$RUN" ]; then echo "✗ 找不到运行目录 $RUN"; exit 1; fi
+if [ ! -d "$SRC/.git" ]; then echo "✗ 源码仓库不可用"; exit 1; fi
+if [ ! -d "$RUN" ]; then echo "✗ 运行目录不可用"; exit 1; fi
+if [ "$APPROVE_DEPLOY" != "YES" ]; then
+  echo "✗ 部署未获显式批准。审阅固定 commit 后同时设置 QW_APPROVE_DEPLOY=YES 和 QW_APPROVED_COMMIT=<完整40位commit>。"
+  exit 1
+fi
+if ! [[ "$APPROVED_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
+  echo "✗ QW_APPROVED_COMMIT 必须是经审核的完整 40 位 commit ID。"
+  exit 1
+fi
 
 # ---------- 1/7 备份数据（数据库 + 旧程序 + 旧运维脚本）----------
 mkdir -p "$RUN/backups"
@@ -78,32 +89,27 @@ echo "[1/7] ✓ 备份完成 → $RUN/backups/ (*.$STAMP)"
 # 部署镜像原则：源码目录以远端为准。
 # 不用 git pull：上游历史可能被强推改写（rebase/amend），此时 pull 会因"分叉"直接失败。
 cd "$SRC"
-BRANCH="${QW_BRANCH:-main}"
 if ! git fetch --prune origin; then
-  echo "✗ git fetch 失败（网络？）—— 中止，线上不受影响"
+  echo "✗ git fetch 失败——中止，线上不受影响"
   exit 1
 fi
-if ! git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null; then
-  echo "✗ 找不到远端分支 origin/$BRANCH —— 中止"
+if ! git cat-file -e "$APPROVED_COMMIT^{commit}" 2>/dev/null; then
+  echo "✗ 审批 commit 不在本地仓库；请先审阅并获取该固定 commit。"
   exit 1
 fi
-
-BEFORE="$(git rev-parse --short HEAD)"
-# 丢弃前先把本地改动存成补丁（防误伤：万一有人在服务器上直接改过代码）
+if ! git merge-base --is-ancestor "$APPROVED_COMMIT" "origin/$BRANCH" 2>/dev/null; then
+  echo "✗ 审批 commit 不是 origin/$BRANCH 的已知祖先；拒绝按分支尖端部署。"
+  exit 1
+fi
 if [ -n "$(git status --porcelain)" ]; then
-  PATCH="$RUN/backups/src-local-changes-$STAMP.patch"
-  if git diff > "$PATCH" 2>/dev/null; then
-    echo "  ⚠ 源码目录有未提交改动，已保存补丁: $PATCH"
-  fi
+  echo "✗ 源码工作区有未提交/未跟踪内容；为避免覆盖，拒绝更新。请人工保留并清理后重试。"
+  exit 1
 fi
-DIVERGED="$(git log --oneline "origin/$BRANCH..HEAD" 2>/dev/null | wc -l | tr -d ' ')"
-
-git reset --hard "origin/$BRANCH" >/dev/null
+BEFORE="$(git rev-parse --short HEAD)"
+# Detach at the immutable approved commit; do not move/reset a branch ref.
+git checkout --detach "$APPROVED_COMMIT" >/dev/null
 AFTER="$(git rev-parse --short HEAD)"
-echo "[2/7] ✓ 代码 $BEFORE → $AFTER（已同步 origin/$BRANCH）"
-if [ "${DIVERGED:-0}" != "0" ]; then
-  echo "      注意：丢弃了 $DIVERGED 个不在远端的本地提交（上游强推改写历史所致，内容已在远端）"
-fi
+echo "[2/7] ✓ 已切换到经明确批准的 commit $AFTER（detached HEAD）"
 if [ "$BEFORE" = "$AFTER" ]; then
   echo "      （无新提交，继续重建）"
 fi

@@ -1,0 +1,74 @@
+/* ---------- 全站随机单词条（顶部 / 底部） ---------- */
+/* 变量都带兜底值：即使页面没有加载主题样式表，词条也保持可读。 */
+.wordline {
+  background: var(--surface, #fbfaf6);
+  color: var(--ink, #1e292b);
+  border-bottom: 1px solid var(--border, #d6d9d3);
+}
+.wordline-bottom {
+  border-top: 1px solid var(--border, #d6d9d3);
+  border-bottom: 0;
+}
+.wordline-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 11px var(--space-page, 24px) 12px;
+  font-family: "Aptos", "Microsoft YaHei", -apple-system, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.wordline-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--magenta, #b63d32);
+  text-transform: uppercase;
+}
+.wordline-word {
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.wordline-ph {
+  color: var(--muted, #596565);
+  font-size: 0.86rem;
+}
+.wordline-pos {
+  color: var(--muted, #596565);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+.wordline-def {
+  flex: 1 1 320px;
+  min-width: 0;
+  color: var(--muted, #596565);
+}
+.wordline-next {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--border, #d6d9d3);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, #596565);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.wordline-next:hover:not(:disabled) {
+  color: var(--magenta, #b63d32);
+  border-color: var(--magenta, #b63d32);
+}
+.wordline-next:disabled { opacity: 0.45; cursor: default; }
+@media (max-width: 640px) {
+  .wordline-inner { padding: 9px var(--space-page, 16px); }
+  .wordline-def { flex-basis: 100%; }
+  .wordline-next { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wordline-next { transition: none; }
+}

@@ -4,9 +4,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+
+	"wasteland/internal/tools/history"
 )
 
 var db *DB
@@ -112,6 +115,24 @@ func main() {
 	srv("/api/email/verify/confirm", rateLimitHandler("mail", handleConfirmEmailVerify()))
 	srv("/api/email/reset", rateLimitHandler("mail", handleRequestReset()))
 	srv("/api/email/reset/confirm", rateLimitHandler("mail", handleConfirmReset()))
+
+	// 登录用户的本站浏览足迹（不接受客户端传入 user ID）。
+	srv("/api/visit", quotaHandler(rateLimitHandler("act", handleRecordVisit())))
+
+	// 全站随机单词（词库编译进二进制，见 internal/wordbank）。
+	srv("/api/words/random", handleRandomWords())
+
+	// 浏览器扩展自动同步：用设备令牌鉴权，不依赖网页会话，因此不走 csrfGuard。
+	// 每个 IP 每小时最多 120 次同步请求，避免令牌泄露后被当成上传通道刷。
+	syncHandler := history.SyncHandler(authStore.db, 8<<20)
+	http.HandleFunc("/api/history/sync", func(w http.ResponseWriter, r *http.Request) {
+		if ok, _ := rateLimitOK(fpKey(r)+"|sync", 120); !ok {
+			w.Header().Set("Retry-After", "600")
+			apiErr(w, 429, "同步过于频繁，请稍后再试")
+			return
+		}
+		syncHandler(w, r)
+	})
 
 	// 课程 API 路由
 	srv("/api/courses", handleCourses(db))
@@ -251,12 +272,17 @@ func main() {
 	// 目录由 baseDir 决定，不再受进程工作目录影响。
 	http.Handle("/", newStaticHandler(publicDir()))
 	// 维护模式中间件（普通访问者拦截，管理员/API 放行），包装 DefaultServeMux
-	handler := securityHeaders(maintenanceInterceptor(authStore.db, http.DefaultServeMux))
+	handler := securityHeaders(maintenanceInterceptor(authStore.db, sameOriginGuard(http.DefaultServeMux)))
 
-	port := os.Getenv("PORT")
-	if port == "" { port = ":3000" }
-	log.Printf("🟣 QDU Wasteland 已启动: http://localhost%s", port)
-	if err := http.ListenAndServe(port, handler); err != nil {
+	server, err := newHTTPServer(os.Getenv("PORT"), handler)
+	if err != nil {
+		log.Fatal("服务器配置无效: ", err)
+	}
+	cleanupCtx, stopCleanup := context.WithCancel(context.Background())
+	defer stopCleanup()
+	startRateLimitCleanup(cleanupCtx)
+	log.Printf("🟣 QDU Wasteland 已启动: http://%s", server.Addr)
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("服务器启动失败: ", err)
 	}
 }

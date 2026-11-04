@@ -21,12 +21,12 @@ import (
 	"wasteland/internal/githubdigest"
 	"wasteland/internal/hotdigest"
 	"wasteland/internal/tools"
-	_ "wasteland/internal/tools/collector"   // 随笔散文 + 趣味角落
-	"wasteland/internal/tools/digest"        // 开源日报
-		"wasteland/internal/tools/history"        // 浏览足迹
+	_ "wasteland/internal/tools/collector"    // 随笔散文 + 趣味角落
+	"wasteland/internal/tools/digest"         // 开源日报
+	"wasteland/internal/tools/history"        // 浏览足迹
 	"wasteland/internal/tools/hot"            // 热点日报
 	_ "wasteland/internal/tools/nextjlc"      // Gerber 工具（托管外部静态包）
-	_ "wasteland/internal/tools/placeholders" // history / favorite / poetrymatrix 占位
+	_ "wasteland/internal/tools/placeholders" // private bookmarks and PoetryMatrix placeholder
 )
 
 func registerToolRoutes(mux *http.ServeMux) {
@@ -50,10 +50,10 @@ func registerToolRoutes(mux *http.ServeMux) {
 	}
 
 	// 浏览足迹：与站点共用同一个 SQLite 库（表名前缀 history_）。
-	if st, err := history.NewStore(authStore.db); err != nil {
+	if st, err := history.NewStore(authStore.db, ownerID); err != nil {
 		log.Printf("⚠️ history 工具初始化失败: %v", err)
 	} else {
-		history.Setup(st)
+		history.Setup(st, currentUserID)
 	}
 	// 每日硬件开源项目摘要：数据落本地 JSON（默认 ./tool-data），不写站点数据库。
 	// GITHUB_TOKEN 可选，用于把搜索 API 配额从 10 次/分钟提高到 30 次/分钟。
@@ -79,10 +79,12 @@ func registerToolRoutes(mux *http.ServeMux) {
 	hot.SetStore(hots)
 
 	tools.Mount(mux, tools.Env{
+		DB:         authStore.db,
 		DataDir:    digestDir,
 		BundleRoot: filepath.Join(root, "nextjlc"),
 		OwnerUID:   ownerID,
 		CanOwner:   canViewPrivate,
+		UserID:     currentUserID,
 	})
 
 	// 仅站长可用的手动刷新；页面按钮调用此接口。

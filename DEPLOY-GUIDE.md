@@ -2,31 +2,34 @@
 
 > 本教程带你把 QDU Wasteland 从"本地代码"部署到"公网服务器"，任何人能访问。
 > 全程手把手，每步有"为什么"和"怎么验证"。跟着顺序做即可。
+>
+> **安全部署基线（2026-11）**：推荐 `Cloudflare Tunnel → 本机 loopback Nginx → 127.0.0.1:3000 应用`。Tunnel 不是 VPN，也不是物理隔离；仍须使用主机防火墙、最小权限、日志轮转和独立备份。`deploy/nginx-tunnel.conf.example` 与 `deploy/nginx.conf.example` 都是需人工审阅后启用的模板，仓库不会替你改动线上配置。
+> 本仓库不提供代理、流量规避或 VPN 配置；不要把 VPN 目录/配置纳入本部署流程。
 
 ---
 
 ## 〇、部署全景图（先看这张图，心里有数）
 
 ```
-买服务器（境外 VPS，免备案）        ← 第 1 章
+买服务器（境外 VPS）                ← 第 1 章
   ↓
-连上服务器（SSH）                  ← 第 2 章
+通过受控管理路径连接服务器            ← 第 2 章
   ↓
-装环境（MySQL / Nginx / ClamAV）   ← 第 3 章
+安装所需环境（Nginx / cloudflared 等）← 第 3 章
   ↓
-配 MySQL（建库 + 建账号）           ← 第 4 章
+配置应用与数据                        ← 第 4 章
   ↓
-配防火墙（只开 22/80/443）          ← 第 5 章
+确认主机与云防火墙基线                ← 第 5 章
   ↓
-配 Nginx（反向代理 80→3000）        ← 第 6 章
+选择并审阅 Tunnel 或直接 HTTPS 模板   ← 第 6 章
   ↓
-传程序 + 传课表数据                 ← 第 7 章
+部署程序与数据                        ← 第 7 章
   ↓
-启动 Go 程序（systemd 守护）        ← 第 8 章
+启动 Go 程序（回环监听）              ← 第 8 章
   ↓
-验证：http://你的IP 能打开          ← 第 9 章
+通过所选域名入口验证                  ← 第 9 章
   ↓
-（后续）HTTPS / 域名 / MySQL迁移 / ClamAV / 备份 / 压测  ← 第 10 章
+DNS/TLS/备份/监控及恢复演练            ← 第 10 章
 ```
 
 ---
@@ -124,56 +127,52 @@ exit;
 
 ---
 
-## 第 5 章 · 配置防火墙（UFW，只开 22/80/443）
+## 第 5 章 · 检查防火墙（先确认管理回滚路径与所选入口）
 
 ```bash
-ufw allow 22/tcp      # SSH（先放行，防止把自己关门外）
-ufw allow 80/tcp      # HTTP 网页
-ufw allow 443/tcp     # HTTPS（后续用）
-ufw enable            # 问 y/n 时输入 y
-ufw status            # 确认 active + 三个端口 ALLOW
+# 选择 Tunnel 模式时，网站本身不需要公网入站 80/443；仅在确需管理且有安全访问路径时放行 SSH。
+# 首次启用前要先准备 Vultr 控制台/VNC 回滚，确认 IPv6 与云防火墙规则；不要照抄会锁死远程管理的规则。
+ufw status verbose
 ```
 
 ---
 
-## 第 6 章 · 配置 Nginx（反向代理 80 → 3000）
+## 第 6 章 · 配置入口（Cloudflare Tunnel → loopback Nginx → 应用）
 
-**作用**：用户访问 80 端口，Nginx 把请求转给 Go 程序（监听 3000），以后还能加 HTTPS。
+**推荐拓扑**：Cloudflare Tunnel 将外部 HTTPS 请求送到本机 `127.0.0.1:8080`，Nginx 再反代到应用 `127.0.0.1:3000`。应用和 Nginx 都不应绑定公网地址。Tunnel 不是 VPN 或物理隔离；仍需主机/云防火墙、最小权限和独立备份。
 
-```bash
-# 1) 打开编辑器（nano 若没装：apt install -y nano）
-nano /etc/nginx/sites-available/qdu-wasteland
-```
+仓库模板：
+- `deploy/nginx-tunnel.conf.example`：Tunnel 入口，真实 IP 仅信任 loopback 对端送来的 `CF-Connecting-IP`。
+- `deploy/nginx.conf.example`：保留的直接公网 HTTPS 入口（无 Tunnel 时使用），含 TLS 1.2+、未知 Host 拒绝、固定 canonical HTTPS 重定向、限流和超时。
 
-**粘贴**（nano 里右键=粘贴）：
-```nginx
-server {
-    listen 80;
-    server_name _;
+模板只是部署蓝图，须替换域名/证书路径并人工审阅；不要把 `0.0.0.0/0`、任意 `X-Forwarded-For` 链或客户端自带头加入信任范围。
 
-    client_max_body_size 200m;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 300s;
-        proxy_send_timeout 300s;
-    }
-}
-```
-
-保存退出：`Ctrl+O` → 回车 → `Ctrl+X`
+### 6.1 Tunnel 模式配置
 
 ```bash
-# 2) 启用配置 + 删默认 + 测试 + 重载
-ln -s /etc/nginx/sites-available/qdu-wasteland /etc/nginx/sites-enabled/
-rm /etc/nginx/sites-enabled/default
+# 先安装并审阅模板；不要覆盖现有线上配置
+install -m 0644 deploy/nginx-tunnel.conf.example /etc/nginx/conf.d/qdu-wasteland-tunnel.conf
+# cloudflared ingress 的 service 应指向 http://127.0.0.1:8080；按 Cloudflare 控制台/本机配置审核后启用
+nginx -t
+systemctl reload nginx
+```
+
+Tunnel 配置必须只接受明确域名，未知 Host 由默认 server 拒绝。Nginx 只接受本机 Tunnel 对端；不要把 Cloudflare CDN 出口地址加入 fail2ban 封禁名单，也不要把 Tunnel 当作绕过主机隔离的通道。
+
+日志模板：`deploy/qdu-wasteland.logrotate.example`（Nginx 文件日志）和 `deploy/journ-qdu-wasteland.conf.example`（journald 容量/保留）。应用默认写 journald；先确认本机日志路径及运行用户，再安装。不要直接使用不匹配的示例路径，也不要把服务重启信号用于不支持日志 reopen 的程序。
+
+### 6.2 无 Tunnel 的直接公网模式（兼容旧部署）
+
+继续使用 `deploy/nginx.conf.example`，不要恢复旧的 `X-Forwarded-For $proxy_add_x_forwarded_for` 示例。启用前先确认 DNS/证书、域名和防火墙策略，随后：
+
+```bash
+install -m 0644 deploy/nginx.conf.example /etc/nginx/conf.d/qdu-wasteland.conf
 nginx -t                              # 必须显示 test is successful
-systemctl reload nginx                # 使配置生效
-systemctl status nginx                # active (running)
+systemctl reload nginx
+systemctl status nginx
 ```
+
+直接公网模式下，应用仍绑定 `127.0.0.1:3000`；只信 Nginx 覆写的请求头，不信任任意来源头。保留现有公网访问时不要盲目切换到 Tunnel，完成变更窗口、Cloudflare ingress 和回滚检查后再启用。
 
 ---
 
@@ -227,7 +226,7 @@ WorkingDirectory=/root/qdu-wasteland
 ExecStart=/root/qdu-wasteland/qdu-wasteland-linux
 Restart=always
 Environment=CSV_DIR=/root/csv_data
-Environment=PORT=:3000
+Environment=PORT=127.0.0.1:3000
 Environment=ADMIN_EMAIL=admin@你的域名或邮箱
 Environment=ADMIN_PASSWORD=你的站长密码
 # 邮件（可选，不配则日志模式）
@@ -238,6 +237,8 @@ Environment=ADMIN_PASSWORD=你的站长密码
 # Environment=MAIL_FROM=xxx@qq.com
 # AI 审查（可选）
 # Environment=AI_API_URL=https://api.deepseek.com/v1/chat/completions
+# 若用其他供应商，只填写审核过的精确主机名（逗号分隔）
+# Environment=AI_ALLOWED_HOSTS=ai.example.com
 # Environment=AI_API_KEY=你的key
 # Environment=AI_MODEL=deepseek-chat
 

@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Wasteland 浏览足迹同步",
+  "version": "1.2.0",
+  "description": "把浏览器历史与书签自动同步到 QDU Wasteland 的浏览足迹，只在你自己登录的账号下可见。",
+  "permissions": ["history", "bookmarks", "alarms", "storage", "cookies"],
+  "host_permissions": ["https://*/*", "http://127.0.0.1/*", "http://localhost/*"],
+  "background": { "scripts": ["background.js"] },
+  "action": { "default_title": "Wasteland 足迹同步", "default_popup": "popup.html" },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "browser_specific_settings": {
+    "gecko": { "id": "history-sync@qdwasteland.top", "strict_min_version": "115.0" }
+  }
+}

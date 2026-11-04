@@ -1,7 +1,7 @@
 // tool.go — history 工具的路由装配。
 //
 // 页面是上游 unlimited_history 的本地网页（原生 JS，无构建），
-// 接口挂在 /tool/history/api/ 之下，只有站长能进。
+// 接口挂在 /tool/history/api/ 之下，要求有效登录会话。
 package history
 
 import (
@@ -16,15 +16,27 @@ import (
 var assets embed.FS
 
 // Server 承载全部 HTTP 处理器。
-type Server struct{ store *Store }
+type Server struct {
+	store  *Store
+	userID func(*http.Request) int64
+}
 
-// NewServer 绑定存储。
-func NewServer(st *Store) *Server { return &Server{store: st} }
+// NewServer 绑定存储和会话用户解析器。
+func NewServer(st *Store, userID func(*http.Request) int64) *Server {
+	return &Server{store: st, userID: userID}
+}
 
 var server *Server
 
 // Setup 由主程序在挂载前调用：建表并绑定数据库。
-func Setup(st *Store) { server = NewServer(st) }
+func Setup(st *Store, userID func(*http.Request) int64) { server = NewServer(st, userID) }
+
+func (s *Server) forRequest(r *http.Request) *Store {
+	if s.userID == nil {
+		return s.store.ForUser(0)
+	}
+	return s.store.ForUser(s.userID(r))
+}
 
 func init() { tools.Register(tool{}) }
 
@@ -36,7 +48,7 @@ func (tool) Meta() tools.Meta {
 		Title:   "浏览足迹",
 		Summary: "浏览器历史、B站历史与书签，仅本人可见。",
 		Label:   "PRIVATE / HISTORY",
-		Access:  tools.OwnerOnly,
+		Access:  tools.Member,
 		Enabled: true,
 	}
 }
@@ -44,7 +56,10 @@ func (tool) Meta() tools.Meta {
 // pages 是 SPA 的四个入口，全部落到同一份 index.html。
 var pages = map[string]bool{
 	"/": true, "/index.html": true,
-	"/browser/": true, "/bilibili/": true, "/favorite/": true, "/backup/": true,
+	"/browser/": true, "/browser/index.html": true,
+	"/bilibili/": true, "/bilibili/index.html": true,
+	"/favorite/": true, "/favorite/index.html": true,
+	"/backup/": true, "/backup/index.html": true,
 }
 
 func (tool) Register(mux *http.ServeMux, _ tools.Env) {
@@ -59,12 +74,15 @@ func (tool) Register(mux *http.ServeMux, _ tools.Env) {
 	mux.HandleFunc("/api/me", s.handleMe)
 	mux.HandleFunc("/api/stats", s.handleStats)
 	mux.HandleFunc("/api/history", s.handleHistory)
+	mux.HandleFunc("/api/site-visits", s.handleSiteVisits)
 	mux.HandleFunc("/api/favorite", s.handleFavorites)
 	mux.HandleFunc("/api/favorite/folders", s.handleFavoriteFolders)
 	mux.HandleFunc("/api/favorite/snapshots", s.handleFavoriteSnapshots)
 	mux.HandleFunc("/api/import/preview", s.handleImportPreview)
 	mux.HandleFunc("/api/import/confirm", s.handleImportConfirm)
 	mux.HandleFunc("/api/backup", s.handleBackup)
+	mux.HandleFunc("/api/devices", s.handleDevices)
+	mux.HandleFunc("/api/extension.zip", s.handleExtensionZip)
 
 	sub, err := fs.Sub(assets, "static")
 	if err != nil {

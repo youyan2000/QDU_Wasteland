@@ -134,7 +134,7 @@
 }
 .course-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(255,46,136,0.12);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--magenta) 12%, transparent);
   border-color: var(--magenta-soft);
 }
 .course-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.4; }

@@ -226,22 +226,22 @@ func importBili(backup map[string]any, out *ImportResult) error {
 		}
 
 		h := History{
-			ID:        "bili:" + eventKey,
-			Source:    "bilibili",
-			Title:     cleanText(str(item, "title"), 1000),
-			URL:       u,
-			VisitedAt: viewed * 1000,
-			UID:       account,
-			Business:  business,
-			ContentID: contentID,
-			EventKey:  eventKey,
-			Cover:     cleanText(str(item, "cover"), 4096),
+			ID:         "bili:" + eventKey,
+			Source:     "bilibili",
+			Title:      cleanText(str(item, "title"), 1000),
+			URL:        u,
+			VisitedAt:  viewed * 1000,
+			UID:        account,
+			Business:   business,
+			ContentID:  contentID,
+			EventKey:   eventKey,
+			Cover:      httpsURL(cleanText(str(item, "cover"), 4096)),
 			AuthorName: cleanText(str(item, "author_name"), 200),
-			AuthorMid: num(item, "author_mid"),
-			Duration:  num(item, "duration"),
-			Progress:  num(item, "progress"),
-			IsFav:     boolean(item, "is_fav"),
-			TagName:   cleanText(str(item, "tag_name"), 40),
+			AuthorMid:  num(item, "author_mid"),
+			Duration:   num(item, "duration"),
+			Progress:   num(item, "progress"),
+			IsFav:      boolean(item, "is_fav"),
+			TagName:    cleanText(str(item, "tag_name"), 40),
 		}
 		out.History = append(out.History, h)
 	}
@@ -442,6 +442,18 @@ func isBVID(s string) bool {
 	return true
 }
 
+// httpsURL 把封面等外链统一升级到 https：站点 CSP 只允许 https 图片，
+// B站 旧数据里常见 http:// 或 // 开头的地址，直接渲染会被浏览器拦掉。
+func httpsURL(s string) string {
+	if strings.HasPrefix(s, "//") {
+		return "https:" + s
+	}
+	if strings.HasPrefix(s, "http://") {
+		return "https://" + strings.TrimPrefix(s, "http://")
+	}
+	return s
+}
+
 // canonicalHistory 用于「本工具自己的备份」这条路径。
 func canonicalHistory(item map[string]any) (History, error) {
 	source := str(item, "source")
@@ -461,7 +473,7 @@ func canonicalHistory(item map[string]any) (History, error) {
 		h.Business = cleanText(str(item, "business"), 30)
 		h.ContentID = num(item, "contentId")
 		h.EventKey = cleanText(str(item, "eventKey"), 512)
-		h.Cover = cleanText(str(item, "cover"), 4096)
+		h.Cover = httpsURL(cleanText(str(item, "cover"), 4096))
 		h.AuthorName = cleanText(str(item, "authorName"), 200)
 		h.AuthorMid = num(item, "authorMid")
 		h.Duration = num(item, "duration")
@@ -490,7 +502,7 @@ func canonicalFavorite(item map[string]any) (Favorite, error) {
 	f := Favorite{
 		ID: cleanText(str(item, "id"), 512), Origin: origin,
 		Title: cleanText(str(item, "title"), 1000), URL: u,
-		Note: cleanText(str(item, "note"), 4096),
+		Note:     cleanText(str(item, "note"), 4096),
 		DeviceID: cleanText(str(item, "deviceId"), 200), DeviceName: cleanText(str(item, "deviceName"), 200),
 		Folder: cleanText(str(item, "folder"), 4096), UpdatedAt: num(item, "updated_at"),
 		DeletedAt: num(item, "deletedAt"),

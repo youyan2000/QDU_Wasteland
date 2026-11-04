@@ -2,6 +2,7 @@ package hotdigest
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -32,6 +33,22 @@ func NewEnricher(apiKey string) *Enricher {
 	if apiURL == "" {
 		apiURL = "https://api.openai.com/v1/chat/completions"
 	}
+	parsedURL, err := url.Parse(apiURL)
+	if err != nil || parsedURL.Scheme != "https" || parsedURL.User != nil || parsedURL.Hostname() == "" || (parsedURL.Port() != "" && parsedURL.Port() != "443") {
+		return nil
+	}
+	host := strings.ToLower(strings.TrimSuffix(parsedURL.Hostname(), "."))
+	allowed := map[string]bool{"api.openai.com": true, "api.deepseek.com": true}
+	for _, entry := range strings.Split(os.Getenv("AI_ALLOWED_HOSTS"), ",") {
+		entry = strings.ToLower(strings.TrimSpace(strings.TrimSuffix(entry, ".")))
+		if entry != "" {
+			allowed[entry] = true
+		}
+	}
+	if !allowed[host] {
+		return nil
+	}
+	apiURL = parsedURL.String()
 	model := strings.TrimSpace(os.Getenv("AI_MODEL"))
 	if model == "" {
 		model = "gpt-4o-mini"
@@ -40,7 +57,12 @@ func NewEnricher(apiKey string) *Enricher {
 		APIURL: apiURL,
 		APIKey: apiKey,
 		Model:  model,
-		Client: &http.Client{Timeout: 120 * time.Second},
+		Client: &http.Client{
+			Timeout: 120 * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 	}
 }
 

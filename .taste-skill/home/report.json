@@ -1,0 +1,1223 @@
+{
+ "url": "public\\index.html",
+ "at": "2026-11-02T19:05:16.177Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.86,
+    0.39
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 2,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 1613,
+     "screens": 1.8,
+     "words": 50,
+     "img": 1,
+     "video": 0,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 1,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "wallpaper.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Wasteland",
+     "words": 1,
+     "chars": 9,
+     "lines": 1,
+     "size": 168,
+     "vw": 11.7,
+     "font": "Aptos",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 0.95,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "center",
+     "position": "center",
+     "widthRatio": 0.62,
+     "top": 290,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Wasteland",
+     "words": 1,
+     "lines": 1,
+     "size": 168,
+     "font": "Aptos"
+    },
+    "headings": [
+     {
+      "text": "Wasteland",
+      "words": 1,
+      "chars": 9,
+      "lines": 1,
+      "size": 168,
+      "vw": 11.7,
+      "font": "Aptos",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 0.95,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.62,
+      "top": 290,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "在青大，先从眼前的事开始。",
+      "words": 1,
+      "chars": 13,
+      "lines": 1,
+      "size": 48,
+      "vw": 3.3,
+      "font": "Aptos",
+      "weight": 700,
+      "tracking": -0.02,
+      "leading": 1.18,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.5,
+      "top": 1014,
+      "tag": "h2",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 2,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 1,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Aptos",
+       "share": 0.94,
+       "mono": false
+      },
+      {
+       "family": "Georgia",
+       "share": 0.06,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      25,
+      48,
+      168
+     ],
+     "sizeCount": 11,
+     "notLoaded": [],
+     "body": {
+      "font": "Aptos",
+      "size": 13.6,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 5
+     },
+     "measureChars": 198,
+     "max": {
+      "size": 168,
+      "vw": 11.7,
+      "font": "Aptos",
+      "text": "Wasteland"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.12,
+     "centerShare": 0.44,
+     "smallText": 2
+    },
+    "eyebrows": [
+     {
+      "text": "QINGDAO UNIVERSITY / STUDENT COMMONS",
+      "above": "Wasteland",
+      "upper": true,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 11.8,
+      "top": 258
+     },
+     {
+      "text": "青岛大学 · 学习与互助",
+      "above": "在青大，先从眼前的事开始。",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12.2,
+      "top": 988
+     }
+    ],
+    "numbered": [
+     {
+      "text": "01 / 资料库",
+      "size": 12.2,
+      "top": 1181
+     },
+     {
+      "text": "02 / 同学社区",
+      "size": 12.2,
+      "top": 1181
+     },
+     {
+      "text": "03 / 校园观察",
+      "size": 12.2,
+      "top": 1181
+     }
+    ],
+    "color": {
+     "bodyBg": "#f4f3ed",
+     "bodyBgHsl": {
+      "h": 51,
+      "s": 0.24,
+      "l": 0.94
+     },
+     "dark": false,
+     "sectionBgs": [],
+     "textColors": [
+      {
+       "color": "#596565",
+       "share": 0.37
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.22
+      },
+      {
+       "color": "#8a7f87",
+       "share": 0.18
+      },
+      {
+       "color": "#277f78",
+       "share": 0.12
+      },
+      {
+       "color": "#1e292b",
+       "share": 0.1
+      }
+     ],
+     "button": {
+      "bg": "#b63d32",
+      "hsl": {
+       "h": 5,
+       "s": 0.57,
+       "l": 0.45
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": [
+      {
+       "text": "用户协议",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "隐私政策",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "开源仓库",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "联系方式",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "青岛大学 · 学习与互助",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 12.2,
+       "fg": "#277f78",
+       "bg": "#f4f3ed"
+      },
+      {
+       "text": "01 / 资料库",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 12.2,
+       "fg": "#277f78",
+       "bg": "#f4f3ed"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 2,
+     "radius": 4,
+     "height": 55,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "进入资料库",
+      "逛逛社区"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.hero-wash → linear-gradient(rgba(12, 25, 28, 0.14) 0%, rgba(12, 25, 28, 0.18) 38%, rgba(12, 25, 28, 0.68) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 3,
+     "hairlineSamples": [
+      "div.module-grid 1348px",
+      "a.module-card.module-course 492px",
+      "a.module-card.module-forum 428px"
+     ],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 2,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 1,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 2,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 23,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 1613,
+    "margins": {
+     "left": 46,
+     "right": 123
+    },
+    "sections": [
+     {
+      "sel": "section#top.hero",
+      "tag": "section",
+      "top": 0,
+      "height": 900,
+      "words": 10,
+      "media": 0,
+      "middle": 171,
+      "heading": {
+       "text": "Wasteland",
+       "size": 168,
+       "tag": "h1"
+      },
+      "left": 64,
+      "right": 276,
+      "textLeft": 64,
+      "textRight": 276,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#courses.modules",
+      "tag": "section",
+      "top": 900,
+      "height": 628,
+      "words": 22,
+      "media": 0,
+      "middle": 90,
+      "heading": {
+       "text": "在青大，先从眼前的事开始。",
+       "size": 48,
+       "tag": "h2"
+      },
+      "left": 46,
+      "right": 123,
+      "textLeft": 46,
+      "textRight": 123,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Wasteland",
+      "size": 168,
+      "top": 290,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 46,
+      "n": 2
+     },
+     {
+      "x": 567,
+      "n": 1
+     },
+     {
+      "x": 995,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 4,
+    "bodySize": 16,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 3,
+   "filled": [
+    0.9,
+    0.29,
+    0.29
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 2,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 1965,
+     "screens": 2.3,
+     "words": 50,
+     "img": 1,
+     "video": 0,
+     "canvas": 0,
+     "svg": 0,
+     "sections": 2,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 1,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [
+      "wallpaper.jpg"
+     ],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Wasteland",
+     "words": 1,
+     "chars": 9,
+     "lines": 1,
+     "size": 56,
+     "vw": 14.4,
+     "font": "Aptos",
+     "weight": 600,
+     "tracking": 0,
+     "leading": 0.95,
+     "upper": false,
+     "italic": false,
+     "mono": false,
+     "align": "center",
+     "position": "center",
+     "widthRatio": 0.83,
+     "top": 338,
+     "tag": "h1",
+     "kind": "heading"
+    },
+    "h1": {
+     "text": "Wasteland",
+     "words": 1,
+     "lines": 1,
+     "size": 56,
+     "font": "Aptos"
+    },
+    "headings": [
+     {
+      "text": "Wasteland",
+      "words": 1,
+      "chars": 9,
+      "lines": 1,
+      "size": 56,
+      "vw": 14.4,
+      "font": "Aptos",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 0.95,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.83,
+      "top": 338,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "在青大，先从眼前的事开始。",
+      "words": 1,
+      "chars": 13,
+      "lines": 2,
+      "size": 30.4,
+      "vw": 7.8,
+      "font": "Aptos",
+      "weight": 700,
+      "tracking": -0.02,
+      "leading": 1.18,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.9,
+      "top": 958,
+      "tag": "h2",
+      "kind": "heading"
+     },
+     {
+      "text": "课程与资料",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 24.8,
+      "vw": 6.4,
+      "font": "Georgia",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.8,
+      "top": 1195,
+      "tag": "h3",
+      "kind": "heading"
+     },
+     {
+      "text": "把问题放到广场",
+      "words": 1,
+      "chars": 7,
+      "lines": 1,
+      "size": 24.8,
+      "vw": 6.4,
+      "font": "Georgia",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.8,
+      "top": 1385,
+      "tag": "h3",
+      "kind": "heading"
+     },
+     {
+      "text": "青大最近有什么",
+      "words": 1,
+      "chars": 7,
+      "lines": 1,
+      "size": 24.8,
+      "vw": 6.4,
+      "font": "Georgia",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.8,
+      "top": 1575,
+      "tag": "h3",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 5,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 1,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Aptos",
+       "share": 0.94,
+       "mono": false
+      },
+      {
+       "family": "Georgia",
+       "share": 0.06,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      25,
+      30,
+      56
+     ],
+     "sizeCount": 11,
+     "notLoaded": [],
+     "body": {
+      "font": "Aptos",
+      "size": 13.6,
+      "leading": 1.6,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 5
+     },
+     "measureChars": 51,
+     "max": {
+      "size": 56,
+      "vw": 14.4,
+      "font": "Aptos",
+      "text": "Wasteland"
+     },
+     "monoShare": 0,
+     "monoProseShare": 0,
+     "monoFamilies": [],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.12,
+     "centerShare": 0.44,
+     "smallText": 2
+    },
+    "eyebrows": [
+     {
+      "text": "QINGDAO UNIVERSITY / STUDENT COMMONS",
+      "above": "Wasteland",
+      "upper": true,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 11.8,
+      "top": 305
+     },
+     {
+      "text": "青岛大学 · 学习与互助",
+      "above": "在青大，先从眼前的事开始。",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12.2,
+      "top": 932
+     },
+     {
+      "text": "01 / 资料库",
+      "above": "课程与资料",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12.2,
+      "top": 1162
+     },
+     {
+      "text": "02 / 同学社区",
+      "above": "把问题放到广场",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12.2,
+      "top": 1352
+     },
+     {
+      "text": "03 / 校园观察",
+      "above": "青大最近有什么",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12.2,
+      "top": 1542
+     }
+    ],
+    "numbered": [
+     {
+      "text": "01 / 资料库",
+      "size": 12.2,
+      "top": 1162
+     },
+     {
+      "text": "02 / 同学社区",
+      "size": 12.2,
+      "top": 1352
+     },
+     {
+      "text": "03 / 校园观察",
+      "size": 12.2,
+      "top": 1542
+     }
+    ],
+    "color": {
+     "bodyBg": "#f4f3ed",
+     "bodyBgHsl": {
+      "h": 51,
+      "s": 0.24,
+      "l": 0.94
+     },
+     "dark": false,
+     "sectionBgs": [],
+     "textColors": [
+      {
+       "color": "#596565",
+       "share": 0.37
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.22
+      },
+      {
+       "color": "#8a7f87",
+       "share": 0.18
+      },
+      {
+       "color": "#277f78",
+       "share": 0.12
+      },
+      {
+       "color": "#1e292b",
+       "share": 0.1
+      }
+     ],
+     "button": {
+      "bg": "#b63d32",
+      "hsl": {
+       "h": 5,
+       "s": 0.57,
+       "l": 0.45
+      },
+      "fg": "#ffffff"
+     },
+     "lowContrast": [
+      {
+       "text": "用户协议",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "隐私政策",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "开源仓库",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "联系方式",
+       "ratio": 3.2,
+       "need": 4.5,
+       "size": 13.6,
+       "fg": "#596565",
+       "bg": "#0d0d1c"
+      },
+      {
+       "text": "青岛大学 · 学习与互助",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 12.2,
+       "fg": "#277f78",
+       "bg": "#f4f3ed"
+      },
+      {
+       "text": "01 / 资料库",
+       "ratio": 4.3,
+       "need": 4.5,
+       "size": 12.2,
+       "fg": "#277f78",
+       "bg": "#f4f3ed"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 2,
+     "radius": 4,
+     "height": 55,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "进入资料库",
+      "逛逛社区"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 1,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.hero-wash → linear-gradient(rgba(12, 25, 28, 0.14) 0%, rgba(12, 25, 28, 0.18) 38%, rgba(12, 25, 28, 0.68) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 3,
+     "hairlineSamples": [
+      "div.module-grid 350px",
+      "a.module-card.module-course 350px",
+      "a.module-card.module-forum 350px"
+     ],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 2,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 1,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 2,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "img",
+      "ratio": 1
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 23,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 1965,
+    "margins": {
+     "left": 20,
+     "right": 24
+    },
+    "sections": [
+     {
+      "sel": "section#top.hero",
+      "tag": "section",
+      "top": 0,
+      "height": 844,
+      "words": 10,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Wasteland",
+       "size": 56,
+       "tag": "h1"
+      },
+      "left": 33,
+      "right": 33,
+      "textLeft": 33,
+      "textRight": 33,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section#courses.modules",
+      "tag": "section",
+      "top": 844,
+      "height": 992,
+      "words": 22,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "在青大，先从眼前的事开始。",
+       "size": 30,
+       "tag": "h2"
+      },
+      "left": 20,
+      "right": 34,
+      "textLeft": 20,
+      "textRight": 34,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "footer.footer",
+      "tag": "footer",
+      "top": 1836,
+      "height": 129,
+      "words": 11,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 24,
+      "right": 24,
+      "textLeft": 24,
+      "textRight": 24,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Wasteland",
+      "size": 56,
+      "top": 338,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 20,
+      "n": 4
+     }
+    ],
+    "leftBlocks": 4,
+    "bodySize": 16,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": null,
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "eyebrow",
+   "width": 1440,
+   "message": "2 eyebrow/kicker label(s) above headings: \"QINGDAO UNIVERSITY / STUDENT COMMONS\" above \"Wasteland\"; \"青岛大学 · 学习与互助\" above \"在青大，先从眼前的事开始。\"",
+   "fix": "Delete them. If the label carried real information, fold it into the headline or the supporting sentence.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "numbering",
+   "width": 1440,
+   "message": "Decorative index numbers: \"01 / 资料库\", \"02 / 同学社区\", \"03 / 校园观察\"",
+   "fix": "Remove them. If order truly matters, write it into the words (\"First, …\") or use a real <ol>.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "gradient",
+   "width": 1440,
+   "message": "1 gradient fill(s): div.hero-wash → linear-gradient(rgba(12, 25, 28, 0.14) 0%, rgba(12, 25, 28, 0.18) 38%, rgba(12, 25, 28, 0.68) 100%)",
+   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "text-shadow",
+   "width": 1440,
+   "message": "2 text-shadow(s).",
+   "fix": "Remove; fix legibility with a scrim or a different crop.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "hairline",
+   "width": 1440,
+   "message": "3 thin rule(s)/divider line(s): div.module-grid 1348px | a.module-card.module-course 492px | a.module-card.module-forum 428px",
+   "fix": "Delete. Separate with space, a tone change, or scale. Lines are only for real tables and form fields.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "glass",
+   "width": 1440,
+   "message": "2 backdrop-blur surfaces.",
+   "fix": "One blurred sticky bar at most; glass cards are a tell.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "palette-cream",
+   "width": 1440,
+   "message": "Yellow-cream background (page background #f4f3ed).",
+   "fix": "Use the drawn palette. If you want warmth, take a low-chroma stone or bone, not a yellow cream.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "contrast",
+   "width": 1440,
+   "message": "Low-contrast text: \"用户协议\" 3.2:1 needs 4.5:1; \"隐私政策\" 3.2:1 needs 4.5:1; \"开源仓库\" 3.2:1 needs 4.5:1; \"联系方式\" 3.2:1 needs 4.5:1",
+   "fix": "Darken or lighten the text colour.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "size-count",
+   "width": 1440,
+   "message": "11 different font sizes (12, 14, 15, 16, 17, 18, 19, 20, 25, 48, 168).",
+   "fix": "A page needs about five: display, heading, lead, body, small.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "body-size",
+   "width": 1440,
+   "message": "Body text is 13.6px (the size most of the running text is set in).",
+   "fix": "Body copy 16–20px. Map small sizes from blueprints onto your body step.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "grey-body",
+   "width": 1440,
+   "message": "The running text is a soft grey on its ground (5:1).",
+   "fix": "Set body copy in the full ink (7:1 or more). Keep the muted ink for secondary notes; pages read thin and unfinished when everything is grey.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "few-pictures",
+   "width": 1440,
+   "message": "Only 1 picture(s) on the page (1 photographs, footage or raster images, 0 interface fragments). Drawings in SVG do not count.",
+   "fix": "Find real pictures of the subject's world with scripts/assets.mjs (photographs, archival images, maps, engravings, footage), download them to assets/ and give them room: a hero picture, one per section that has a subject, a full-width band. At least four, usually six to twelve."
+  },
+  {
+   "level": "WARN",
+   "id": "no-footage",
+   "width": 1440,
+   "message": "No video anywhere on the page.",
+   "fix": "Look for one honest clip with scripts/assets.mjs --video (the place, the material, the process) and use it as a muted loop with a poster frame. Defend its absence only if no clip fits the subject."
+  },
+  {
+   "level": "WARN",
+   "id": "measure",
+   "width": 1440,
+   "message": "Longest paragraph runs about 198 characters per line.",
+   "fix": "Cap paragraphs at 45–75 characters (max-width: 60ch)."
+  },
+  {
+   "level": "WARN",
+   "id": "small-text",
+   "width": 1440,
+   "message": "2 text block(s) under 13px.",
+   "fix": "Nothing meant to be read goes below 13px.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "off-centre",
+   "width": 1440,
+   "message": "The page sits off-centre: its content comes to 46px from the left edge but only to 123px from the right, at 1440px.",
+   "fix": "Give the page one pair of equal margins. Check the wrapper for a max-width without margin-inline: auto, a grid with an empty last column, or padding on one side only. If one side is meant to hold air, it must still be closed by something that reaches the margin (a picture, the navigation's last item, a figure)."
+  },
+  {
+   "level": "WARN",
+   "id": "name-only-title",
+   "width": 1440,
+   "message": "The h1 is a bare name (\"Wasteland\") and nothing else on the first screen says what this is.",
+   "fix": "Keep the name if it leads, and give the line under it (18px or more) the plain words: what it is, for whom, where or when. In the study of 97 Sites of the Day, first screens that named nothing lost usability and content points.",
+   "alsoAt": [
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "still-page",
+   "width": 1440,
+   "message": "Only 2 element(s) moved while the page loaded and scrolled.",
+   "fix": "Build the motion layer (SKILL.md step 9, references/motion.md): the signature move, an entrance for the parts of every section, feedback on every control, and one moving picture. Transform and opacity only, with a reduced-motion fallback."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "F:\\My_Projects\\Wasteland\\qdu-wasteland\\.taste-skill\\home\\desktop-fold.jpg",
+   "pages": [
+    "F:\\My_Projects\\Wasteland\\qdu-wasteland\\.taste-skill\\home\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "F:\\My_Projects\\Wasteland\\qdu-wasteland\\.taste-skill\\home\\mobile-fold.jpg",
+   "pages": [
+    "F:\\My_Projects\\Wasteland\\qdu-wasteland\\.taste-skill\\home\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

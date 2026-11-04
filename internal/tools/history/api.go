@@ -24,6 +24,7 @@ const (
 // previewEntry 是「预导入」暂存：先给用户看条数与警告，确认后才真正写库。
 type previewEntry struct {
 	data    *ImportResult
+	userID  int64
 	expires time.Time
 }
 
@@ -98,7 +99,7 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{
 		"loggedIn": true,
 		"demo":     false,
-		"access":   "owner",
+		"access":   "member",
 		"warning":  "",
 	})
 }
@@ -122,7 +123,7 @@ type deviceCount struct {
 
 func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	source := param(r, "source", "all")
-	if source != "all" && source != "browser" && source != "bilibili" {
+	if source != "all" && source != "browser" && source != "bilibili" && source != "site" {
 		writeErr(w, 400, "未知的历史来源")
 		return
 	}
@@ -143,7 +144,16 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	}
 	domain := strings.ToLower(param(r, "domain", ""))
 
-	all, err := s.store.AllHistory()
+	store := s.forRequest(r)
+	var all []History
+	var err error
+	if source == "site" {
+		all, err = store.AllSiteVisits()
+	} else if source == "all" {
+		all, err = store.AllHistoryCombined()
+	} else {
+		all, err = store.AllHistory()
+	}
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return
@@ -236,12 +246,32 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ---------- /api/site-visits ----------
+
+func (s *Server) handleSiteVisits(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		writeErr(w, http.StatusMethodNotAllowed, "只支持 GET")
+		return
+	}
+	items, err := s.forRequest(r).AllSiteVisits()
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "读取失败")
+		return
+	}
+	SortHistoryDesc(items)
+	if len(items) > 200 {
+		items = items[:200]
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items, "total": len(items)})
+}
+
 // ---------- /api/history ----------
 
 func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	q := strings.ToLower(param(r, "q", ""))
 	source := param(r, "source", "")
-	if source != "" && source != "browser" && source != "bilibili" {
+	if source != "" && source != "browser" && source != "bilibili" && source != "site" {
 		writeErr(w, 400, "未知的历史来源")
 		return
 	}
@@ -262,7 +292,16 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	domain := strings.ToLower(param(r, "domain", ""))
 
-	all, err := s.store.AllHistory()
+	store := s.forRequest(r)
+	var all []History
+	var err error
+	if source == "site" {
+		all, err = store.AllSiteVisits()
+	} else if source == "" {
+		all, err = store.AllHistoryCombined()
+	} else {
+		all, err = store.AllHistory()
+	}
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return
@@ -321,9 +360,9 @@ func (s *Server) handleFavorites(w http.ResponseWriter, r *http.Request) {
 	includeDeleted := r.URL.Query().Get("includeDeleted") == "1"
 	snapshotID := paramInt(r, "snapshot", 0)
 
-	list, err := s.store.AllFavorites()
+	list, err := s.forRequest(r).AllFavorites()
 	if snapshotID > 0 {
-		list, err = s.store.FavoritesAt(snapshotID)
+		list, err = s.forRequest(r).FavoritesAt(snapshotID)
 		if err != nil {
 			writeErr(w, 500, "读取失败")
 			return
@@ -408,7 +447,7 @@ func (s *Server) handleFavoriteFolders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	root := param(r, "root", "toolbar")
-	list, err := s.store.AllFavorites()
+	list, err := s.forRequest(r).AllFavorites()
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return
@@ -459,7 +498,7 @@ func (s *Server) handleFavoriteFolders(w http.ResponseWriter, r *http.Request) {
 // ---------- /api/favorite/snapshots ----------
 
 func (s *Server) handleFavoriteSnapshots(w http.ResponseWriter, r *http.Request) {
-	list, err := s.store.FavoriteSnapshots()
+	list, err := s.forRequest(r).FavoriteSnapshots()
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return
@@ -509,7 +548,7 @@ func (s *Server) handleImportPreview(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	previews[id] = previewEntry{data: res, expires: now.Add(previewTTL)}
+	previews[id] = previewEntry{data: res, userID: s.userID(r), expires: now.Add(previewTTL)}
 	previewMu.Unlock()
 
 	bili, browser := 0, 0
@@ -551,13 +590,13 @@ func (s *Server) handleImportConfirm(w http.ResponseWriter, r *http.Request) {
 		delete(previews, body.PreviewID)
 	}
 	previewMu.Unlock()
-	if !ok || entry.expires.Before(time.Now()) {
+	if !ok || entry.expires.Before(time.Now()) || entry.userID != s.userID(r) {
 		writeErr(w, 409, "预览已失效，请重新选择文件")
 		return
 	}
 
 	batchID := "manual-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	res, err := s.store.Ingest("manual", batchID, body.PreviewID, "manual", entry.data)
+	res, err := s.forRequest(r).Ingest("manual", batchID, body.PreviewID, "manual", entry.data)
 	if err != nil {
 		writeErr(w, 500, "合并失败："+err.Error())
 		return
@@ -575,17 +614,17 @@ func (s *Server) handleImportConfirm(w http.ResponseWriter, r *http.Request) {
 // ---------- /api/backup ----------
 
 func (s *Server) handleBackup(w http.ResponseWriter, r *http.Request) {
-	history, err := s.store.AllHistory()
+	history, err := s.forRequest(r).AllHistory()
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return
 	}
-	favorites, err := s.store.AllFavorites()
+	favorites, err := s.forRequest(r).AllFavorites()
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return
 	}
-	tombstones, err := s.store.Tombstones()
+	tombstones, err := s.forRequest(r).Tombstones()
 	if err != nil {
 		writeErr(w, 500, "读取失败")
 		return

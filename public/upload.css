@@ -66,7 +66,7 @@
 
 /* 拖拽区 */
 .drop-zone {
-  border: 2px dashed rgba(255,46,136,0.4);
+  border: 2px dashed color-mix(in srgb, var(--magenta) 40%, transparent);
   border-radius: var(--radius-lg);
   padding: 2.6rem 2rem; text-align: center; cursor: pointer;
   transition: all .2s; background: var(--surface);

@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/common.css">
   <link id="themesCss" rel="stylesheet" href="/themes.css">
   <link rel="stylesheet" href="/tool/_assets/tool-center.css">
+  <script defer src="/themeboot.js"></script>
   <script defer src="/icons.js"></script>
   <script defer src="/nav.js"></script>
   <script defer src="/tool/_assets/tool-center.js"></script>
@@ -27,10 +28,10 @@
     <section class="tools-section" aria-label="工具列表">
       <div class="tool-grid">
       {{range .Tools}}
-        <article class="tool-card {{if .Enabled}}tool-card-ready{{end}}" data-status="{{if .Enabled}}available{{else}}planned{{end}}">
-          <div class="tool-card-top"><span class="tool-symbol icon-fill" data-icon="{{if eq .Slug "nextjlc"}}layers{{else if eq .Slug "poetrymatrix"}}book{{else if eq .Slug "information"}}fileText{{else if eq .Slug "hot"}}flame{{else if eq .Slug "history"}}clock{{else if eq .Slug "favorite"}}star{{else}}sparkles{{end}}" aria-hidden="true"></span><span class="tool-status {{if .Enabled}}is-ready{{end}}">{{if .Enabled}}可使用{{else}}待接入{{end}}</span></div>
+        <article class="tool-card {{if .Enabled}}tool-card-ready{{else}}tool-card-planned{{end}}" data-status="{{if .Enabled}}available{{else}}planned{{end}}"{{if not .Enabled}} title="准备中" aria-disabled="true"{{end}}>
+          <div class="tool-card-top"><span class="tool-symbol icon-fill" data-icon="{{if eq .Slug "nextjlc"}}layers{{else if eq .Slug "poetrymatrix"}}book{{else if eq .Slug "information"}}fileText{{else if eq .Slug "hot"}}flame{{else if eq .Slug "history"}}clock{{else if eq .Slug "favorite"}}star{{else}}sparkles{{end}}" aria-hidden="true"></span></div>
           <h3>{{.Title}}</h3><p class="tool-summary">{{.Summary}}</p>
-          <div class="tool-card-bottom"><span class="tool-category">{{.Label}}</span>{{if .Enabled}}<a class="tool-open" href="/tool/{{.Slug}}/">打开 <span aria-hidden="true">↗</span></a>{{else}}<span class="tool-pending">准备中</span>{{end}}</div>
+          <div class="tool-card-bottom"><span class="tool-category">{{.Label}}</span>{{if .Enabled}}<a class="tool-open" href="/tool/{{.Slug}}/">打开 <span aria-hidden="true">↗</span></a>{{end}}</div>
         </article>
       {{end}}
       </div>

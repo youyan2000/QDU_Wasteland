@@ -1,3 +1,6 @@
+.tool-card-planned { opacity: .62; }
+.tool-card-planned:hover { border-color: var(--border); }
+.tool-card-planned .tool-symbol { color: var(--tool-muted); }
 /* Tool-specific styles only; typography, colours and navigation come from the site. */
 /* Action pairs are independent of the site's accent: neon fills need dark text. */
 body.tools-body, body.nextjlc-body {

@@ -1,0 +1,55 @@
+# Cloudflare Tunnel -> loopback nginx -> Go app blueprint.
+# This is an alternative profile: do not enable it until cloudflared ingress is
+# deliberately pointed at http://127.0.0.1:8080 and the deployment is reviewed.
+# Public TLS terminates at Cloudflare; cloudflared carries origin traffic locally.
+# App must remain bound to 127.0.0.1:3000. Tunnel is not a VPN or physical isolation.
+# Install this file inside nginx's http {} context (e.g. conf.d/).
+# Host-specific names and rate values must be reviewed for your service.
+
+server_tokens off;
+limit_req_zone $binary_remote_addr zone=qw_tunnel_rate:10m rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=qw_tunnel_conn:10m;
+limit_req_status 429;
+
+# cloudflared must be the only intended local ingress to this listener.
+# Trusting loopback means local host processes are inside this trust boundary.
+# Do NOT add 0.0.0.0/0, arbitrary proxy ranges, or client-supplied XFF here.
+# Cloudflare's Cf-Connecting-IP is accepted only from that local tunnel peer.
+server {
+    listen 127.0.0.1:8080 default_server;
+    server_name _;
+    return 444;
+}
+
+server {
+    listen 127.0.0.1:8080;
+    server_name qdwasteland.top www.qdwasteland.top;
+
+    # Nginx realip module: only loopback tunnel connection can supply the header.
+    set_real_ip_from 127.0.0.1;
+    set_real_ip_from ::1;
+    real_ip_header CF-Connecting-IP;
+    real_ip_recursive off;
+
+    client_max_body_size 220m;
+    client_body_timeout 60s;
+    send_timeout 120s;
+
+    location / {
+        limit_req zone=qw_tunnel_rate burst=40 nodelay;
+        limit_conn qw_tunnel_conn 20;
+
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        # $remote_addr is rewritten only by realip from the trusted loopback peer.
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 300s;
+    }
+}

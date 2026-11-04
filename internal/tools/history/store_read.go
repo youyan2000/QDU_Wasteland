@@ -8,12 +8,30 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
+	"strings"
 )
 
-// AllHistory 返回全部历史（已剔除墓碑命中的记录）。
+// AllHistory 返回全部外部历史（已剔除墓碑命中的记录）。
 func (s *Store) AllHistory() ([]History, error) {
-	rows, err := s.db.Query(`SELECT body FROM history_records WHERE kind IN ('bilibili','browser')`)
+	return s.historyByKinds("bilibili", "browser")
+}
+
+func (s *Store) AllSiteVisits() ([]History, error) { return s.historyByKinds("site") }
+
+func (s *Store) AllHistoryCombined() ([]History, error) {
+	return s.historyByKinds("bilibili", "browser", "site")
+}
+
+func (s *Store) historyByKinds(kinds ...string) ([]History, error) {
+	placeholders := strings.TrimRight(strings.Repeat("?,", len(kinds)), ",")
+	args := make([]any, 0, len(kinds)+1)
+	args = append(args, s.userID)
+	for _, kind := range kinds {
+		args = append(args, kind)
+	}
+	rows, err := s.db.Query(`SELECT body FROM history_records WHERE user_id=? AND kind IN (`+placeholders+`)`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -27,6 +45,9 @@ func (s *Store) AllHistory() ([]History, error) {
 		var h History
 		if err := json.Unmarshal([]byte(body), &h); err != nil {
 			continue // 单条损坏不应让整页挂掉
+		}
+		if s.userID > 0 {
+			h.ID = strings.TrimPrefix(h.ID, fmt.Sprintf("u%d:", s.userID))
 		}
 		out = append(out, h)
 	}
@@ -68,7 +89,7 @@ type SnapshotMeta struct {
 
 // FavoriteSnapshots 返回全部收藏快照的元信息（新→旧）。
 func (s *Store) FavoriteSnapshots() ([]SnapshotMeta, error) {
-	rows, err := s.db.Query(`SELECT id,device,imported_at FROM history_bookmark_snapshots ORDER BY id DESC`)
+	rows, err := s.db.Query(`SELECT id,device,imported_at FROM history_bookmark_snapshots WHERE user_id=? ORDER BY id DESC`, s.userID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +108,7 @@ func (s *Store) FavoriteSnapshots() ([]SnapshotMeta, error) {
 // FavoritesAt 返回指定快照的条目。
 func (s *Store) FavoritesAt(snapshotID int64) ([]Favorite, error) {
 	var payload string
-	err := s.db.QueryRow(`SELECT payload FROM history_bookmark_snapshots WHERE id=?`, snapshotID).Scan(&payload)
+	err := s.db.QueryRow(`SELECT payload FROM history_bookmark_snapshots WHERE user_id=? AND id=?`, s.userID, snapshotID).Scan(&payload)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -103,7 +124,7 @@ func (s *Store) FavoritesAt(snapshotID int64) ([]Favorite, error) {
 
 // tombstoneIndex 按 kind 归并墓碑，便于 O(1) 判定。
 type tombstoneIndex struct {
-	history   map[string]bool  // 命中的历史 id
+	history     map[string]bool  // 命中的历史 id
 	biliContent map[string]int64 // "uid:business:contentId" -> through(秒)
 	biliLegacy  map[string]int64 // "uid:contentId" -> through(秒)
 }

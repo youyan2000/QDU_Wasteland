@@ -168,3 +168,17 @@ func TestImportRejectsInvalidBVID(t *testing.T) {
 		t.Fatal("非法 BVID 应拒绝")
 	}
 }
+
+func TestCoverURLNormalizedToHTTPS(t *testing.T) {
+	cases := map[string]string{
+		"http://i0.hdslb.com/a.jpg":  "https://i0.hdslb.com/a.jpg",
+		"//i0.hdslb.com/b.jpg":       "https://i0.hdslb.com/b.jpg",
+		"https://i0.hdslb.com/c.jpg": "https://i0.hdslb.com/c.jpg",
+		"":                           "",
+	}
+	for in, want := range cases {
+		if got := httpsURL(in); got != want {
+			t.Fatalf("httpsURL(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

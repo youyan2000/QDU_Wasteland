@@ -5,12 +5,14 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"database/sql"
+	"encoding/hex"
+	"errors"
 	"log"
+	"net"
 	"net/smtp"
 	"os"
 	"strings"
@@ -125,7 +127,7 @@ func sendMail(to, subject, htmlBody string) bool {
 	if port == "465" {
 		err = sendMailSSL(addr, host, user, pass, from, []string{to}, []byte(msg))
 	} else {
-		err = smtp.SendMail(addr, smtp.PlainAuth("", user, pass, host), from, []string{to}, []byte(msg))
+		err = sendMailSTARTTLS(addr, host, user, pass, from, []string{to}, []byte(msg), os.Getenv("MAIL_ALLOW_PLAINTEXT") == "1")
 	}
 	if err != nil {
 		log.Printf("📧 [邮件发送失败] to=%s err=%v", to, err)
@@ -135,10 +137,65 @@ func sendMail(to, subject, htmlBody string) bool {
 	return true
 }
 
+// sendMailSTARTTLS requires a successful STARTTLS upgrade before authentication
+// unless plaintext has been explicitly enabled for a trusted local relay.
+func sendMailSTARTTLS(addr, host, user, pass, from string, to []string, msg []byte, allowPlaintext bool) error {
+	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
+	if err != nil {
+		return err
+	}
+	if err := conn.SetDeadline(time.Now().Add(2 * time.Minute)); err != nil {
+		conn.Close()
+		return err
+	}
+	client, err := smtp.NewClient(conn, host)
+	if err != nil {
+		conn.Close()
+		return err
+	}
+	defer client.Close()
+	if ok, _ := client.Extension("STARTTLS"); ok {
+		if err := client.StartTLS(&tls.Config{ServerName: host, MinVersion: tls.VersionTLS12}); err != nil {
+			return err
+		}
+	} else if !allowPlaintext {
+		return errors.New("SMTP server does not support required STARTTLS")
+	}
+	if user != "" || pass != "" {
+		if err := client.Auth(smtp.PlainAuth("", user, pass, host)); err != nil {
+			return err
+		}
+	}
+	if err := client.Mail(from); err != nil {
+		return err
+	}
+	for _, recipient := range to {
+		if err := client.Rcpt(recipient); err != nil {
+			return err
+		}
+	}
+	w, err := client.Data()
+	if err != nil {
+		return err
+	}
+	if _, err := w.Write(msg); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+	return client.Quit()
+}
+
 // sendMailSSL 465 端口：先 TLS 拨号再走 smtp 客户端
 func sendMailSSL(addr, host, user, pass, from string, to []string, msg []byte) error {
-	conn, err := tls.Dial("tcp", addr, &tls.Config{ServerName: host, InsecureSkipVerify: false})
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	conn, err := tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{ServerName: host, MinVersion: tls.VersionTLS12, InsecureSkipVerify: false})
 	if err != nil {
+		return err
+	}
+	if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		conn.Close()
 		return err
 	}
 	client, err := smtp.NewClient(conn, host)
@@ -228,6 +285,7 @@ func base64Encode(b []byte) string {
 	}
 	return sb.String()
 }
+
 // hashToken 返回 token 的 SHA-256 十六进制，用于入库比对。
 func hashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))

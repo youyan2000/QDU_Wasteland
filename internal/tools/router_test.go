@@ -80,9 +80,13 @@ func TestPortalListsEnabledAndPlanned(t *testing.T) {
 	if strings.Contains(body, `href="/tool/beta/"`) {
 		t.Error("未启用工具不应有链接")
 	}
-	// 模板用「待接入」角标 +「准备中」文案表示未启用。
-	if !strings.Contains(body, "待接入") || !strings.Contains(body, "准备中") {
-		t.Error("未启用工具应显示「待接入 / 准备中」")
+	// 未启用工具不显示「可使用 / 待接入」角标，也不在卡片底部放「准备中」文字，
+	// 只用禁用态 + title 提示。
+	if strings.Contains(body, "tool-status") || strings.Contains(body, "tool-pending") {
+		t.Error("未启用工具不应再渲染状态角标/准备中文案")
+	}
+	if !strings.Contains(body, `title="准备中"`) {
+		t.Error("未启用工具应保留 title 提示，便于鼠标悬停时说明")
 	}
 }
 
@@ -149,6 +153,51 @@ func TestOwnerOnlyHiddenFromPortal(t *testing.T) {
 
 	if strings.Contains(rec.Body.String(), "Secret") {
 		t.Fatal("非站长不应在清单页看到私有工具")
+	}
+}
+
+func TestMemberRedirectsAnonymousPageAndReturns401ForAPI(t *testing.T) {
+	d := newTestDispatcher(t, Env{}, Meta{Slug: "private", Title: "Private", Access: Member, Enabled: true})
+
+	page := httptest.NewRecorder()
+	d.ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/tool/private/?tab=recent", nil))
+	if page.Code != http.StatusFound {
+		t.Fatalf("匿名页面请求应跳登录，got %d", page.Code)
+	}
+	if got := page.Header().Get("Location"); got != "/login.html?next=%2Ftool%2Fprivate%2F%3Ftab%3Drecent" {
+		t.Fatalf("登录回跳地址不正确：%q", got)
+	}
+
+	api := httptest.NewRecorder()
+	d.ServeHTTP(api, httptest.NewRequest(http.MethodGet, "/tool/private/api/ping", nil))
+	if api.Code != http.StatusUnauthorized || !strings.Contains(api.Body.String(), "请先登录") {
+		t.Fatalf("匿名 API 应返回 401 JSON，got %d %q", api.Code, api.Body.String())
+	}
+}
+
+func TestMemberAllowedForAuthenticatedUserAndListedInPortal(t *testing.T) {
+	env := Env{UserID: func(*http.Request) int64 { return 42 }}
+	d := newTestDispatcher(t, env, Meta{Slug: "private", Title: "Private", Access: Member, Enabled: true})
+
+	page := httptest.NewRecorder()
+	d.ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/tool/private/", nil))
+	if page.Code != http.StatusOK {
+		t.Fatalf("登录用户应可访问，got %d", page.Code)
+	}
+
+	portal := httptest.NewRecorder()
+	d.ServeHTTP(portal, httptest.NewRequest(http.MethodGet, "/tool/", nil))
+	if !strings.Contains(portal.Body.String(), "Private") {
+		t.Fatal("登录用户应在清单页看到 Member 工具")
+	}
+}
+
+func TestMemberHiddenFromAnonymousPortal(t *testing.T) {
+	d := newTestDispatcher(t, Env{}, Meta{Slug: "private", Title: "Private", Access: Member, Enabled: true})
+	rec := httptest.NewRecorder()
+	d.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/tool/", nil))
+	if strings.Contains(rec.Body.String(), "Private") {
+		t.Fatal("匿名用户不应在清单页看到 Member 工具")
 	}
 }
 

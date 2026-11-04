@@ -328,6 +328,8 @@ func handleLogin(auth *AuthStore) http.HandlerFunc {
 			return
 		}
 		createSession(w, u.ID)
+		// 登录成功即清零该 IP 的 auth 计数：正常用户不该被自己成功登录的记录锁住。
+		clearRateLimit(fpKey(r) + "|auth")
 		apiJSON(w, 200, map[string]any{"message": "登录成功", "user": u.ToSessionInfo()})
 	}
 }

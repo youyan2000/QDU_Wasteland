@@ -17,14 +17,20 @@ const (
 	Public Access = iota
 	// OwnerOnly 仅站长可用；对其他人一律 404，不泄露存在性。
 	OwnerOnly
+	// Member 要求有效登录会话。
+	Member
 )
 
 // String 返回稳定的标识，用于清单页与日志。
 func (a Access) String() string {
-	if a == OwnerOnly {
+	switch a {
+	case OwnerOnly:
 		return "owner"
+	case Member:
+		return "member"
+	default:
+		return "public"
 	}
-	return "public"
 }
 
 // Meta 是工具对外暴露的全部元信息。
@@ -54,6 +60,16 @@ type Env struct {
 	BundleRoot string
 	// CanOwner 判定当前请求是否来自站长；为 nil 时视为“无人是站长”。
 	CanOwner func(*http.Request) bool
+	// UserID 返回当前登录用户 ID；未登录或无效会话返回 0。
+	UserID func(*http.Request) int64
+}
+
+// userID 统一收敛 nil 判断。
+func (e Env) userID(r *http.Request) int64 {
+	if e.UserID == nil {
+		return 0
+	}
+	return e.UserID(r)
 }
 
 // isOwner 统一收敛 nil 判断，避免各工具重复写。

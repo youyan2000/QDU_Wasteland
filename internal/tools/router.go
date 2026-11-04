@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -68,8 +70,16 @@ func (d *dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(path, "/tool/")
 	slug, tail, hadSlash := strings.Cut(rest, "/")
 	entry, ok := d.mounts[slug]
-	if !ok || !entry.meta.Enabled || !d.allowed(r, entry.meta) {
-		// 未知、未启用、无权限三种情况一律 404，不泄露工具是否存在。
+	if !ok || !entry.meta.Enabled {
+		http.NotFound(w, r)
+		return
+	}
+	if entry.meta.Access == Member && d.env.userID(r) <= 0 {
+		denyMember(w, r)
+		return
+	}
+	if !d.allowed(r, entry.meta) {
+		// OwnerOnly 对非站长一律 404，不泄露工具是否存在。
 		http.NotFound(w, r)
 		return
 	}
@@ -94,9 +104,26 @@ func (d *dispatcher) allowed(r *http.Request, m Meta) bool {
 	switch m.Access {
 	case OwnerOnly:
 		return d.env.isOwner(r)
+	case Member:
+		return d.env.userID(r) > 0
 	default:
 		return true
 	}
+}
+
+func denyMember(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/tool/") && strings.Contains(r.URL.Path, "/api/") {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "请先登录"})
+		return
+	}
+	next := r.URL.RequestURI()
+	if !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
+		next = "/tool/"
+	}
+	http.Redirect(w, r, "/login.html?next="+url.QueryEscape(next), http.StatusFound)
 }
 
 // visible 给出当前访客在清单页上应该看到的条目。
@@ -104,6 +131,9 @@ func (d *dispatcher) visible(r *http.Request) []Meta {
 	out := make([]Meta, 0, len(d.order))
 	for _, slug := range d.order {
 		m := d.mounts[slug].meta
+		if m.Access == Member && d.env.userID(r) <= 0 {
+			continue
+		}
 		if !d.allowed(r, m) {
 			continue
 		}

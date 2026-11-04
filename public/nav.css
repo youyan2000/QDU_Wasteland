@@ -80,7 +80,7 @@
 }
 /* 公告条 */
 .announce-bar {
-  background: linear-gradient(90deg, var(--ann-tint), var(--surface)); border-bottom: 1px solid rgba(255,46,136,0.12);
+  background: linear-gradient(90deg, var(--ann-tint), var(--surface)); border-bottom: 1px solid color-mix(in srgb, var(--magenta) 12%, transparent);
   color: var(--ink); font-size: .88rem; padding: .5rem var(--space-page);
   display: flex; align-items: center; gap: 10px;
 }
@@ -108,7 +108,7 @@
 .nb-clear { margin-left:auto; color:var(--muted); font-size:.75rem; }
 .nb-body { max-height:480px; overflow-y:auto; }
 .nb-sec { padding:.4rem 0; }
-.nb-ann { padding:.8rem 1rem; font-size:.88rem; color:var(--ink); background:var(--nb-tint); border-bottom:1px solid rgba(255,46,136,.1); display:flex; gap:8px; }
+.nb-ann { padding:.8rem 1rem; font-size:.88rem; color:var(--ink); background:var(--nb-tint); border-bottom:1px solid color-mix(in srgb, var(--magenta) 10%, transparent); display:flex; gap:8px; }
 .nb-empty { text-align:center; color:var(--muted); padding:1.6rem 0; font-size:.86rem; }
 .nb-item { padding:.7rem 1rem; border-bottom:1px solid rgba(26,26,46,0.04); font-size:.86rem; cursor:pointer; }
 .nb-item:hover { background: var(--surface-2); }
@@ -136,10 +136,10 @@
   background: linear-gradient(90deg, var(--magenta), var(--sunrise));
   color: #fff !important;
   font-weight: 600; font-size: .88rem;
-  box-shadow: 0 2px 10px rgba(255,46,136,.3);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--magenta) 30%, transparent);
   transition: transform .15s, box-shadow .15s;
 }
-.site-nav .nav-auth-login:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255,46,136,.45); }
+.site-nav .nav-auth-login:hover { transform: translateY(-1px); box-shadow: 0 4px 14px color-mix(in srgb, var(--magenta) 45%, transparent); }
 .site-nav .nav-auth-register {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 6px 14px;

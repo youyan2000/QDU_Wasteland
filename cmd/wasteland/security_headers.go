@@ -6,6 +6,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -26,8 +27,17 @@ const jsonBodyLimit = 2 << 20
 // jsonBodyLimit 之外的请求（multipart 上传）给一个宽松上限，防止无限流式上传打满磁盘。
 const rawBodyLimit = 256 << 20
 
+// importBodyLimit 是"导入备份"这个接口的专属上限：浏览器导出的历史 JSON
+// 动辄几 MB 到十几 MB，用 2MB 的通用 JSON 上限会直接掐断上传。
+const importBodyLimit = 24 << 20
+
 // securityHeaders 给所有响应加安全头，并给 JSON 请求套上请求体上限。
 func securityHeaders(next http.Handler) http.Handler {
+	// 未完成全部子域 HTTPS 盘点前，只约束当前主机，不申请 preload。
+	hsts := "max-age=31536000"
+	if os.Getenv("HSTS_INCLUDE_SUBDOMAINS") == "true" {
+		hsts += "; includeSubDomains"
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 		h.Set("X-Content-Type-Options", "nosniff")
@@ -35,7 +45,7 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		h.Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 		// 只在 HTTPS 下有意义；本地 http 调试时浏览器会忽略。
-		h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		h.Set("Strict-Transport-Security", hsts)
 		// 页面内联了少量 style，脚本全部是外部文件，所以脚本不需要 unsafe-inline。
 		if !strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/api/me" {
 			h.Set("Content-Security-Policy", contentSecurityPolicy)
@@ -45,6 +55,9 @@ func securityHeaders(next http.Handler) http.Handler {
 			limit := int64(rawBodyLimit)
 			if ct := r.Header.Get("Content-Type"); strings.Contains(ct, "application/json") {
 				limit = jsonBodyLimit
+				if strings.HasSuffix(r.URL.Path, "/import/preview") {
+					limit = importBodyLimit
+				}
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, limit)
 		}

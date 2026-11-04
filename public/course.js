@@ -9,6 +9,7 @@ async function load() {
     if (r.status === 404) { wrap.innerHTML = '<div class="empty">课程不存在</div>'; return; }
     const c = await r.json();
     render(c);
+    recordVisit('course', c.code, c.name);
     // 设置"上传本课资料"按钮带课程参数
     const up = document.getElementById('uploadThis');
     if (up) { up.href = '/upload.html?course=' + encodeURIComponent(c.code); }
@@ -187,6 +188,11 @@ function fmtSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
   return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+function recordVisit(kind, recordId, title) {
+  const path = location.pathname + location.search;
+  fetch('/api/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id: String(recordId || ''), path, title }), keepalive: true }).catch(() => {});
 }
 
 function escape(s) { return (s==null?'':String(s)).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }

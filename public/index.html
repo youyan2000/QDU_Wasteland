@@ -1,77 +1,75 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f3ed">
   <title>Wasteland · 青大课程资料共享社区</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="common.css">
-
 </head>
 <body>
-  <!-- 首页保持 hero 纯粹，只在右上角留一个克制的登录入口 -->
-  <div class="home-top-actions">
-    <span id="homeAuth"></span>
-  </div>
-
-  <!-- Hero：图片 + Wasteland 大字，品红主调，朝阳大海感 -->
-  <section class="hero" id="top">
+  <div class="home-top-actions"><span id="homeAuth"></span></div>
+  <section class="hero" id="top" aria-labelledby="home-title">
     <div class="hero-image-wrap">
-      <!-- 主视觉图片：从 F:\WallPaper 选取（当前占位01.jpg，可更换） -->
-      <img class="hero-image" src="wallpaper.jpg" alt="朝阳与大海">
-      <div class="hero-wash"></div>
+      <img class="hero-image" src="wallpaper.jpg" alt="青岛海岸线">
+      <div class="hero-wash" aria-hidden="true"></div>
     </div>
     <div class="hero-content">
-      <h1 class="hero-title">Wasteland</h1>
-      <p class="hero-subtitle">课程资料 · 同学社区 · 学校生活 —— 属于青大人的数字<br>荒岛</p>
+      <h1 class="hero-title" id="home-title">Wasteland</h1>
+      <p class="hero-subtitle">青岛大学的课程资料与同学互助社区</p>
       <div class="hero-actions">
         <a href="/courses.html" class="btn btn-primary">进入资料库</a>
         <a href="/forum.html" class="btn btn-ghost">逛逛社区</a>
       </div>
     </div>
-    <!-- 非对称角落信息块（借鉴设计 DNA 的 location 块） -->
-    <aside class="hero-location">
-      <span class="loc-value">QDU</span>
-    </aside>
+    <aside class="hero-location"><span class="loc-value">QDU · 青岛</span></aside>
   </section>
-
-  <!-- 简单的三个模块入口 -->
-  <section class="modules" id="courses">
-    <h2 class="section-title">从明天开始</h2>
+  <section class="modules" id="courses" aria-labelledby="modules-title">
+    <div class="modules-heading">
+      <h2 class="section-title" id="modules-title">在青大，先从眼前的事开始。</h2>
+      <p class="modules-intro">找一门课的资料，问一个具体问题，或者看看校园里正在发生什么。</p>
+    </div>
     <div class="module-grid">
-      <a class="module-card" href="/courses.html">
-        <span class="module-icon" data-icon="book"></span>
-        <h3>关于课程</h3>
-        <p>检索全校 3800+ 课程，分享与获取学习资料</p>
+      <a class="module-card module-course" href="/courses.html">
+        <h3>课程与资料</h3>
+        <p>检索全校课程，查看评价，分享讲义、作业与复习资料。</p>
+        <span class="module-arrow" aria-hidden="true">↗</span>
       </a>
-      <a class="module-card" href="/forum.html">
-        <span class="module-icon" data-icon="messages"></span>
-        <h3>关于同学</h3>
-        <p>广场论坛：交易 · 纸片 · 求助 · 友人</p>
+      <a class="module-card module-forum" href="/forum.html">
+        <h3>把问题放到广场</h3>
+        <p>求助、交易、闲聊和校园里的小事，都从具体问题开始。</p>
+        <span class="module-arrow" aria-hidden="true">↗</span>
       </a>
-      <a class="module-card" href="/articles.html">
-        <span class="module-icon" data-icon="school"></span>
-        <h3>关于校园</h3>
-        <p>比赛 · 生活 · 组织 · 规划</p>
+      <a class="module-card module-campus" href="/articles.html">
+        <h3>青大最近有什么</h3>
+        <p>比赛、组织、生活信息与值得留意的校园消息。</p>
+        <span class="module-arrow" aria-hidden="true">↗</span>
       </a>
-      <a class="module-card" href="/tool/">
-        <span class="module-icon" aria-hidden="true">⌘</span>
-        <h3>关于工具</h3>
-        <p>NeXTJLC 与更多好用、好玩的数字工具</p>
+      <a class="module-card module-tools" href="/tool/">
+        <h3>工具目录</h3>
+        <p>浏览足迹、日报与实用小工具，集中在一处。</p>
+        <span class="module-arrow" aria-hidden="true">↗</span>
       </a>
-      <a class="module-card" href="/me.html">
-        <span class="module-icon" data-icon="user"></span>
-        <h3>关于自己</h3>
-        <p>我的资料 · 我的主页 · DIY 页面</p>
+      <a class="module-card module-me" href="/me.html">
+        <h3>我的主页</h3>
+        <p>我的帖子、评价、资料、收藏与个人设置。</p>
+        <span class="module-arrow" aria-hidden="true">↗</span>
       </a>
     </div>
   </section>
-
-  <!-- Footer：深色收尾（设计 DNA 的深浅对照）-->
   <footer class="footer">
-    <p>Wasteland © 2026  青大学习资料与互助社区（非官方独立运营） · <a href="/terms.html" style="color:var(--muted)">用户协议</a> · <a href="/privacy.html" style="color:var(--muted)">隐私政策</a> · <a href="https://github.com/youyan2000/QDU_Wasteland" target="_blank" rel="noopener" style="color:var(--muted)">开源仓库</a> · <a href="https://wpa.qq.com/msgrd?v=3&uin=3978279928&site=qq&menu=yes" target="_blank" rel="noopener" style="color:var(--muted)">联系方式</a>（QQ 3978279928）</p>
-  </footer><script>fetch("/api/me").then(r=>r.json()).then(d=>{const b=document.getElementById("homeAuth");if(!b)return;if(d.loggedIn){b.innerHTML=`<a href="/me.html" class="home-auth-user">&#128100; ${(d.user.nickname||d.user.email)}</a>`}else{b.innerHTML=`<a href="/login.html" class="home-auth-login">登录</a><a href="/login.html#register" class="home-auth-register">注册</a>`}}).catch(()=>{})</script><script src="icons.js"></script>
-<script>document.querySelectorAll("[data-icon]").forEach(el=>{const f=ICONS[el.dataset.icon];if(f)el.innerHTML=f(22);});</script>
+    <p>Wasteland © 2026 · 青大学习资料与互助社区（非官方独立运营）</p>
+    <nav aria-label="法律与联系">
+      <a href="/terms.html">用户协议</a>
+      <a href="/privacy.html">隐私政策</a>
+      <a href="https://github.com/youyan2000/QDU_Wasteland" target="_blank" rel="noopener">开源仓库</a>
+      <a href="https://wpa.qq.com/msgrd?v=3&amp;uin=3978279928&amp;site=qq&amp;menu=yes" target="_blank" rel="noopener">联系方式</a>
+    </nav>
+  </footer>
+    <script src="/themeboot.js"></script>
+<script src="/home.js"></script>
+  <script src="/wordbar.js" defer></script>
 </body>
 </html>

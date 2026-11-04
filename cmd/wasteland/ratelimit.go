@@ -1,14 +1,11 @@
-// ratelimit.go — 频率限制（分级 + IP/设备指纹 + 未验证邮箱小时配额锁）
-// 分级：
-//   auth  (register/login):        每 1 小时每指纹 ≤5 次
-//   act   (发帖/评论/评价/私信/举报):每 1 小时每指纹 ≤30 次
-//   upload(上传资料):               每 1 小时每指纹 ≤15 次
-// 指纹 = IP + UA 哈希，配合 IP 双重识别（防换 IP 绕过）。
+// ratelimit.go — 按可信客户端 IP 分级限流 + 未验证邮箱小时配额。
+// auth / act / upload：每小时每 IP 分别允许 20 / 30 / 15 次；登录成功后会清零 auth 计数。
+// UA 不参与身份键；条目有容量上限，过期记录由生命周期清理器回收。
 // 未验证邮箱的用户，每自然小时只有 2 次"配额动作"额度；达到第 3 次(及斐波那契全局节点)即锁到下小时。
 package main
 
 import (
-	"hash/fnv"
+	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -18,20 +15,59 @@ import (
 )
 
 type rlEntry struct {
-	ts []int64 // 最近请求时间戳（毫秒）
+	ts []int64 // 当前小时滑动窗口内的已接受请求，最多 rlMaxEvents 个
+}
+
+type mailQuotaEntry struct {
+	bucket string
+	count  int
 }
 
 var (
 	rlMu   sync.Mutex
 	rlData = map[string]*rlEntry{}
-	// 未验证邮箱用户：小时配额记录  key = "mailq|uid|YYYY-MM-DD-HH:count"
-	mailQ = map[string]int{}
+	mailQ  = map[int64]mailQuotaEntry{}
 )
 
 const (
-	rlKeepWindow = 6 * time.Hour // 内存条目保留时长
-	mailQuota    = 2             // 未验证用户每小时配额次数（第3次触发锁）
+	rlKeepWindow = time.Hour
+	rlMaxEntries = 50000
+	rlMaxEvents  = 120 // 不小于当前最大的验证码小时额度
+	mailQuota    = 2
 )
+
+// startRateLimitCleanup 在服务生命周期内定期回收；请求路径只检查当前键。
+func startRateLimitCleanup(ctx context.Context) {
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case now := <-ticker.C:
+				cleanupRateLimits(now)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func cleanupRateLimits(now time.Time) {
+	cut := now.Add(-rlKeepWindow).UnixMilli()
+	bucket := hourBucket(now)
+	rlMu.Lock()
+	defer rlMu.Unlock()
+	for key, entry := range rlData {
+		if len(entry.ts) == 0 || entry.ts[len(entry.ts)-1] <= cut {
+			delete(rlData, key)
+		}
+	}
+	for uid, entry := range mailQ {
+		if entry.bucket != bucket {
+			delete(mailQ, uid)
+		}
+	}
+}
 
 // clientIP 提取客户端 IP。
 //
@@ -47,11 +83,29 @@ func clientIP(r *http.Request) string {
 		host = r.RemoteAddr
 	}
 	if isLocalPeer(host) {
-		if real := strings.TrimSpace(r.Header.Get("X-Real-IP")); real != "" && net.ParseIP(real) != nil {
-			return real
+		if real := strings.TrimSpace(r.Header.Get("X-Real-IP")); real != "" {
+			if normalized := normalizeClientIP(real); normalized != "" {
+				return normalized
+			}
 		}
 	}
+	if normalized := normalizeClientIP(host); normalized != "" {
+		return normalized
+	}
 	return host
+}
+
+func normalizeClientIP(raw string) string {
+	ip := net.ParseIP(raw)
+	if ip == nil {
+		return ""
+	}
+	if v4 := ip.To4(); v4 != nil {
+		return v4.String()
+	}
+	// IPv6 地址按 /64 聚合，避免同一常规子网轮换临时地址分散额度。
+	mask := net.CIDRMask(64, 128)
+	return (&net.IPNet{IP: ip.Mask(mask), Mask: mask}).String()
 }
 
 // isLocalPeer 判断是否来自本机反代。
@@ -69,35 +123,16 @@ func isLocalPeer(host string) bool {
 	return ip.IsLoopback()
 }
 
-func indexByte(s string, b byte) int {
-	for i := 0; i < len(s); i++ {
-		if s[i] == b {
-			return i
-		}
-	}
-	return -1
-}
-
-func trimSpace(s string) string {
-	for len(s) > 0 && (s[0] == ' ' || s[0] == '\t') {
-		s = s[1:]
-	}
-	for len(s) > 0 && (s[len(s)-1] == ' ' || s[len(s)-1] == '\t') {
-		s = s[:len(s)-1]
-	}
-	return s
-}
-
-// uaHash 对 UA 做 32 位哈希 → 稳定的设备指纹片段
-func uaHash(ua string) uint32 {
-	h := fnv.New32a()
-	h.Write([]byte(ua))
-	return h.Sum32()
-}
-
-// fpKey 行为指纹 = IP + UA 哈希（双重，防换 IP/换 UA 单点绕过）
+// fpKey 保留旧调用名，但主键仅使用规范化的可信客户端 IP。
 func fpKey(r *http.Request) string {
-	return clientIP(r) + "|h" + strconv.FormatUint(uint64(uaHash(r.UserAgent())), 16)
+	return clientIP(r)
+}
+
+// clearRateLimit 清空某个键的计数（登录成功后调用，避免正常用户被自己的成功登录锁住）。
+func clearRateLimit(key string) {
+	rlMu.Lock()
+	delete(rlData, key)
+	rlMu.Unlock()
 }
 
 // rateLimitOK 窗口限流；limit 为该窗口允许次数
@@ -106,24 +141,18 @@ func rateLimitOK(key string, limit int) (bool, int) {
 	rlMu.Lock()
 	defer rlMu.Unlock()
 
-	for k, e := range rlData {
-		cutoff := now - rlKeepWindow.Milliseconds()
-		n := 0
-		for _, t := range e.ts {
-			if t >= cutoff {
-				e.ts[n] = t
-				n++
-			}
-		}
-		if n == 0 {
-			delete(rlData, k)
-		} else {
-			e.ts = e.ts[:n]
-		}
+	if limit <= 0 {
+		return false, 0
 	}
-
+	if limit > rlMaxEvents {
+		limit = rlMaxEvents
+	}
 	e, ok := rlData[key]
 	if !ok {
+		// 满容量时不驱逐活跃额度，防止已有额度意外重置。
+		if len(rlData) >= rlMaxEntries {
+			return false, 0
+		}
 		e = &rlEntry{}
 		rlData[key] = e
 	}
@@ -139,7 +168,7 @@ func rateLimitOK(key string, limit int) (bool, int) {
 		return false, len(valid)
 	}
 	e.ts = append(e.ts, now)
-	return true, len(e.ts) + 1
+	return true, len(e.ts)
 }
 
 // hourBucket 当前自然小时桶
@@ -152,29 +181,21 @@ func hourBucket(t time.Time) string {
 func mailQuotaUse(uid int64) (bool, int) {
 	now := time.Now()
 	bucket := hourBucket(now)
-	key := "q" + strconv.FormatInt(uid, 10) + "|" + bucket
 	rlMu.Lock()
-	n := mailQ[key]
-	rlMu.Unlock()
-	n++ // 本次尝试
-	if n > mailQuota {
-		return false, n
+	defer rlMu.Unlock()
+	entry, exists := mailQ[uid]
+	if !exists && len(mailQ) >= rlMaxEntries {
+		return false, mailQuota + 1
 	}
-	rlMu.Lock()
-	mailQ[key] = n
-	rlMu.Unlock()
-	// 惰性清理旧桶
-	if len(mailQ) > 20000 {
-		rlMu.Lock()
-		keep := map[string]int{}
-		for k, v := range mailQ {
-			_ = v
-			keep[k] = v
-		}
-		mailQ = keep
-		rlMu.Unlock()
+	if entry.bucket != bucket {
+		entry = mailQuotaEntry{bucket: bucket}
 	}
-	return true, n
+	if entry.count >= mailQuota {
+		return false, entry.count + 1
+	}
+	entry.count++
+	mailQ[uid] = entry
+	return true, entry.count
 }
 
 // rateLimitHandler 分级限流包装：action ∈ auth / act / upload
@@ -185,7 +206,7 @@ func rateLimitHandler(action string, h http.HandlerFunc) http.HandlerFunc {
 			limit := 30
 			switch action {
 			case "auth":
-				limit = 5
+				limit = 20
 			case "mail":
 				limit = 10 // 邮箱验证/找回密码：每 1 小时每指纹 ≤10 次（与登录配额分离，避免误伤）
 			case "upload":
@@ -214,6 +235,7 @@ func requireVerifiedQuota(uid int64) (bool, string) {
 	}
 	return true, ""
 }
+
 // quotaHandler 邮箱配额锁：未验证邮箱的用户做"配额动作"(发帖/评论/评价/私信/举报/上传)时，
 // 每自然小时 ≤2 次；达到验证节点则拦截并提示。验证通过后不再限制。
 func quotaHandler(h http.HandlerFunc) http.HandlerFunc {

@@ -220,6 +220,61 @@ func TestTombstonesStored(t *testing.T) {
 	}
 }
 
+func TestUserStoresAreIsolated(t *testing.T) {
+	root := testStore(t)
+	userA, userB := root.ForUser(11), root.ForUser(22)
+	res := &ImportResult{History: []History{biliRecord("same-id", 1700000000000)}}
+	if _, err := userA.Ingest("pc", "batch", "sha", "upload", res); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := userB.Ingest("pc", "batch", "sha", "upload", res); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		store *Store
+		want  int
+	}{{userA, 1}, {userB, 1}, {root, 0}} {
+		got, err := tc.store.AllHistory()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != tc.want {
+			t.Fatalf("user %d: got %d records, want %d", tc.store.userID, len(got), tc.want)
+		}
+	}
+	if _, err := userA.Ingest("pc", "batch", "sha", "upload", res); err != nil {
+		t.Fatal(err)
+	}
+	if n, _, _, err := userA.Counts(); err != nil || n != 1 {
+		t.Fatalf("same-user idempotence failed: count=%d err=%v", n, err)
+	}
+}
+
+func TestRecordSiteVisitDeduplicatesPerUserAndPath(t *testing.T) {
+	root := testStore(t)
+	at := time.Date(2026, 11, 3, 10, 0, 0, 0, time.Local)
+	first, err := root.ForUser(7).RecordSiteVisit("/article.html?id=3", "文章三", at)
+	if err != nil || !first {
+		t.Fatalf("first visit: recorded=%v err=%v", first, err)
+	}
+	duplicate, err := root.ForUser(7).RecordSiteVisit("/article.html?id=3", "文章三", at.Add(30*time.Second))
+	if err != nil || duplicate {
+		t.Fatalf("duplicate should be skipped: recorded=%v err=%v", duplicate, err)
+	}
+	otherUser, err := root.ForUser(8).RecordSiteVisit("/article.html?id=3", "文章三", at.Add(30*time.Second))
+	if err != nil || !otherUser {
+		t.Fatalf("other user should have own visit: recorded=%v err=%v", otherUser, err)
+	}
+	later, err := root.ForUser(7).RecordSiteVisit("/article.html?id=3", "文章三", at.Add(61*time.Second))
+	if err != nil || !later {
+		t.Fatalf("visit after dedupe window should be stored: recorded=%v err=%v", later, err)
+	}
+	visits, err := root.ForUser(7).AllSiteVisits()
+	if err != nil || len(visits) != 2 {
+		t.Fatalf("user 7 visits=%d err=%v, want 2", len(visits), err)
+	}
+}
+
 func TestHostAndDayDerivation(t *testing.T) {
 	if h := hostOf("https://www.bilibili.com/video/BV1xx?p=1"); h != "www.bilibili.com" {
 		t.Errorf("host 解析不符: %q", h)

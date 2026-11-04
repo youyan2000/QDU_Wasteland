@@ -5,8 +5,23 @@ window.loadCaptcha = async function (pre, img) {
     if (!d.id) return;
     document.getElementById(pre + "CaptchaId").value = d.id;
     if (img) img.src = "/api/captcha/" + d.id + ".svg";
+    if (img) img.alt = "验证码（点击可换一张）";
   } catch (e) {}
 };
+// 验证码刷新：CSP 禁止内联事件，这里统一绑定点击行为。
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".captcha-img[data-captcha]").forEach((img) => {
+    img.style.cursor = "pointer";
+    img.title = "点击换一张";
+    img.addEventListener("click", () => loadCaptcha(img.dataset.captcha, img));
+  });
+  document.querySelectorAll("[data-captcha-refresh]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pre = btn.dataset.captchaRefresh;
+      loadCaptcha(pre, document.getElementById(pre + "CapImg"));
+    });
+  });
+});
 document.addEventListener("DOMContentLoaded", () => {
   loadCaptcha("l", document.getElementById("lCapImg"));
   loadCaptcha("r", document.getElementById("rCapImg"));
@@ -30,6 +45,13 @@ function switchTab(which) {
 }
 tabLogin.onclick = () => switchTab('login');
 tabRegister.onclick = () => switchTab('register');
+
+// 导航栏的「注册」链接指向 /login.html#register，直接进入注册表单。
+if (location.hash === '#register') switchTab('register');
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#register') switchTab('register');
+  else if (location.hash === '#login') switchTab('login');
+});
 
 // 若已登录直接跳个人主页
 async function checkLogin() {
@@ -129,7 +151,8 @@ loginForm.addEventListener('submit', async e => {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || '登录失败');
-    location.href = '/me.html';
+    const next = new URLSearchParams(location.search).get('next');
+    location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/me.html';
   } catch (err) {
     errEl.textContent = err.message;
   } finally {

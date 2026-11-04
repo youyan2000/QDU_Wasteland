@@ -12,7 +12,14 @@
     me: null,
     meError: "",
     meLoading: true,
-    page: "browser",
+    page: "site",
+    site: {
+      items: [],
+      loading: false,
+      loaded: false,
+      error: "",
+      imported: null,
+    },
     history: {
       source: "browser",
       q: "",
@@ -58,9 +65,16 @@
       file: null,
       preview: null,
       result: null,
-      seedResult: null,
       loading: false,
       error: "",
+    },
+    devices: {
+      items: [],
+      loading: false,
+      loaded: false,
+      error: "",
+      newToken: "",
+      busy: false,
     },
   };
 
@@ -100,6 +114,7 @@
     if (path === "/tool/history/bilibili") return "bilibili";
     if (path === "/tool/history/favorite") return "favorite";
     if (path === "/tool/history/backup") return "backup";
+    if (path === "/tool/history" || path === "/tool/history/index.html") return "site";
     return "browser";
   }
 
@@ -117,7 +132,6 @@
     const init = { method, headers, credentials: "same-origin" };
 
     if (method !== "GET" && method !== "HEAD") {
-      headers.set("X-Local-Demo", "1");
       headers.set("Content-Type", "application/json");
       init.body = JSON.stringify(options.body === undefined ? {} : options.body);
     }
@@ -126,7 +140,7 @@
     try {
       response = await fetch(path, init);
     } catch (_error) {
-      throw new Error("无法连接本地服务，请确认 node demo/server.mjs 正在运行。");
+      throw new Error("连接中断：可能是文件过大或服务刚重启，请刷新页面后重试；大于 20MB 的备份请分批导入。");
     }
 
     const contentType = response.headers.get("content-type") || "";
@@ -237,12 +251,13 @@
     const brand = makeLink("/tool/history/browser/", "", "brand");
     brand.append(node("span", "brand-mark", "UH"));
     const brandText = node("span", "brand-copy");
-    brandText.append(node("strong", "", "Unlimited History"), node("small", "", "本地网站"));
+    brandText.append(node("strong", "", "浏览足迹"), node("small", "", "WASTELAND"));
     brand.append(brandText);
     sidebar.append(brand);
 
     const nav = node("nav", "primary-nav");
     nav.append(
+      navLink("/tool/history/", "◈", "本站足迹", state.page === "site"),
       navLink("/tool/history/browser/", "◉", "浏览器历史", state.page === "browser"),
       navLink("/tool/history/bilibili/", "▶", "B站历史", state.page === "bilibili"),
       navLink("/tool/history/favorite/", "◇", "收藏列表", state.page === "favorite"),
@@ -251,14 +266,14 @@
     sidebar.append(nav);
 
     const sideFoot = node("div", "sidebar-foot");
-    sideFoot.append(node("span", "side-foot-dot"), node("span", "", "仅监听本机 · 数据不出本机"));
+    sideFoot.append(node("span", "side-foot-dot"), node("span", "", "账号专属 · 导入内容仅本人可见"));
     sidebar.append(sideFoot);
 
     const main = node("main", "main-area");
     const topbar = node("header", "topbar");
     const status = node("div", `local-badge${state.meError ? " is-error" : ""}`);
     status.append(node("span", "status-dot"));
-    status.append(node("span", "", state.meError ? "本地服务未连接" : "本机运行"));
+    status.append(node("span", "", state.meError ? "服务暂不可用" : "账号档案"));
     topbar.append(status);
 
     const content = node("div", "content-wrap");
@@ -267,11 +282,11 @@
     notice.append(icon(state.meError ? "!" : "i", "notice-icon"));
     const noticeCopy = node("div", "notice-copy");
     noticeCopy.append(
-      node("strong", "", state.meError ? "本地服务暂不可用" : "这是你自己的本地档案"),
+      node("strong", "", state.meError ? "浏览足迹暂不可用" : "个人浏览档案"),
       node(
         "span",
         "",
-        state.meError ? state.meError : "数据只从本机 SQLite 读取，没有账号，也不上传任何内容。",
+        state.meError ? state.meError : "这里汇总你在本站的浏览足迹，以及你主动导入的浏览器或 B 站历史。",
       ),
     );
     notice.append(noticeCopy);
@@ -279,7 +294,7 @@
       noticeCopy.append(node("span", "server-warning", state.me.warning));
     }
     if (state.meLoading && !state.meError) {
-      noticeCopy.append(node("span", "server-status", "正在检查本地演示服务…"));
+      noticeCopy.append(node("span", "server-status", "正在加载账号档案…"));
     }
     content.append(notice);
 
@@ -287,6 +302,8 @@
     content.append(page);
     main.append(topbar, content);
     shell.append(sidebar, main);
+    // 本站足迹页用标题 + 使用说明表达，不再叠一层提示框。
+    if (state.page === "site") notice.remove();
     return { shell, page };
   }
 
@@ -522,13 +539,169 @@
 
   /* ---------- 历史页 ---------- */
 
+  /* ---------- 本站足迹 ---------- */
+
+  async function loadSiteVisits() {
+    const site = state.site;
+    site.loading = true;
+    site.error = "";
+    render();
+    try {
+      const { data } = await request(`${API}/site-visits`);
+      const items = data && Array.isArray(data.items) ? data.items : [];
+      site.items = items;
+      site.error = "";
+    } catch (error) {
+      site.items = [];
+      site.error = error instanceof Error ? error.message : "读取失败";
+    } finally {
+      site.loading = false;
+      site.loaded = true;
+      render();
+      loadImportedCounts();
+    }
+  }
+
+  // 本站足迹页顺带拉一下另外三个来源的数量：导入过数据的人能马上看到入口，
+  // 不会以为"导入完什么都没有"。
+  async function loadImportedCounts() {
+    try {
+      const [browser, bili, fav] = await Promise.all([
+        request(`${API}/history?source=browser&limit=1`),
+        request(`${API}/history?source=bilibili&limit=1`),
+        request(`${API}/favorite?origin=browser&limit=1`),
+      ]);
+      state.site.imported = {
+        browser: Number((browser.data && browser.data.total) || 0),
+        bilibili: Number((bili.data && bili.data.total) || 0),
+        favorites: Number((fav.data && fav.data.total) || 0),
+      };
+    } catch (_error) {
+      state.site.imported = null;
+    }
+    render();
+  }
+
+  function renderSitePage(page) {
+    const site = state.site;
+    page.append(
+      setPageTitle(
+        "浏览足迹",
+        "登录后在本站打开过的文章、帖子、课程和资料会自动记在这里，只有你自己能看到。",
+      ),
+    );
+
+    // 使用说明：很多人第一次进来不知道"为什么是空的"，这里把三条路径讲清楚。
+    const guide = node("details", "history-guide");
+    guide.open = state.site.loaded && state.site.items.length === 0;
+    const summary = node("summary", "", "怎么用（30 秒看完）");
+    const steps = node("ol", "history-guide-steps");
+    steps.append(
+      node("li", "", "保持登录，正常浏览课程、文章、帖子或资料页面；每打开一个内容，系统自动记一条。"),
+      node("li", "", "回到本页按天查看，点右侧「打开」可以直接回到那个页面。"),
+      node(
+        "li",
+        "",
+        "「浏览器历史 / B站历史 / 导入的书签」需要安装一次浏览器扩展（到「数据备份」页下载并生成配对码），之后每 30 分钟自动同步；没有配对时为空是正常的。",
+      ),
+    );
+    guide.append(summary, steps);
+    page.append(guide);
+
+    // 三个导入来源的入口：哪怕本站足迹还是空的，也能看到导入的数据在哪。
+    const imported = state.site.imported;
+    if (imported && (imported.browser || imported.bilibili || imported.favorites)) {
+      const bar = node("div", "imported-links");
+      bar.append(node("span", "imported-label", "已导入："));
+      const add = (href, label, count, unit) => {
+        if (!count) return;
+        const link = makeLink(href, `${label} ${formatNumber(count)} ${unit}`, "imported-link");
+        bar.append(link);
+      };
+      add("/tool/history/browser/", "浏览器历史", imported.browser, "条");
+      add("/tool/history/bilibili/", "B站历史", imported.bilibili, "条");
+      add("/tool/history/favorite/", "书签", imported.favorites, "个");
+      page.append(bar);
+    }
+
+    if (site.error) {
+      page.append(makeMessage("error", site.error));
+      const retry = makeButton("重新读取", "button button-outline");
+      retry.addEventListener("click", () => loadSiteVisits());
+      page.append(retry);
+      return;
+    }
+
+    if (!site.loaded || site.loading) {
+      page.append(makeMessage("info", "正在读取足迹…"));
+      return;
+    }
+
+    const items = site.items;
+    const listSummary = node("div", "list-summary");
+    listSummary.append(
+      node("span", "", `共 ${formatNumber(items.length)} 条本站记录`),
+      node("span", "summary-source", "只保留最近 200 条 · 同一页面 1 分钟内不重复记录"),
+    );
+    page.append(listSummary);
+
+    if (!items.length) {
+      page.append(
+        makeEmptyState(
+          "◈",
+          "还没有本站足迹",
+          "保持登录，去课程、文章或论坛打开一篇内容，再回到这里就能看到记录。",
+        ),
+      );
+      return;
+    }
+
+    const list = node("div", "record-list");
+    let currentDay = "";
+    let daySection = null;
+    for (const item of items) {
+      const key = item && item.visited_at ? localDayKey(item.visited_at) : "";
+      if (key !== currentDay) {
+        currentDay = key;
+        daySection = node("section", "day-group");
+        daySection.append(
+          node("div", "day-heading", node("span", "day-title", key ? dayLabel(key) : "时间未知")),
+        );
+        list.append(daySection);
+      }
+      const card = node("article", "record-card");
+      const visual = node("div", "record-mark site", "◈");
+      const body = node("div", "record-body");
+      const title = safeString(item && item.title, "未命名页面").trim() || "未命名页面";
+      const path = safeString(item && item.url, "").trim();
+      const isInternal = path.startsWith("/") && !path.startsWith("//");
+      const titleNode = isInternal ? makeLink(path, title, "record-title") : node("span", "record-title", title);
+      const meta = node("div", "record-meta");
+      meta.append(node("span", "record-time", formatTime(item && item.visited_at)));
+      if (path) meta.append(metaDot(), node("span", "record-host", path.split("?")[0]));
+      body.append(titleNode, meta);
+      card.append(visual, body);
+      if (isInternal) card.append(makeLink(path, "打开", "record-open"));
+      daySection.append(card);
+    }
+    for (const group of list.querySelectorAll(".day-group")) {
+      const count = group.querySelectorAll(".record-card").length;
+      group.querySelector(".day-heading").append(node("span", "day-count", `${count} 条`));
+    }
+    page.append(list);
+  }
+
+  async function ensureSitePage() {
+    if (!state.site.loaded && !state.site.loading) await loadSiteVisits();
+  }
+
   function renderHistoryPage(page, source) {
     const history = state.history;
     const isBili = source === "bilibili";
     page.append(
       isBili
         ? setPageTitle("B站历史", "按观看账号归档的 B站观看记录，只增不改。")
-        : setPageTitle("浏览器历史", "Firefox 每次访问独立归档，只增不改。"),
+        : setPageTitle("浏览器历史", "浏览器每次访问独立归档，只增不改；可装扩展自动同步。"),
     );
     page.append(makeFilterBar());
 
@@ -577,12 +750,12 @@
     );
     main.append(toolbar);
 
-    const summary = node("div", "list-summary");
-    summary.append(
+    const listSummary = node("div", "list-summary");
+    listSummary.append(
       node(
         "span",
         "",
-        history.loading ? "正在读取本地档案…" : `${formatNumber(history.total)} 条记录`,
+        history.loading ? "正在读取账号档案…" : `${formatNumber(history.total)} 条记录`,
       ),
       node(
         "span",
@@ -592,7 +765,7 @@
           .join(" · "),
       ),
     );
-    main.append(summary);
+    main.append(listSummary);
 
     const list = node("div", isBili ? "record-list bili-grid" : "record-list");
     main.append(list);
@@ -605,8 +778,8 @@
           history.q || history.domain || history.from
             ? "试试清除筛选条件。"
             : isBili
-              ? "B站历史需要登录凭据才能采集；用一键导入脚本采集。"
-              : "这个来源目前没有可显示的记录。",
+              ? "B站历史需要浏览器里有 B站 登录状态；在扩展设置里打开「同步 B站历史」即可。"
+              : "这个来源还没有记录；装扩展同步，或到「数据备份」导入 JSON。",
         ),
       );
     }
@@ -754,7 +927,7 @@
     const card = node("article", "bili-card");
     const url = safeHttpUrl(item && item.url);
     const title = safeString(item && item.title, "未命名内容").trim() || "未命名内容";
-    const cover = safeHttpUrl(item && item.cover);
+    const cover = safeHttpUrl(upgradeHttps(safeString(item && item.cover, "")));
     const progress = Number(item && item.progress);
     const duration = Number(item && item.duration);
     const hasProgress = progress > 0 && duration > 0;
@@ -868,6 +1041,14 @@
     record.append(visual, body);
     if (url) record.append(node("span", "record-open", "↗"));
     return record;
+  }
+
+  // 旧数据可能存了 http:// 或 // 的封面，站点 CSP 只放行 https，这里统一升级。
+  function upgradeHttps(value) {
+    if (!value) return null;
+    if (value.indexOf('//') === 0) return 'https:' + value;
+    if (value.indexOf('http://') === 0) return 'https://' + value.slice(7);
+    return value;
   }
 
   function metaDot() {
@@ -1168,8 +1349,8 @@
     );
     main.append(toolbar);
 
-    const summary = node("div", "list-summary");
-    summary.append(
+    const listSummary = node("div", "list-summary");
+    listSummary.append(
       node("span", "", favorites.loading ? "正在读取…" : `${formatNumber(favorites.total)} 个书签`),
       node(
         "span",
@@ -1177,7 +1358,7 @@
         favorites.folder ? `目录 · ${favorites.folder}` : "目录 · 全部（仅 toolbar）",
       ),
     );
-    main.append(summary);
+    main.append(listSummary);
 
     const list = node("div", "record-list favorite-list");
     main.append(list);
@@ -1330,37 +1511,146 @@
 
   /* ---------- 数据备份 ---------- */
 
-  function renderBackup(page) {
-    const backup = state.backup;
-    page.append(setPageTitle("数据备份", "导入前先预览，确认后才会写入本地档案。"));
+  async function loadDevices() {
+    state.devices.loading = true;
+    state.devices.error = "";
+    render();
+    try {
+      const { data } = await request(`${API}/devices`);
+      state.devices.items = Array.isArray(data && data.devices) ? data.devices : [];
+    } catch (error) {
+      state.devices.error = error instanceof Error ? error.message : "读取配对设备失败";
+    } finally {
+      state.devices.loading = false;
+      state.devices.loaded = true;
+      render();
+    }
+  }
 
-    const backupPanel = node("section", "backup-panel");
-    const panelHead = node("div", "panel-heading");
-    panelHead.append(
-      node("span", "panel-icon", "↧"),
-      node("div", "panel-heading-copy", node("h2", "", "一键采集本机数据")),
+  async function createDeviceToken() {
+    state.devices.busy = true;
+    state.devices.error = "";
+    render();
+    try {
+      const { data } = await request(`${API}/devices`, { method: "POST", body: { label: "浏览器扩展" } });
+      state.devices.newToken = (data && data.token) || "";
+      await loadDevices();
+    } catch (error) {
+      state.devices.error = error instanceof Error ? error.message : "生成配对码失败";
+    } finally {
+      state.devices.busy = false;
+      render();
+    }
+  }
+
+  async function revokeDevice(id) {
+    state.devices.busy = true;
+    try {
+      await request(`${API}/devices?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      state.devices.newToken = "";
+      await loadDevices();
+    } catch (error) {
+      state.devices.error = error instanceof Error ? error.message : "撤销失败";
+    } finally {
+      state.devices.busy = false;
+      render();
+    }
+  }
+
+  function formatSyncTime(value) {
+    return value ? formatDate(value) : "还没同步过";
+  }
+
+  function renderExtensionPanel(panel) {
+    const devices = state.devices;
+    const head = node("div", "panel-heading");
+    head.append(
+      node("span", "panel-icon", "⟳"),
+      node("div", "panel-heading-copy", node("h2", "", "浏览器扩展 · 自动同步")),
     );
-    panelHead
+    head
       .querySelector(".panel-heading-copy")
-      .append(node("p", "", "在项目目录运行下面任一条命令，一次把三类真实数据采集进来。"));
-    backupPanel.append(panelHead);
-    const help = node("div", "backup-section");
-    const code = node("pre", "code-block");
-    code.textContent = [
-      "node demo/collect-all.mjs            # 浏览器历史 + 浏览器书签 + B站历史",
-      "node demo/collect-all.mjs --dry-run   # 只看会读到什么，不写入",
-      "node demo/collect-all.mjs --no-bili   # 跳过 B站（完全不读登录凭据）",
-    ].join("\n");
-    help.append(code);
-    help.append(
+      .append(node("p", "", "装一次扩展，之后每 30 分钟自动同步浏览器历史和书签，不用再手动导入。"));
+    panel.append(head);
+
+    const steps = node("ol", "extension-steps");
+    steps.append(
+      node("li", "", "按你的浏览器下载对应的扩展包，并解压到一个固定文件夹（别删，删了扩展就失效）。"),
+      node("li", "", "Chrome / Edge：打开扩展页开启「开发者模式」→「加载已解压的扩展程序」。Firefox：打开 about:debugging#/runtime/this-firefox →「临时载入附加组件」选中解压后的 manifest.json。"),
+      node("li", "", "点下面的「生成配对码」，把站点地址和配对码填进扩展的「设置」页，再点「立即同步」。"),
+    );
+    panel.append(steps);
+
+    const actions = node("div", "extension-actions");
+    const chromeZip = makeLink(`${API}/extension.zip?browser=chrome`, "下载 Chrome / Edge 版", "button button-primary button-compact");
+    chromeZip.setAttribute("download", "wasteland-history-sync-chrome.zip");
+    const firefoxZip = makeLink(`${API}/extension.zip?browser=firefox`, "下载 Firefox 版", "button button-outline button-compact");
+    firefoxZip.setAttribute("download", "wasteland-history-sync-firefox.zip");
+    actions.append(chromeZip, firefoxZip);
+
+    const gen = makeButton(devices.busy ? "生成中…" : "生成配对码", "button button-outline button-compact");
+    gen.disabled = devices.busy;
+    gen.addEventListener("click", () => createDeviceToken());
+    actions.append(gen);
+    panel.append(actions);
+
+    panel.append(
       node(
         "p",
         "section-help",
-        "B站历史需要你的登录状态：脚本只从本机 Firefox 的 cookies.sqlite 读取 SESSDATA，在内存中用于调用 B站接口，不落盘、不打印、不上传。加 --no-bili 可完全跳过这一部分。",
+        "Firefox 正式版只允许临时载入未签名扩展：重启浏览器后需要在 about:debugging 里再载入一次（不需要重新配对）；Firefox Developer Edition / Nightly 可关闭签名校验后永久安装。Chrome / Edge 装一次即可长期有效。",
       ),
     );
-    backupPanel.append(help);
 
+    if (devices.error) panel.append(makeMessage("error", devices.error));
+
+    if (devices.newToken) {
+      const tokenBox = node("div", "token-box");
+      tokenBox.append(node("span", "token-label", "配对码（只显示这一次，请立刻填进扩展）"));
+      const code = node("code", "token-value", devices.newToken);
+      const copy = makeButton("复制", "button button-outline button-compact");
+      copy.addEventListener("click", () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(devices.newToken).then(() => {
+            copy.textContent = "已复制";
+            window.setTimeout(() => (copy.textContent = "复制"), 1500);
+          });
+        }
+      });
+      tokenBox.append(code, copy);
+      const origin = node("p", "section-help", `站点地址填：${location.origin}`);
+      tokenBox.append(origin);
+      panel.append(tokenBox);
+    }
+
+    const list = node("div", "device-list");
+    if (!devices.loading && !devices.loaded) {
+      list.append(node("p", "section-help", "正在读取配对设备…"));
+    } else if (!devices.items.length) {
+      list.append(node("p", "section-help", "还没有配对设备。生成配对码后，扩展才能同步到你的账号。"));
+    } else {
+      for (const d of devices.items) {
+        const row = node("div", "device-row");
+        row.append(
+          node("span", "device-name", d.label || "浏览器扩展"),
+          node("span", "device-sync", `最近同步：${formatSyncTime(d.lastSync)}`),
+        );
+        const revoke = makeButton("撤销", "button button-outline button-compact");
+        revoke.disabled = devices.busy;
+        revoke.addEventListener("click", () => revokeDevice(d.id));
+        row.append(revoke);
+        list.append(row);
+      }
+    }
+    panel.append(list);
+  }
+
+  function renderBackup(page) {
+    const backup = state.backup;
+    page.append(setPageTitle("数据备份", "推荐装扩展自动同步；也可以手动导入 JSON 档案。"));
+
+    const backupPanel = node("section", "backup-panel");
+    renderExtensionPanel(backupPanel);
     backupPanel.append(node("div", "panel-divider"));
     const importSection = node("div", "backup-section");
     importSection.append(
@@ -1431,33 +1721,11 @@
     backupPanel.append(exportSection);
     page.append(backupPanel);
 
-    const seedPanel = node("section", "seed-panel");
-    const seedCopy = node("div", "seed-copy");
-    seedCopy.append(node("span", "seed-icon", "✦"), node("div", "", ""));
-    seedCopy
-      .querySelector("div")
-      .append(
-        node("h3", "", "显式载入演示数据"),
-        node(
-          "p",
-          "",
-          "首次打开不含预设假数据。点击后由本地服务写入可辨识的演示记录，不会伪装成真实账号内容。",
-        ),
-      );
-    seedPanel.append(seedCopy);
-    const seed = makeButton(backup.loading ? "处理中…" : "载入演示数据", "button button-soft");
-    seed.disabled = backup.loading;
-    seed.addEventListener("click", seedDemoData);
-    seedPanel.append(seed);
-    if (backup.seedResult)
-      seedPanel.append(makeImportResult(backup.seedResult, "演示数据载入结果"));
-    page.append(seedPanel);
-
     page.append(
       node(
         "p",
         "backup-footnote",
-        "导入、下载与载入演示数据都只请求本机服务；写入请求带本机标识，由服务端校验同源。备份文件请自己保管。",
+        "导入内容会归入当前账号；备份文件下载到你的设备，请妥善保管。",
       ),
     );
   }
@@ -1560,6 +1828,12 @@
     render();
     try {
       const raw = await backup.file.text();
+      // 服务端对导入接口的上限是 20MB；提前拦住，避免浏览器只报"无法连接"。
+      if (raw.length > 20 * 1024 * 1024) {
+        throw new Error(
+          `文件约 ${(raw.length / 1048576).toFixed(1)}MB，超过单次导入上限 20MB，请分批导出后再导入。`,
+        );
+      }
       let parsed;
       try {
         parsed = JSON.parse(raw);
@@ -1584,7 +1858,7 @@
     const backup = state.backup;
     const previewId = backup.preview && backup.preview.previewId;
     if (!previewId || backup.loading) return;
-    if (!window.confirm("确认将预览中的内容导入本地档案吗？此操作会写入当前 Demo 数据。")) return;
+    if (!window.confirm("确认将预览中的内容导入你的账号档案吗？")) return;
     backup.loading = true;
     backup.error = "";
     backup.result = null;
@@ -1637,33 +1911,13 @@
     }
   }
 
-  async function seedDemoData() {
-    const backup = state.backup;
-    if (backup.loading) return;
-    if (!window.confirm("仅在本地演示服务中载入示例记录？此操作会向 Demo 数据库写入演示数据。"))
-      return;
-    backup.loading = true;
-    backup.error = "";
-    backup.seedResult = null;
-    render();
-    try {
-      const { data } = await request(`${API}/demo/seed`, { method: "POST", body: {} });
-      backup.seedResult = data || {};
-      invalidateAfterWrite();
-    } catch (error) {
-      backup.error = error instanceof Error ? error.message : "载入演示数据失败。";
-    } finally {
-      backup.loading = false;
-      render();
-    }
-  }
-
   /* ---------- 引导 ---------- */
 
   function render() {
     state.page = getRoute();
     const { shell, page } = makeShell();
-    if (state.page === "favorite") renderFavorite(page);
+    if (state.page === "site") renderSitePage(page);
+    else if (state.page === "favorite") renderFavorite(page);
     else if (state.page === "backup") renderBackup(page);
     else renderHistoryPage(page, state.page);
     app.replaceChildren(shell);
@@ -1699,14 +1953,17 @@
       state.me = data && typeof data === "object" ? data : null;
       state.meError = "";
     } catch (error) {
-      state.meError = error instanceof Error ? error.message : "本地服务未连接。";
+      state.meError = error instanceof Error ? error.message : "服务暂不可用。";
     } finally {
       state.meLoading = false;
       render();
     }
 
     if (state.page === "favorite") await ensureFavoritePage();
-    else if (state.page !== "backup") await ensureHistoryPage();
+    else if (state.page === "site") await ensureSitePage();
+    else if (state.page === "backup") {
+      if (!state.devices.loaded) await loadDevices();
+    } else await ensureHistoryPage();
   }
 
   window.addEventListener("hashchange", () => {
@@ -1715,7 +1972,10 @@
     state.page = next;
     render();
     if (next === "favorite") void ensureFavoritePage();
-    else if (next !== "backup") void ensureHistoryPage();
+    else if (next === "site") void ensureSitePage();
+    else if (next === "backup") {
+      if (!state.devices.loaded) void loadDevices();
+    } else void ensureHistoryPage();
   });
 
   initialize();

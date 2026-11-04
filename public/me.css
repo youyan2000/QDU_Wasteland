@@ -168,7 +168,7 @@
   transition:all .15s;
 }
 .mgmt-btn:hover { border-color:var(--magenta); color:var(--magenta); background:var(--magenta-soft); }
-.mgmt-btn.primary { color:var(--magenta); border-color:rgba(255,46,136,.35); }
+.mgmt-btn.primary { color:var(--magenta); border-color:color-mix(in srgb, var(--magenta) 35%, transparent); }
 .mgmt-btn.primary:hover { background:var(--magenta); color:#fff; }
 .mgmt-del {
   border:1px solid rgba(211,47,47,.35); background:var(--surface); cursor:pointer;

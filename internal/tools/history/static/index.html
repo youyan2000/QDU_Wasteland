@@ -1,22 +1,40 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f5f8fa" />
-    <meta
-      name="description"
-      content="Unlimited History 本地网站：浏览本机的 B站历史、浏览器历史与书签归档"
-    />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Unlimited History · 本地网站</title>
-    <!-- 空图标：避免浏览器自动请求 /favicon.ico 打到白名单外返回 404。 -->
-    <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/tool/history/style.css" />
-    <script src="/tool/history/app.js" defer></script>
-  </head>
-  <body>
-    <div id="app" aria-live="polite"></div>
-    <noscript>这个本地页面需要启用 JavaScript。</noscript>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f3f0">
+  <meta name="description" content="查看你在 QDU Wasteland 浏览过的文章、帖子、课程和资料。">
+  <meta name="robots" content="noindex, nofollow">
+  <title>浏览足迹 · QDU Wasteland</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/common.css">
+  <link id="themesCss" rel="stylesheet" href="/themes.css">
+  <link rel="stylesheet" href="/tool/history/style.css">
+  <link rel="stylesheet" href="/tool/history/shell.css">
+  <script defer src="/icons.js"></script>
+  <script defer src="/nav.js"></script>
+  <script defer src="/themeboot.js"></script>
+  <script defer src="/tool/history/site.js"></script>
+  <script defer src="/tool/history/app.js"></script>
+  <script defer src="/wordbar.js"></script>
+</head>
+<body class="tools-body history-tool-body">
+  <a class="skip-link" href="#history-content">跳到内容</a>
+  <div id="site-nav"></div>
+  <main class="history-site-main" id="history-content">
+    <nav class="tools-breadcrumb" aria-label="面包屑"><a href="/tool/">返回工具</a></nav>
+    <nav class="history-tabs" aria-label="浏览足迹">
+      <a href="/tool/history/" data-history-tab="site">本站足迹</a>
+      <a href="/tool/history/browser/" data-history-tab="browser">浏览器历史</a>
+      <a href="/tool/history/bilibili/" data-history-tab="bilibili">B站历史</a>
+      <a href="/tool/history/favorite/" data-history-tab="favorite">导入的书签</a>
+      <a href="/tool/history/backup/" data-history-tab="backup">数据备份</a>
+    </nav>
+    <div id="app" aria-live="polite"></div>    <noscript>此页面需要启用 JavaScript。</noscript>
+  </main>
+  <footer class="history-site-footer">QDU Wasteland <span aria-hidden="true">·</span> 浏览足迹仅对当前登录账号开放</footer>
+</body>
 </html>

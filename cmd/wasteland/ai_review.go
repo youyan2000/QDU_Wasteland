@@ -1,9 +1,11 @@
 // ai_review.go — 后台 AI 内容审查（V16）
 // 通过可配置的 LLM API（OpenAI 兼容）审查文本/文件内容，帮助站长判断违规。
 // 环境变量：
-//   AI_API_URL  默认 https://api.openai.com/v1/chat/completions
-//   AI_API_KEY  API 密钥（未配置时接口返回提示，功能不可用）
-//   AI_MODEL    默认 gpt-4o-mini（可换 deepseek-chat 等）
+//
+//	AI_API_URL  默认 https://api.openai.com/v1/chat/completions
+//	AI_API_KEY  API 密钥（未配置时接口返回提示，功能不可用）
+//	AI_MODEL    默认 gpt-4o-mini（可换 deepseek-chat 等）
+//
 // 接口：POST /api/admin/ai-review  body:{content}
 package main
 
@@ -22,7 +24,9 @@ import (
 // POST /api/admin/ai-review  body:{content, type?}
 func handleAiReview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if requireAdmin(authStore, w, r) == 0 { return }
+		if requireAdmin(authStore, w, r) == 0 {
+			return
+		}
 		apiKey := os.Getenv("AI_API_KEY")
 		if apiKey == "" {
 			apiErr(w, 400, "AI 审查未配置：请设置环境变量 AI_API_KEY（以及可选的 AI_API_URL / AI_MODEL）")
@@ -33,17 +37,24 @@ func handleAiReview() http.HandlerFunc {
 			Type    string `json:"type"` // post/comment/review/article/file
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			apiErr(w, 400, "请求格式错误"); return
+			apiErr(w, 400, "请求格式错误")
+			return
 		}
 		body.Content = trimMaxRunes(body.Content, 3000)
 		if body.Content == "" {
-			apiErr(w, 400, "内容不能为空"); return
+			apiErr(w, 400, "内容不能为空")
+			return
 		}
 
-		apiURL := os.Getenv("AI_API_URL")
-		if apiURL == "" { apiURL = "https://api.openai.com/v1/chat/completions" }
+		apiURL, err := aiAPIURL(os.Getenv("AI_API_URL"))
+		if err != nil {
+			apiErr(w, 400, "AI 服务目标未通过 allowlist 配置校验")
+			return
+		}
 		model := os.Getenv("AI_MODEL")
-		if model == "" { model = "gpt-4o-mini" }
+		if model == "" {
+			model = "gpt-4o-mini"
+		}
 
 		system := "你是校园内容安全审查助手。请审查用户提交的内容，判断是否违规。违规类别：色情、淫秽、暴力、侮辱辱骂、广告营销、诈骗、政治敏感、版权侵权、人身攻击。请输出 JSON：{\"ok\":true/false,\"categories\":[\"命中类别\"],\"reason\":\"简短中文理由\",\"suggestion\":\"建议（通过/下架/删除）\"}。只输出 JSON，不要其他文字。"
 
@@ -57,19 +68,24 @@ func handleAiReview() http.HandlerFunc {
 		}
 		jsonData, _ := json.Marshal(payload)
 		req, err := http.NewRequest("POST", apiURL, bytes.NewReader(jsonData))
-		if err != nil { apiErr(w, 500, "请求构造失败"); return }
+		if err != nil {
+			apiErr(w, 500, "请求构造失败")
+			return
+		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 
-		client := &http.Client{Timeout: 60 * time.Second}
+		client := &http.Client{Timeout: 60 * time.Second, CheckRedirect: rejectAIRedirect}
 		resp, err := client.Do(req)
 		if err != nil {
-			apiErr(w, 502, "AI 服务连接失败："+err.Error()); return
+			apiErr(w, 502, "AI 服务连接失败")
+			return
 		}
 		defer resp.Body.Close()
 		respData, _ := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
 		if resp.StatusCode != 200 {
-			apiErr(w, 502, "AI 服务返回错误 "+fmt.Sprint(resp.StatusCode)+": "+string(respData)); return
+			apiErr(w, 502, "AI 服务返回错误 "+fmt.Sprint(resp.StatusCode)+": "+string(respData))
+			return
 		}
 		var cr struct {
 			Choices []struct {
@@ -79,7 +95,8 @@ func handleAiReview() http.HandlerFunc {
 			} `json:"choices"`
 		}
 		if err := json.Unmarshal(respData, &cr); err != nil || len(cr.Choices) == 0 {
-			apiErr(w, 502, "AI 响应解析失败"); return
+			apiErr(w, 502, "AI 响应解析失败")
+			return
 		}
 		aiOut := cr.Choices[0].Message.Content
 		// 提取 JSON（模型可能包在 ```json 里）
@@ -104,16 +121,24 @@ func handleAiReview() http.HandlerFunc {
 func extractJSONBlock(s string) string {
 	i := 0
 	for i < len(s) {
-		if s[i] == '{' { break }
+		if s[i] == '{' {
+			break
+		}
 		i++
 	}
-	if i >= len(s) { return s }
+	if i >= len(s) {
+		return s
+	}
 	j := len(s)
 	for j > i {
-		if s[j-1] == '}' { break }
+		if s[j-1] == '}' {
+			break
+		}
 		j--
 	}
-	if j <= i { return s }
+	if j <= i {
+		return s
+	}
 	return s[i:j]
 }
 
@@ -136,7 +161,9 @@ func trimMaxRunes(s string, maxLen int) string {
 
 func handleAiReviewAuto() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if requireAdmin(authStore, w, r) == 0 { return }
+		if requireAdmin(authStore, w, r) == 0 {
+			return
+		}
 		apiKey := os.Getenv("AI_API_KEY")
 		if apiKey == "" {
 			apiErr(w, 400, "AI 审查未配置：请设置环境变量 AI_API_KEY（可用 DeepSeek：AI_API_URL=https://api.deepseek.com/v1/chat/completions AI_MODEL=deepseek-chat）")
@@ -146,7 +173,9 @@ func handleAiReviewAuto() http.HandlerFunc {
 			Limit int `json:"limit"`
 		}
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body.Limit < 1 || body.Limit > 100 { body.Limit = 30 }
+		if body.Limit < 1 || body.Limit > 100 {
+			body.Limit = 30
+		}
 
 		// 1) 收集候选：最近且状态正常的帖子/评论/评价/文章
 		type cand struct {
@@ -164,22 +193,42 @@ func handleAiReviewAuto() http.HandlerFunc {
 		}
 		// 帖子
 		if rows, err := authStore.db.Query(`SELECT p.id, p.title, p.content, COALESCE(u.nickname,'') FROM posts p LEFT JOIN users u ON u.id=p.user_id WHERE p.status='正常' ORDER BY p.id DESC LIMIT ?`, body.Limit); err == nil {
-			for rows.Next() { var id int64; var t, c, n string; rows.Scan(&id, &t, &c, &n); add("post", id, t+" "+c, n) }
+			for rows.Next() {
+				var id int64
+				var t, c, n string
+				rows.Scan(&id, &t, &c, &n)
+				add("post", id, t+" "+c, n)
+			}
 			rows.Close()
 		}
 		// 评论
 		if rows, err := authStore.db.Query(`SELECT c.id, c.content, COALESCE(u.nickname,'') FROM comments c LEFT JOIN users u ON u.id=c.user_id ORDER BY c.id DESC LIMIT ?`, body.Limit); err == nil {
-			for rows.Next() { var id int64; var c, n string; rows.Scan(&id, &c, &n); add("comment", id, c, n) }
+			for rows.Next() {
+				var id int64
+				var c, n string
+				rows.Scan(&id, &c, &n)
+				add("comment", id, c, n)
+			}
 			rows.Close()
 		}
 		// 评价
 		if rows, err := authStore.db.Query(`SELECT r.id, r.content, COALESCE(u.nickname,'') FROM reviews r LEFT JOIN users u ON u.id=r.user_id WHERE r.status='正常' ORDER BY r.id DESC LIMIT ?`, body.Limit); err == nil {
-			for rows.Next() { var id int64; var c, n string; rows.Scan(&id, &c, &n); add("review", id, c, n) }
+			for rows.Next() {
+				var id int64
+				var c, n string
+				rows.Scan(&id, &c, &n)
+				add("review", id, c, n)
+			}
 			rows.Close()
 		}
 		// 文章
 		if rows, err := authStore.db.Query(`SELECT a.id, a.title, a.content, COALESCE(u.nickname,'') FROM articles a LEFT JOIN users u ON u.id=a.user_id WHERE a.status='正常' ORDER BY a.id DESC LIMIT ?`, body.Limit); err == nil {
-			for rows.Next() { var id int64; var t, c, n string; rows.Scan(&id, &t, &c, &n); add("article", id, t+" "+c, n) }
+			for rows.Next() {
+				var id int64
+				var t, c, n string
+				rows.Scan(&id, &t, &c, &n)
+				add("article", id, t+" "+c, n)
+			}
 			rows.Close()
 		}
 		if len(candidates) == 0 {
@@ -188,16 +237,23 @@ func handleAiReviewAuto() http.HandlerFunc {
 		}
 
 		// 2) 分批送 AI（每批 ≤ 10 条）
-		apiURL := os.Getenv("AI_API_URL")
-		if apiURL == "" { apiURL = "https://api.openai.com/v1/chat/completions" }
+		apiURL, err := aiAPIURL(os.Getenv("AI_API_URL"))
+		if err != nil {
+			apiErr(w, 400, "AI 服务目标未通过 allowlist 配置校验")
+			return
+		}
 		model := os.Getenv("AI_MODEL")
-		if model == "" { model = "gpt-4o-mini" }
+		if model == "" {
+			model = "gpt-4o-mini"
+		}
 
 		var removed, borderline []map[string]any
 		batchSize := 10
 		for start := 0; start < len(candidates); start += batchSize {
 			end := start + batchSize
-			if end > len(candidates) { end = len(candidates) }
+			if end > len(candidates) {
+				end = len(candidates)
+			}
 			batch := candidates[start:end]
 
 			var sb strings.Builder
@@ -215,31 +271,45 @@ func handleAiReviewAuto() http.HandlerFunc {
 			}
 			jsonData, _ := json.Marshal(payload)
 			req, err := http.NewRequest("POST", apiURL, bytes.NewReader(jsonData))
-			if err != nil { continue }
+			if err != nil {
+				continue
+			}
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+apiKey)
-			client := &http.Client{Timeout: 90 * time.Second}
+			client := &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectAIRedirect}
 			resp, err := client.Do(req)
-			if err != nil { continue }
+			if err != nil {
+				continue
+			}
 			respData, _ := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
 			resp.Body.Close()
-			if resp.StatusCode != 200 { continue }
+			if resp.StatusCode != 200 {
+				continue
+			}
 			var cr struct {
 				Choices []struct {
-					Message struct{ Content string `json:"content"` } `json:"message"`
+					Message struct {
+						Content string `json:"content"`
+					} `json:"message"`
 				} `json:"choices"`
 			}
-			if json.Unmarshal(respData, &cr) != nil || len(cr.Choices) == 0 { continue }
+			if json.Unmarshal(respData, &cr) != nil || len(cr.Choices) == 0 {
+				continue
+			}
 			aiOut := extractJSONBlock(cr.Choices[0].Message.Content)
 			var verdicts []struct {
 				Index   int    `json:"index"`
 				Verdict string `json:"verdict"`
 				Reason  string `json:"reason"`
 			}
-			if json.Unmarshal([]byte(aiOut), &verdicts) != nil { continue }
+			if json.Unmarshal([]byte(aiOut), &verdicts) != nil {
+				continue
+			}
 
 			for _, v := range verdicts {
-				if v.Index < 0 || v.Index >= len(batch) { continue }
+				if v.Index < 0 || v.Index >= len(batch) {
+					continue
+				}
 				c := batch[v.Index]
 				item := map[string]any{"kind": c.Kind, "id": c.ID, "content": trimMaxRunes(c.Content, 120), "author": c.Author, "reason": v.Reason}
 				switch v.Verdict {

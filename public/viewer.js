@@ -28,6 +28,7 @@ async function load() {
   if (!id) { content.innerHTML = '<div class="empty">文件链接不完整，请返回重试</div>'; return; }
   nameEl.textContent = name;
   dlEl.href = '/api/files/' + id + '/download';
+  recordVisit('file', id, name);
 
   const ext = extOf(name);
   const previewUrl = '/api/files/' + id + '/preview';
@@ -70,6 +71,11 @@ async function load() {
       <p style="margin-bottom:1.2rem">Word / Excel / PPT 等格式请下载后用办公软件打开</p>
       <a class="btn btn-primary" href="/api/files/${id}/download">${ICONS.download(16)} 下载文件</a>
     </div>`;
+}
+
+function recordVisit(kind, recordId, title) {
+  const path = location.pathname + location.search;
+  fetch('/api/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id: String(recordId || ''), path, title }), keepalive: true }).catch(() => {});
 }
 
 function escapeHtml(s) {
