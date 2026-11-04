@@ -200,6 +200,13 @@ for i in $(seq 1 36); do
     READY=1
     break
   fi
+  # 启动即失败的情况（配置错误、端口非法）立刻停，不要干等 6 分钟。
+  if journalctl -u "$SERVICE" --since "-2 min" --no-pager 2>/dev/null | grep -q "不是回环地址\|PORT 必须绑定回环"; then
+    echo "      ✗ 启动即失败：PORT 不是回环地址"
+    echo "        修法：systemd 单元里写 Environment=PORT=127.0.0.1:3000；"
+    echo "              EnvironmentFile 里写 PORT=127.0.0.1:3000（不要带 Environment= 前缀）"
+    break
+  fi
   printf "      ...等待中 %ss\n" "$((i*10))"
 done
 
@@ -209,6 +216,7 @@ if [ "$READY" != "1" ]; then
   cp -p "$RUN/backups/qdu-wasteland-linux.$STAMP" "$RUN/qdu-wasteland-linux"
   systemctl start "$SERVICE"
   echo "      已回滚。数据从未被改动，网站会恢复成更新前的样子。"
+  echo "      常见原因：systemd 里 PORT 还是 :3000 / 0.0.0.0:3000（必须是 127.0.0.1:3000）"
   echo "      排查日志: journalctl -u $SERVICE -n 100 --no-pager"
   trap - ERR
   exit 1

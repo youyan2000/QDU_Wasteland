@@ -17,11 +17,11 @@ func newHTTPServer(addr string, handler http.Handler) (*http.Server, error) {
 	}
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
-		return nil, fmt.Errorf("PORT 必须为回环 IP:端口: %w", err)
+		return nil, fmt.Errorf("PORT=%q 格式无效（应为 127.0.0.1:3000）: %w", addr, err)
 	}
 	ip := net.ParseIP(host)
 	if ip == nil || !ip.IsLoopback() {
-		return nil, fmt.Errorf("PORT 必须绑定回环 IP，例如 127.0.0.1:3000")
+		return nil, fmt.Errorf("PORT=%q 不是回环地址：请在 systemd 的 Environment/EnvironmentFile 里改成 127.0.0.1:3000（例如 PORT=127.0.0.1:3000），不要在变量前加 Environment= 前缀", addr)
 	}
 	portNumber, err := strconv.Atoi(port)
 	if err != nil || portNumber < 1 || portNumber > 65535 {
