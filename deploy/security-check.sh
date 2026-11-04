@@ -51,7 +51,8 @@ else
   ok "以专用用户运行: $UNIT_USER"
 fi
 # 只看真正的 Environment= 行；注释里提到变量名不算泄露（之前的版本会把这个当 FAIL）。
-if systemctl cat "$SERVICE" 2>/dev/null \
+UNIT_TEXT="$(systemctl cat "$SERVICE" 2>/dev/null || true)"
+if printf '%s\n' "$UNIT_TEXT" \
    | grep -E '^[[:space:]]*Environment=' \
    | grep -qE 'ADMIN_PASSWORD|MAIL_PASS|AI_API_KEY|SMTP_PASS'; then
   bad "unit 文件里出现明文凭据（systemctl cat 就能看到）"
@@ -99,7 +100,9 @@ echo
 echo "[5/7] nginx 版本号"
 if command -v nginx >/dev/null 2>&1; then
   # 只认真正生效的指令行；`# server_tokens off;` 这种注释不算。
-  if nginx -T 2>/dev/null | grep -qE '^[[:space:]]*server_tokens[[:space:]]+off;'; then
+  # 注意先取输出再 grep：pipefail 下 grep -q 提前退出会让 nginx 收到 SIGPIPE，误判为失败。
+  NGINX_CONF="$(nginx -T 2>/dev/null || true)"
+  if printf '%s\n' "$NGINX_CONF" | grep -qE '^[[:space:]]*server_tokens[[:space:]]+off;'; then
     ok "已配置 server_tokens off"
   else
     bad "未关闭 server_tokens（响应头会暴露 nginx 版本）"
@@ -119,7 +122,8 @@ else
 fi
 if ss -tln 2>/dev/null | grep -qE '0\.0\.0\.0:(80|443)|\[::\]:(80|443)'; then
   # 端口在听不等于对全网开放：检查 ufw 是否只放行了指定网段。
-  if ufw status 2>/dev/null | grep -E '^(80|443)/tcp' | grep -qv 'Anywhere'; then
+  UFW_TEXT="$(ufw status 2>/dev/null || true)"
+  if printf '%s\n' "$UFW_TEXT" | grep -E '^(80|443)/tcp' | grep -qv 'Anywhere'; then
     ok "80/443 仅对指定来源开放（ufw 已限制网段）"
   else
     warn "源站 80/443 对所有来源开放"
