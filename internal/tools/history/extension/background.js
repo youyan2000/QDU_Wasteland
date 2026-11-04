@@ -85,7 +85,8 @@ async function collectHistory(cfg, since) {
   await api.storage.local.set({ syncProgress: { phase: 'history', items: out.length, at: Date.now() } });
 
   // 2) 补旧部分：每轮一个 7 天窗口，游标往回推
-  let cursor = Number(saved.histCursor || 0) || Date.now();
+  // 首次补旧从「新增窗口的起点」继续，避免和上面重复取同一周。
+  let cursor = Number(saved.histCursor || 0) || since;
   let done = !!saved.histDone;
   if (!done) {
     const floor = Date.now() - HISTORY_FLOOR_MS;
