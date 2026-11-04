@@ -62,3 +62,6 @@ _cookies.txt
 _ft.*
 _shot*
 _shots*
+
+# 本地设计自查产物
+.taste-skill/
