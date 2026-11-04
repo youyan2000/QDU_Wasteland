@@ -250,6 +250,8 @@ async function collectBilibili(cfg, since) {
     }
     seenCursors.add(nextKey);
     cursor = { max: next.max || 0, view_at: next.view_at || 0, business: next.business || '' };
+    // 每页都落一次游标：万一后台被浏览器挂起，下次同步能从这里继续，不必从头翻。
+    await api.storage.local.set({ biliCursor: cursor, biliDone: false, biliVer: BILI_STATE_VERSION, syncHeartbeat: Date.now() });
     if (reachedOld) {
       reachedEnd = true;
       stopReason = 'reached-old';

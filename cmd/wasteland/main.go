@@ -8,9 +8,28 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"wasteland/internal/tools/history"
 )
+
+// logWriter 记录状态码与响应字节数，供同步接口的访问日志使用。
+type logWriter struct {
+	http.ResponseWriter
+	status int
+	bytes  int
+}
+
+func (w *logWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *logWriter) Write(b []byte) (int, error) {
+	n, err := w.ResponseWriter.Write(b)
+	w.bytes += n
+	return n, err
+}
 
 var db *DB
 
@@ -126,12 +145,18 @@ func main() {
 	// 每个 IP 每小时最多 120 次同步请求，避免令牌泄露后被当成上传通道刷。
 	syncHandler := history.SyncHandler(authStore.db, 8<<20)
 	http.HandleFunc("/api/history/sync", func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		lw := &logWriter{ResponseWriter: w, status: http.StatusOK}
+		defer func() {
+			// 同步是排查"扩展没反应"的关键路径，必须留下可检索的访问日志。
+			log.Printf("history/sync %s %d %dB %s", r.Method, lw.status, lw.bytes, time.Since(started).Round(time.Millisecond))
+		}()
 		if ok, _ := rateLimitOK(fpKey(r)+"|sync", 120); !ok {
 			w.Header().Set("Retry-After", "600")
-			apiErr(w, 429, "同步过于频繁，请稍后再试")
+			apiErr(lw, 429, "同步过于频繁，请稍后再试")
 			return
 		}
-		syncHandler(w, r)
+		syncHandler(lw, r)
 	})
 
 	// 课程 API 路由

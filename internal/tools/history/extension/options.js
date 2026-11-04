@@ -102,7 +102,8 @@ async function runSync(resetFirst) {
   const timer = setInterval(async () => {
     const s = await api.storage.local.get({ syncProgress: null });
     const secs = Math.round((Date.now() - started) / 1000);
-    status.textContent = phaseText(s.syncProgress) + '（' + secs + 's）';
+    const stale = s.syncProgress && s.syncProgress.at && Date.now() - s.syncProgress.at > 45000;
+    status.textContent = phaseText(s.syncProgress) + '（' + secs + 's）' + (stale ? ' — 后台超过 45 秒无进度，可能被浏览器挂起' : '');
     if (secs > 420) {
       status.className = 'status err';
       status.textContent = '同步超过 7 分钟仍未返回：打开扩展的 Service worker 控制台查看卡在哪一步。';
