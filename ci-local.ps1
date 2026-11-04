@@ -1,4 +1,4 @@
-﻿# ci-local.ps1 — 本地 CI 测试（等价于 .github/workflows/ci.yml 的云端流程）
+# ci-local.ps1 — 本地 CI 测试（等价于 .github/workflows/ci.yml 的云端流程）
 # 用法:  powershell -ExecutionPolicy Bypass -File ci-local.ps1
 # 检查项: go vet → go test → 交叉编译 Linux 二进制 → public/ 前端完整性
 # 全部通过输出 [CI] ALL PASS，任一失败以非零退出码结束。
@@ -28,6 +28,8 @@ Step "环境检查" {
     if ($LASTEXITCODE -ne 0) { Write-Host "未安装 Go！" -ForegroundColor Red }
 }
 
+# 0.5 仓库卫生（截图/大文件/凭据误入库）
+Step "仓库卫生检查" { go run ./cmd/repocheck }
 # 1. 静态检查
 Step "go vet (静态检查)" { go vet ./... }
 

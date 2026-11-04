@@ -1,0 +1,11 @@
+#!/bin/sh
+# pre-commit — 提交前拦住截图/大文件/凭据/运行时目录。
+# 安装：git config core.hooksPath .githooks
+# 绕过：git commit --no-verify（不推荐；云端 CI 仍会检查）
+
+if ! command -v go >/dev/null 2>&1; then
+  echo "[pre-commit] 未找到 go，跳过仓库卫生检查（CI 仍会拦截）" >&2
+  exit 0
+fi
+
+exec go run ./cmd/repocheck --staged

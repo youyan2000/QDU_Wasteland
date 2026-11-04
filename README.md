@@ -49,6 +49,25 @@ Wasteland/
 生产入口推荐 `Cloudflare Tunnel → loopback Nginx → 应用`，应用默认绑定 `127.0.0.1:3000`。Tunnel 不等于 VPN 或物理隔离；上线前须审阅 [DEPLOY-GUIDE.md](DEPLOY-GUIDE.md) 和 `deploy/` 模板，尤其是真实 IP 信任边界、防火墙、日志轮转及固定 commit 的显式部署批准。模板不会自动改变现有公网服务。
 ---
 
+
+## 🧹 仓库卫生检查（防误提交）
+
+截图、构建产物、凭据文件不允许入库。仓库自带两层拦截：
+
+1. **提交前（本地）**：启用一次钩子后，`git commit` 会自动检查暂存文件
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/install-git-hooks.ps1
+```
+
+2. **推送后（云端 CI）**：`.github/workflows/ci.yml` 会跑同一套规则（`go run ./cmd/repocheck`），
+   即使本地用 `--no-verify` 绕过，云端也会失败。
+
+规则：单文件 ≤2MB；图片只允许放在 `public/` 或 `internal/tools/static/covers/`；
+`.taste-skill/`、`.cache/`、`backups/`、`dist/`、`VPN/` 等目录直接拒绝；
+`.env`、`*.key`、`*.pem`、`*credentials*` 一律拒绝。
+
+临时绕过（不推荐）：`git commit --no-verify`。
 ## 🚀 如何运行
 
 ```bash
