@@ -14,11 +14,13 @@
   var statusEl = document.getElementById('status');
   var errEl = document.getElementById('err');
 
-  var files = [];       // File 对象
+  var files = [];       // File 对象（提交给服务端）
   var session = '';
   var outputs = [];     // {originalName, newName}
   var ready = true;
-  var inputs = [];
+  var inputs = [];      // 服务端识别出的文件清单（zip 会被展开）
+  var display = [];     // 左侧列表实际展示的条目 {name, software}
+  var inspecting = false;
 
   drop.onclick = function () { input.click(); };
   input.onchange = function () { addFiles(input.files); };
@@ -32,20 +34,48 @@
 
   function addFiles(list) {
     for (var i = 0; i < list.length; i++) files.push(list[i]);
+    display = files.map(function (f) { return { name: f.name, software: '' }; });
     renderInputs();
+    inspect();
+  }
+
+  // 拖进来的是 zip 时，先让服务端展开，左侧直接显示里面的 Gerber 文件（与原版一致）。
+  // 展开失败就退回显示原始文件名，不阻塞后续处理。
+  function inspect() {
+    var hasZip = files.some(function (f) { return /\.zip$/i.test(f.name); });
+    if (!hasZip || inspecting) return;
+    inspecting = true;
+    var fd = new FormData();
+    files.forEach(function (f) { fd.append('files', f, f.name); });
+    fetch('/tool/nextjlc/api/inspect', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.error) throw new Error(d.error);
+        if (d && (d.inputs || []).length) {
+          inputs = d.inputs;
+          display = d.inputs;
+          renderInputs();
+          renderBadges();
+        }
+      })
+      .catch(function (e) {
+        // 展开失败只提示，不影响用户继续手选文件后点 Process
+        if (e && e.message && e.message !== '没有收到文件') errEl.textContent = e.message;
+      })
+      .then(function () { inspecting = false; });
   }
 
   function renderInputs() {
     inputList.innerHTML = '';
-    inputEmpty.style.display = files.length ? 'none' : 'flex';
-    files.forEach(function (f) {
+    inputEmpty.style.display = display.length ? 'none' : 'flex';
+    display.forEach(function (f) {
       var li = document.createElement('li');
-      li.innerHTML = '<span>' + esc(f.name) + '</span><button title="复制到导出列表">&#8594;</button>';
+      var label = esc(f.name);
+      if (f.software && f.software !== 'None') label += ' <span class="nw-sw">' + esc(f.software) + '</span>';
+      li.innerHTML = '<span>' + label + '</span><button title="复制到导出列表">&#8594;</button>';
       li.querySelector('button').onclick = function () { copyFile(f.name); };
       inputList.appendChild(li);
     });
-    // 徽章由服务端识别结果渲染（见 renderBadges），这里先清空
-    badges.innerHTML = '';
     processBtn.disabled = files.length === 0 || !ready;
   }
 
@@ -94,6 +124,8 @@
         }
         session = res.d.session;
         inputs = res.d.inputs || [];
+        display = inputs;
+        renderInputs();
         outputs = res.d.files || [];
         renderBadges();
         renderOutputs();

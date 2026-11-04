@@ -108,6 +108,7 @@ func getSession(id string) *session {
 
 func (tool) Register(mux *http.ServeMux, _ tools.Env) {
 	mux.HandleFunc("/api/process", handleProcess)
+	mux.HandleFunc("/api/inspect", handleInspect)
 	mux.HandleFunc("/api/copy", handleCopy)
 	mux.HandleFunc("/api/remove", handleRemove)
 	mux.HandleFunc("/api/download", handleDownload)
@@ -129,12 +130,12 @@ type inputDTO struct {
 type processResponse struct {
 	Session    string     `json:"session"`
 	Inputs     []inputDTO `json:"inputs"`
-	Files      []fileDTO `json:"files"`
-	PrimaryEDA string    `json:"primaryEda"`
-	Layers     uint32    `json:"layers"`
-	Errors     []string  `json:"errors"`
-	Warnings   []string  `json:"warnings"`
-	ZipName    string    `json:"zipName"`
+	Files      []fileDTO  `json:"files"`
+	PrimaryEDA string     `json:"primaryEda"`
+	Layers     uint32     `json:"layers"`
+	Errors     []string   `json:"errors"`
+	Warnings   []string   `json:"warnings"`
+	ZipName    string     `json:"zipName"`
 }
 
 func toDTO(s *session) []fileDTO {
@@ -147,18 +148,12 @@ func toDTO(s *session) []fileDTO {
 
 // ---------- 处理 ----------
 
-func handleProcess(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		writeErr(w, 405, "只支持 POST")
-		return
-	}
+// collectAndIdentify 把 multipart 上传展开成文件列表（zip 会自动解包），并逐个识别软件。
+// /api/process 与 /api/inspect 共用，保证"拖进来看到什么"和"实际处理什么"完全一致。
+func collectAndIdentify(r *http.Request) ([]uploaded, map[string][]byte, map[string]string, string, error) {
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		writeErr(w, 400, "上传内容过大或格式错误")
-		return
+		return nil, nil, nil, "", fmt.Errorf("上传内容过大或格式错误")
 	}
-	defer func() { _ = r.MultipartForm.RemoveAll() }()
-
 	var files []uploaded
 	zipBase := ""
 	var total int64
@@ -166,19 +161,16 @@ func handleProcess(w http.ResponseWriter, r *http.Request) {
 		for _, fh := range fhs {
 			src, err := fh.Open()
 			if err != nil {
-				writeErr(w, 400, "读取上传文件失败")
-				return
+				return nil, nil, nil, "", fmt.Errorf("读取上传文件失败")
 			}
 			data, err := io.ReadAll(io.LimitReader(src, maxUploadBytes))
 			_ = src.Close()
 			if err != nil {
-				writeErr(w, 400, "读取上传文件失败")
-				return
+				return nil, nil, nil, "", fmt.Errorf("读取上传文件失败")
 			}
 			total += int64(len(data))
 			if total > 2*maxUploadBytes {
-				writeErr(w, 400, "本次上传总量过大，请分批")
-				return
+				return nil, nil, nil, "", fmt.Errorf("本次上传总量过大，请分批")
 			}
 			if zipBase == "" && strings.HasSuffix(strings.ToLower(fh.Filename), ".zip") {
 				zipBase = strings.TrimSuffix(fh.Filename, ".zip")
@@ -186,18 +178,15 @@ func handleProcess(w http.ResponseWriter, r *http.Request) {
 			}
 			items, err := collectUpload(fh.Filename, data)
 			if err != nil {
-				writeErr(w, 400, err.Error())
-				return
+				return nil, nil, nil, "", err
 			}
 			files = append(files, items...)
 		}
 	}
 	if len(files) == 0 {
-		writeErr(w, 400, "没有收到文件")
-		return
+		return nil, nil, nil, "", fmt.Errorf("没有收到文件")
 	}
 
-	// 逐文件识别软件
 	raw := map[string][]byte{}
 	software := map[string]string{}
 	for _, f := range files {
@@ -213,6 +202,55 @@ func handleProcess(w http.ResponseWriter, r *http.Request) {
 		}
 		software[f.Name] = sw
 	}
+	return files, raw, software, zipBase, nil
+}
+
+// handleInspect 只展开与识别，不做重命名打包；供前端在"拖入 zip"后立即显示文件清单。
+func handleInspect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		writeErr(w, 405, "只支持 POST")
+		return
+	}
+	files, _, software, zipBase, err := collectAndIdentify(r)
+	if err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
+
+	names := make([]string, 0, len(files))
+	for _, f := range files {
+		names = append(names, f.Name)
+	}
+	ordered := port.SortGerberFiles(names)
+	inputs := make([]inputDTO, 0, len(ordered))
+	for _, name := range ordered {
+		inputs = append(inputs, inputDTO{Name: name, Software: software[name]})
+	}
+	writeJSON(w, 200, map[string]any{"inputs": inputs, "zipBase": zipBase})
+}
+
+func handleProcess(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		writeErr(w, 405, "只支持 POST")
+		return
+	}
+	files, raw, software, zipBase, err := collectAndIdentify(r)
+	if err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
 
 	// primaryEda = 排序后第一个文件的软件（与 workflow.tsx 一致）
 	names := make([]string, 0, len(files))
