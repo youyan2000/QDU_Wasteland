@@ -14,6 +14,10 @@ const (
 	maxUploadBytes = 64 << 20
 	maxZipEntries  = 400
 	maxEntryBytes  = 32 << 20
+	// 解压总量预算：400 × 32MB 的上限组合能到 12GB，直接 OOM。
+	// 这里限制单次解压写入的总字节数和压缩比，挡住 zip 炸弹。
+	maxZipTotalBytes = 128 << 20
+	maxZipRatio      = 100
 )
 
 // uploaded 是一个待处理的文件。
@@ -100,14 +104,38 @@ func expandZip(data []byte) ([]uploaded, error) {
 	}
 
 	out := make([]uploaded, 0, len(picked))
+	var totalRead int64
 	for _, e := range picked {
 		rc, err := e.file.Open()
 		if err != nil {
 			continue
 		}
-		content, err := io.ReadAll(io.LimitReader(rc, maxEntryBytes))
+		// 每条再套一层预算：剩余额度不足时直接拒绝，避免一次性读爆内存。
+		remaining := int64(maxZipTotalBytes) - totalRead
+		if remaining <= 0 {
+			return nil, errors.New("压缩包解压后体积超过 128MB 上限")
+		}
+		limit := int64(maxEntryBytes)
+		if remaining < limit {
+			limit = remaining
+		}
+		content, err := io.ReadAll(io.LimitReader(rc, limit))
 		_ = rc.Close()
-		if err != nil || len(content) == 0 {
+		if err != nil {
+			return nil, errors.New("压缩包内容读取失败")
+		}
+		if int64(len(content)) > maxEntryBytes {
+			return nil, errors.New("压缩包里有单个文件超过 32MB")
+		}
+		// 压缩比异常（典型 zip 炸弹）：压缩后很小、解开却很大。
+		if e.file.CompressedSize64 > 0 && int64(len(content))/int64(max(1, int(e.file.CompressedSize64))) > maxZipRatio {
+			return nil, errors.New("压缩比异常，已拒绝该压缩包")
+		}
+		totalRead += int64(len(content))
+		if totalRead > maxZipTotalBytes {
+			return nil, errors.New("压缩包解压后体积超过 128MB 上限")
+		}
+		if len(content) == 0 {
 			continue
 		}
 		out = append(out, uploaded{Name: path.Base(e.name), Data: content})

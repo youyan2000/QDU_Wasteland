@@ -1573,6 +1573,16 @@
       .append(node("p", "", "装一次扩展，之后每 30 分钟自动同步浏览器历史和书签，不用再手动导入。"));
     panel.append(head);
 
+    // 明确告知会上传什么，并链接隐私政策（合规要求，也让用户有知情选择）。
+    const notice = node(
+      "p",
+      "section-help",
+      "开启后会把浏览器历史、B站 观看记录和书签同步到你的账号，只有你登录后可见；随时可以在下面撤销配对或关闭扩展。详见 ",
+    );
+    notice.append(makeLink("/privacy.html", "隐私政策", ""));
+    notice.append(document.createTextNode("。"));
+    panel.append(notice);
+
     const steps = node("ol", "extension-steps");
     steps.append(
       node("li", "", "按你的浏览器下载对应的扩展包，并解压到一个固定文件夹（别删，删了扩展就失效）。"),

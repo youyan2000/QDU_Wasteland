@@ -106,9 +106,24 @@ func getSession(id string) *session {
 
 // ---------- 路由 ----------
 
+// processSlots 限制同时进行的解包/转换任务数：NeXTJLC 是公开接口，
+// 一次 zip 炸弹就足以把 2GB 内存的机器打爆，必须设闸门。
+var processSlots = make(chan struct{}, 2)
+
+func withProcessSlot(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case processSlots <- struct{}{}:
+			defer func() { <-processSlots }()
+			h(w, r)
+		default:
+			writeErr(w, 503, "当前处理任务较多，请稍后再试")
+		}
+	}
+}
 func (tool) Register(mux *http.ServeMux, _ tools.Env) {
-	mux.HandleFunc("/api/process", handleProcess)
-	mux.HandleFunc("/api/inspect", handleInspect)
+	mux.HandleFunc("/api/process", withProcessSlot(handleProcess))
+	mux.HandleFunc("/api/inspect", withProcessSlot(handleInspect))
 	mux.HandleFunc("/api/copy", handleCopy)
 	mux.HandleFunc("/api/remove", handleRemove)
 	mux.HandleFunc("/api/download", handleDownload)
