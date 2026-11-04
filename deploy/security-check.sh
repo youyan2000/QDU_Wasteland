@@ -50,11 +50,14 @@ if [ -z "$UNIT_USER" ] || [ "$UNIT_USER" = "root" ]; then
 else
   ok "以专用用户运行: $UNIT_USER"
 fi
-if systemctl cat "$SERVICE" 2>/dev/null | grep -q 'ADMIN_PASSWORD\|MAIL_PASS\|AI_API_KEY'; then
+# 只看真正的 Environment= 行；注释里提到变量名不算泄露（之前的版本会把这个当 FAIL）。
+if systemctl cat "$SERVICE" 2>/dev/null \
+   | grep -E '^[[:space:]]*Environment=' \
+   | grep -qE 'ADMIN_PASSWORD|MAIL_PASS|AI_API_KEY|SMTP_PASS'; then
   bad "unit 文件里出现明文凭据（systemctl cat 就能看到）"
   echo "        修复: 把凭据移到 EnvironmentFile（600 权限），unit 里只留 EnvironmentFile="
 else
-  ok "unit 文件里没有明文凭据"
+  ok "unit 文件里没有明文凭据（EnvironmentFile 里的不算）"
 fi
 echo
 
@@ -95,7 +98,8 @@ echo
 
 echo "[5/7] nginx 版本号"
 if command -v nginx >/dev/null 2>&1; then
-  if nginx -T 2>/dev/null | grep -q 'server_tokens off'; then
+  # 只认真正生效的指令行；`# server_tokens off;` 这种注释不算。
+  if nginx -T 2>/dev/null | grep -qE '^[[:space:]]*server_tokens[[:space:]]+off;'; then
     ok "已配置 server_tokens off"
   else
     bad "未关闭 server_tokens（响应头会暴露 nginx 版本）"
@@ -114,8 +118,13 @@ else
   bad "应用没有监听 127.0.0.1:3000（检查 PORT 配置）"
 fi
 if ss -tln 2>/dev/null | grep -qE '0\.0\.0\.0:(80|443)|\[::\]:(80|443)'; then
-  warn "源站 80/443 对公网开放（若走 Cloudflare Tunnel，应关闭）"
-  echo "        修复见 docs/SECURITY-ACTIONS-2026-11-05.md 第 6 节"
+  # 端口在听不等于对全网开放：检查 ufw 是否只放行了指定网段。
+  if ufw status 2>/dev/null | grep -E '^(80|443)/tcp' | grep -qv 'Anywhere'; then
+    ok "80/443 仅对指定来源开放（ufw 已限制网段）"
+  else
+    warn "源站 80/443 对所有来源开放"
+    echo "        修复见 docs/SECURITY-ACTIONS-2026-11-05.md 第 6 节"
+  fi
 else
   ok "源站 80/443 未对公网开放"
 fi
