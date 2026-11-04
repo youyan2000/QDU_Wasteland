@@ -12,29 +12,175 @@
   <link id="themesCss" rel="stylesheet" href="/themes.css">
   <link rel="stylesheet" href="/tool/_assets/tool-center.css">
   <script defer src="/icons.js"></script>
+  <script defer src="/themeboot.js"></script>
   <script defer src="/nav.js"></script>
   <style>
-    .nw-grid{display:grid;grid-template-columns:1fr;gap:28px}
-    @media(min-width:900px){.nw-grid{grid-template-columns:1fr 1fr}}
-    .nw-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px}
-    .nw-head h2{font-size:16px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .badge{font-size:11px;padding:1px 8px;border-radius:999px;background:#eef2ff;color:#3730a3}
-    .nw-btn{padding:4px 14px;background:var(--ink,#16181d);color:#fff;font-size:13px;font-weight:600;border:0;border-radius:6px;cursor:pointer}
-    .nw-btn[disabled]{background:#c9ced6;cursor:not-allowed}
-    .nw-box{border:2px dashed #d1d5db;border-radius:10px;height:380px;padding:14px;display:flex;flex-direction:column;background:#fff}
-    .nw-box ul{flex:1;overflow-y:auto;margin:0;padding:0;list-style:none}
-    .nw-box li{display:flex;justify-content:space-between;align-items:center;padding:2px 8px;border-radius:4px}
-    .nw-box li:hover{background:#f6f7f9}
-    .nw-box li span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .nw-box li button{opacity:0;border:0;background:none;color:#6b7280;cursor:pointer;font-size:14px;padding:0 4px}
-    .nw-box li:hover button{opacity:1}
-    .nw-box li button:hover{color:#b91c1c}
-    .nw-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:13px;text-align:center}
-    .nw-drop{margin-top:26px}
-    .nw-bar{height:6px;background:#eef0f3;border-radius:999px;overflow:hidden;margin:14px 0 6px}
-    .nw-bar>i{display:block;height:100%;width:0;background:var(--ink,#16181d);transition:width .18s}
-    .nw-meta{font-size:13px;color:#6b7280;margin:0}
-    .nw-err{color:#b91c1c;font-size:13px;margin-top:10px;white-space:pre-wrap}`n    .nw-sw{font-size:10px;font-weight:600;color:#6b7280;margin-left:6px;border:1px solid #e5e7eb;border-radius:999px;padding:0 6px}
+    /* 全部颜色走站点主题变量：默认 / 暗黑 / 赛博 / 简约 都能自动适配 */
+    .nw-drop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 44px 24px;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-lg, 12px);
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      text-align: center;
+      transition: border-color .15s ease, background-color .15s ease;
+    }
+    .nw-drop:hover,
+    .nw-drop.is-over {
+      border-color: var(--magenta);
+      background: color-mix(in srgb, var(--magenta) 5%, var(--surface));
+    }
+    .nw-drop strong { font-size: 1rem; font-weight: 600; }
+    .nw-drop span { font-size: .85rem; color: var(--muted); }
+    .nw-drop .nw-hint { font-size: .78rem; color: var(--muted); opacity: .85; }
+
+    .nw-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-top: 22px;
+    }
+    @media (min-width: 900px) { .nw-grid { grid-template-columns: 1fr 1fr; } }
+
+    .nw-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 340px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md, 10px);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .nw-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nw-head h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0;
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .nw-count { color: var(--muted); font-weight: 400; font-size: .8rem; }
+    .badge {
+      font-size: 11px;
+      line-height: 1.6;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--magenta-soft);
+      color: var(--magenta-deep);
+    }
+    .nw-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--magenta);
+      border-radius: 8px;
+      background: var(--magenta);
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .nw-btn:hover:not([disabled]) { background: var(--magenta-deep); }
+    .nw-btn[disabled] {
+      background: var(--track);
+      border-color: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .nw-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 6px 6px 10px;
+      min-height: 0;
+    }
+    .nw-box ul { flex: 1; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+    .nw-box li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      color: var(--ink);
+      font-size: .85rem;
+    }
+    .nw-box li + li { border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+    .nw-box li:hover { background: var(--track); }
+    .nw-box li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .nw-box li button {
+      flex: none;
+      border: 0;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      opacity: 0;
+      transition: opacity .12s ease, color .12s ease;
+    }
+    .nw-box li:hover button,
+    .nw-box li button:focus-visible { opacity: 1; }
+    .nw-box li button:hover { color: var(--magenta); }
+    .nw-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: .85rem;
+      text-align: center;
+    }
+    .nw-sw {
+      margin-left: 6px;
+      padding: 0 6px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .nw-bar {
+      height: 4px;
+      margin: 18px 0 8px;
+      border-radius: 999px;
+      background: var(--track);
+      overflow: hidden;
+    }
+    .nw-bar > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--magenta);
+      transition: width .18s ease;
+    }
+    .nw-meta { margin: 0; font-size: .82rem; color: var(--muted); }
+    .nw-err {
+      margin-top: 10px;
+      font-size: .82rem;
+      color: var(--error, #c44536);
+      white-space: pre-wrap;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .nw-drop, .nw-btn, .nw-bar > i, .nw-box li button { transition: none; }
+    }
   </style>
 </head>
 <body class="tools-body">
@@ -47,16 +193,17 @@
       <h1>NeXTJLC</h1>
     </header>
 
-    <div id="drop" class="nw-drop" style="border:2px dashed #d1d5db;border-radius:12px;padding:44px 24px;text-align:center;cursor:pointer;background:#fff">
-      <strong style="display:block;font-size:17px;margin-bottom:6px">拖入 zip 或选择 Gerber 文件</strong>
-      <span style="font-size:13px;color:#6b7280">支持 Altium / KiCad / EasyEDA 导出的 Gerber 与钻孔</span>
-      <input id="file" type="file" multiple hidden style="display:none">
+    <div id="drop" class="nw-drop">
+      <strong>拖入 zip 或选择 Gerber 文件</strong>
+      <span>支持 Altium / KiCad / EasyEDA 导出的 Gerber 与钻孔</span>
+      <span class="nw-hint">zip 会自动解包并列出其中的文件，也可以直接点这里选择</span>
+      <input id="file" type="file" multiple hidden>
     </div>
 
-    <div class="nw-grid" style="margin-top:26px">
-      <section>
+    <div class="nw-grid">
+      <section class="nw-panel">
         <div class="nw-head">
-          <h2>&#128269; Gerber Files<span id="badges"></span></h2>
+          <h2>Gerber Files <span class="nw-count" id="inputCount"></span><span id="badges"></span></h2>
           <button class="nw-btn" id="processBtn" disabled>Process</button>
         </div>
         <div class="nw-box">
@@ -65,9 +212,9 @@
         </div>
       </section>
 
-      <section>
+      <section class="nw-panel">
         <div class="nw-head">
-          <h2>&#128230; Export Preview</h2>
+          <h2>Export Preview <span class="nw-count" id="outputCount"></span></h2>
           <button class="nw-btn" id="downloadBtn" disabled>Download</button>
         </div>
         <div class="nw-box">

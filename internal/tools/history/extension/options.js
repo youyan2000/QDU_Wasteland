@@ -42,8 +42,11 @@ async function load() {
         d.cursorFallback ? `，${d.cursorFallback} 页用兜底游标` : '',
         d.cursorMissing ? `，${d.cursorMissing} 页没有 cursor` : '',
       ].join('');
+      const span = d.firstTs && d.lastTs
+        ? `，时间范围 ${new Date(d.lastTs).toLocaleDateString('zh-CN')} ~ ${new Date(d.firstTs).toLocaleDateString('zh-CN')}`
+        : '';
       lines.push(
-        `B站诊断：请求 ${d.pages || 0} 页，接口共返回 ${d.raw || 0} 条${extra}，code=${d.code}`,
+        `B站诊断：请求 ${d.pages || 0} 页，接口返回 ${d.raw || 0} 条，入库 ${d.unique || 0} 条${extra}${span}，停止原因 ${d.stopReason || '未知'}，code=${d.code}`,
       );
     }
   }

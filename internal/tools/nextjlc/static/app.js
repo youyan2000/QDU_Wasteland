@@ -13,6 +13,8 @@
   var barFill = document.getElementById('barFill');
   var statusEl = document.getElementById('status');
   var errEl = document.getElementById('err');
+  var inputCount = document.getElementById('inputCount');
+  var outputCount = document.getElementById('outputCount');
 
   var files = [];       // File 对象（提交给服务端）
   var session = '';
@@ -25,10 +27,14 @@
   drop.onclick = function () { input.click(); };
   input.onchange = function () { addFiles(input.files); };
   ['dragenter', 'dragover'].forEach(function (t) {
-    drop.addEventListener(t, function (e) { e.preventDefault(); });
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('is-over'); });
+  });
+  ['dragleave', 'dragend'].forEach(function (t) {
+    drop.addEventListener(t, function () { drop.classList.remove('is-over'); });
   });
   drop.addEventListener('drop', function (e) {
     e.preventDefault();
+    drop.classList.remove('is-over');
     addFiles((e.dataTransfer && e.dataTransfer.files) || []);
   });
 
@@ -76,6 +82,7 @@
       li.querySelector('button').onclick = function () { copyFile(f.name); };
       inputList.appendChild(li);
     });
+    if (inputCount) inputCount.textContent = files.length ? '（' + display.length + ' 个文件）' : '';
     processBtn.disabled = files.length === 0 || !ready;
   }
 
@@ -99,6 +106,7 @@
       li.querySelector('button').onclick = function () { removeFile(o.newName); };
       outputList.appendChild(li);
     });
+    if (outputCount) outputCount.textContent = outputs.length ? '（' + outputs.length + ' 个）' : '';
     downloadBtn.disabled = outputs.length === 0;
   }
 

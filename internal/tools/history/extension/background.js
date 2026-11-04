@@ -94,18 +94,30 @@ async function collectBookmarks(cfg) {
 
 // B站历史：用浏览器自身的登录 Cookie 调官方历史接口（可选，默认关闭）。
 // B站历史：用浏览器登录态调官方历史接口，按 cursor 翻页。
-// 采用"持久化游标 + 渐进补全"：每次最多翻 40 页，没翻到底就记住位置，
-// 下次同步接着往更早翻，直到接口返回没有更多；补齐后才切成按时间的增量。
+// 采用"持久化游标 + 渐进补全"：没翻到底就记住位置，下次接着往更早翻。
+// 注意：接口不稳时可能出现"返回条数很少 / 游标不前进"，这里都记录 stopReason 便于排查。
+const BILI_STATE_VERSION = 3;
+
 async function collectBilibili(cfg, since) {
-  const saved = await api.storage.local.get({ biliCursor: null, biliDone: false });
-  const backfill = !saved.biliDone; // 还没补完历史
-  const maxPages = 40;
-  let cursor = saved.biliCursor || { max: 0, view_at: 0, business: '' };
+  const saved = await api.storage.local.get({ biliCursor: null, biliDone: false, biliVer: 0 });
+  // 扩展升级后，旧的"已补全"状态可能来自有 bug 的版本：版本不匹配就重新补一次。
+  const staleState = Number(saved.biliVer || 0) !== BILI_STATE_VERSION;
+  const backfill = staleState || !saved.biliDone;
+  const startCursor = staleState ? { max: 0, view_at: 0, business: '' } : saved.biliCursor || { max: 0, view_at: 0, business: '' };
+  if (staleState) {
+    await api.storage.local.set({ biliVer: BILI_STATE_VERSION, biliCursor: null, biliDone: false });
+  }
+  const maxPages = backfill ? 60 : 10;
+  let cursor = startCursor;
   let pages = 0;
   let reachedEnd = false;
+  let stopReason = 'max-pages';
   let uid = 0;
   const out = [];
-  const debug = { pages: 0, raw: 0, cursorMissing: 0, code: 0, lastCursor: null };
+  const debug = { pages: 0, raw: 0, unique: 0, cursorMissing: 0, cursorFallback: 0, cursorStuck: 0, cursorRepeat: 0, code: 0, stopReason: '', firstTs: 0, lastTs: 0 };
+  const seenCursors = new Set();
+  const cursorKey = (c) => `${c.max || 0}:${c.view_at || 0}:${c.business || ''}`;
+  seenCursors.add(cursorKey(cursor));
 
   while (pages < maxPages) {
     const url =
@@ -127,6 +139,7 @@ async function collectBilibili(cfg, since) {
     if (!data.cursor) debug.cursorMissing += 1;
     if (!list.length) {
       reachedEnd = true;
+      stopReason = 'empty';
       break;
     }
 
@@ -137,6 +150,8 @@ async function collectBilibili(cfg, since) {
       const oid = Number(h.oid || 0);
       const viewAt = Number(it.view_at || 0) * 1000;
       if (!oid || !viewAt) continue;
+      if (!debug.firstTs || viewAt > debug.firstTs) debug.firstTs = viewAt;
+      if (!debug.lastTs || viewAt < debug.lastTs) debug.lastTs = viewAt;
       // 补历史阶段不看时间窗口；补齐后只处理增量，遇到更早的就收工。
       if (!backfill && since && viewAt < since) {
         reachedOld = true;
@@ -162,8 +177,8 @@ async function collectBilibili(cfg, since) {
     }
 
     pages += 1;
-    // 正常情况用接口返回的 cursor；个别情况下接口不返回 cursor，
-    // 就用最后一条记录的 view_at 当游标继续翻（B站 的两套参数都接受）。
+
+    // 正常情况用接口返回的 cursor；没返回或不前进时，用最后一条的 view_at 兜底。
     let next = data.cursor;
     if (!next || (!next.max && !next.view_at)) {
       const last = list[list.length - 1];
@@ -173,36 +188,63 @@ async function collectBilibili(cfg, since) {
           view_at: Number(last.view_at),
           business: (last.history && last.history.business) || 'archive',
         };
-        debug.cursorFallback = (debug.cursorFallback || 0) + 1;
+        debug.cursorFallback += 1;
+      }
+    }
+
+    const sameAsSent =
+      next && Number(next.max) === Number(cursor.max) && Number(next.view_at) === Number(cursor.view_at);
+    if (sameAsSent) {
+      // 游标原地踏步：再用本页最后一条的时间兜底一次，仍不前进才判定到底。
+      const last = list[list.length - 1];
+      if (last && Number(last.view_at) && Number(last.view_at) !== Number(cursor.view_at)) {
+        next = {
+          max: Number(last.view_at),
+          view_at: Number(last.view_at),
+          business: (last.history && last.history.business) || 'archive',
+        };
+        debug.cursorFallback += 1;
+      } else {
+        debug.cursorStuck += 1;
+        reachedEnd = true;
+        stopReason = 'cursor-stuck';
+        break;
       }
     }
     if (!next || (!next.max && !next.view_at)) {
       reachedEnd = true;
+      stopReason = 'no-cursor';
       break;
     }
-    const advanced = Number(next.max) !== Number(cursor.max) || Number(next.view_at) !== Number(cursor.view_at);
-    if (!advanced) {
-      // 游标没有前进，避免死循环。
+
+    const nextKey = cursorKey({ max: next.max || 0, view_at: next.view_at || 0, business: next.business || '' });
+    if (seenCursors.has(nextKey)) {
+      // 游标在几个值之间来回跳（接口异常）：立即停止，避免无限翻页。
+      debug.cursorRepeat += 1;
       reachedEnd = true;
+      stopReason = 'cursor-repeat';
       break;
     }
+    seenCursors.add(nextKey);
     cursor = { max: next.max || 0, view_at: next.view_at || 0, business: next.business || '' };
     if (reachedOld) {
       reachedEnd = true;
+      stopReason = 'reached-old';
       break;
     }
     await new Promise((r) => setTimeout(r, 260));
   }
 
-  if (reachedEnd) {
-    await api.storage.local.set({ biliDone: true, biliCursor: null });
-  } else {
-    await api.storage.local.set({ biliDone: false, biliCursor: cursor });
-  }
   debug.pages = pages;
+  debug.unique = new Set(out.map((x) => x.id)).size;
+  debug.stopReason = stopReason;
+  if (reachedEnd) {
+    await api.storage.local.set({ biliDone: true, biliCursor: null, biliVer: BILI_STATE_VERSION });
+  } else {
+    await api.storage.local.set({ biliDone: false, biliCursor: cursor, biliVer: BILI_STATE_VERSION });
+  }
   return { items: out, pages, done: reachedEnd, backfill, debug };
 }
-
 async function sync(trigger) {
   const cfg = await config();
   if (!cfg.enabled) return { ok: false, skipped: 'disabled' };
