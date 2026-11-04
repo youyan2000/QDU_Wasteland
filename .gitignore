@@ -3,6 +3,7 @@
 *.exe~
 qdu-wasteland-linux
 qdu-wasteland-linux~
+qdu-wasteland-linux.new
 *.test
 *.out
 dist/

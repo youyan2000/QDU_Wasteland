@@ -102,7 +102,9 @@ if ! git merge-base --is-ancestor "$APPROVED_COMMIT" "origin/$BRANCH" 2>/dev/nul
   exit 1
 fi
 if [ -n "$(git status --porcelain)" ]; then
-  echo "✗ 源码工作区有未提交/未跟踪内容；为避免覆盖，拒绝更新。请人工保留并清理后重试。"
+  # 上一次构建中断会留下这个中间产物，它不影响源码，先清掉再判断。
+rm -f "$SRC/qdu-wasteland-linux.new" 2>/dev/null || true
+echo "✗ 源码工作区有未提交/未跟踪内容；为避免覆盖，拒绝更新。请人工保留并清理后重试。"
   exit 1
 fi
 BEFORE="$(git rev-parse --short HEAD)"
