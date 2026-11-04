@@ -47,29 +47,62 @@ function endpoint(server) {
   return server.replace(/\/+$/, '') + '/api/history/sync';
 }
 
-async function collectHistory(cfg, since) {
-  const items = await api.history.search({
-    text: '',
-    startTime: since,
-    maxResults: 5000,
+// 浏览器历史分两种量：新增（上次同步之后）和补旧（按 7 天一个时间窗往回翻）。
+// 补旧每轮只取一个窗口，把"首次同步很久"摊到后面几次里，避免一次跑几分钟被浏览器挂起。
+const HISTORY_WINDOW_MS = 7 * 24 * 3600 * 1000;
+const HISTORY_FLOOR_MS = 365 * 24 * 3600 * 1000; // 最多回溯一年，再早的不要
+const HISTORY_MAX_ITEMS = 2000;
+
+function historyItem(cfg, item, out, seen) {
+  if (!item.url || !/^https?:/i.test(item.url)) return;
+  const visited = item.lastVisitTime || Date.now();
+  const id = `browser:${cfg.deviceId}:${item.id || visited}`;
+  if (seen.has(id)) return;
+  seen.add(id);
+  out.push({
+    id,
+    source: 'browser',
+    title: item.title || item.url,
+    url: item.url,
+    visited_at: visited,
+    deviceId: cfg.deviceId,
+    deviceName: cfg.deviceName,
   });
-  const out = [];
-  for (const item of items) {
-    if (!item.url || !/^https?:/i.test(item.url)) continue;
-    const visited = item.lastVisitTime || Date.now();
-    out.push({
-      id: `browser:${cfg.deviceId}:${item.id || visited}`,
-      source: 'browser',
-      title: item.title || item.url,
-      url: item.url,
-      visited_at: visited,
-      deviceId: cfg.deviceId,
-      deviceName: cfg.deviceName,
-    });
-  }
-  return out;
 }
 
+async function collectHistory(cfg, since) {
+  const saved = await api.storage.local.get({ histCursor: 0, histDone: false });
+  const out = [];
+  const seen = new Set();
+
+  // 1) 新增部分：从上次同步前 1 小时开始
+  const recent = await api.history.search({
+    text: '',
+    startTime: since,
+    maxResults: HISTORY_MAX_ITEMS,
+  });
+  for (const item of recent) historyItem(cfg, item, out, seen);
+  await api.storage.local.set({ syncProgress: { phase: 'history', items: out.length, at: Date.now() } });
+
+  // 2) 补旧部分：每轮一个 7 天窗口，游标往回推
+  let cursor = Number(saved.histCursor || 0) || Date.now();
+  let done = !!saved.histDone;
+  if (!done) {
+    const floor = Date.now() - HISTORY_FLOOR_MS;
+    const windowStart = Math.max(cursor - HISTORY_WINDOW_MS, floor);
+    const older = await api.history.search({
+      text: '',
+      startTime: windowStart,
+      endTime: cursor,
+      maxResults: HISTORY_MAX_ITEMS,
+    });
+    for (const item of older) historyItem(cfg, item, out, seen);
+    cursor = windowStart;
+    if (windowStart <= floor) done = true;
+    await api.storage.local.set({ histCursor: cursor, histDone: done });
+  }
+  return { items: out, histDone: done };
+}
 // Chrome 的三个书签根：1=书签栏 2=其他书签 3=移动设备。站点按 toolbar 分组展示。
 function rootKey(id) {
   if (id === '2') return 'other';
@@ -291,7 +324,8 @@ async function sync(trigger) {
 
   await api.storage.local.set({ syncProgress: { phase: 'history', at: Date.now() } });
   console.log('[history-sync] phase=history since=' + new Date(since).toISOString());
-  const history = await collectHistory(cfg, since);
+  const historyRes = await collectHistory(cfg, since);
+  const history = historyRes.items;
   console.log('[history-sync] history=' + history.length);
   await api.storage.local.set({ syncProgress: { phase: 'bookmarks', items: history.length, at: Date.now() } });
   const favorites = await collectBookmarks(cfg);
@@ -354,6 +388,7 @@ async function sync(trigger) {
       biliPages: biliMeta.pages,
       biliDone: biliMeta.done,
       biliBackfill: biliMeta.backfill,
+      histDone: !!historyRes.histDone,
       biliDebug: biliMeta.debug || null,
     },
   });

@@ -50,6 +50,7 @@ async function load() {
         `本次B站 ${r.bili} 条（翻 ${r.biliPages || 0} 页，${r.biliDone ? '历史已补全' : '还在往更早补'}）`,
       );
     }
+    lines.push(r.histDone ? '浏览器历史：已回溯到一年前' : '浏览器历史：每轮补一周，还在往更早补');
     if (r.biliError) lines.push('B站提示：' + r.biliError);
     if (r.biliDebug) {
       const d = r.biliDebug;
@@ -96,7 +97,7 @@ async function runSync(resetFirst) {
 
   if (resetFirst) {
     // 全量同步才允许长补全（30 页 / 4 分钟）；立即同步只跑 6 页 / 90 秒。
-    await api.storage.local.set({ lastSync: 0, biliCursor: null, biliDone: false, forceBackfill: Date.now(), lastError: '' });
+    await api.storage.local.set({ lastSync: 0, biliCursor: null, biliDone: false, forceBackfill: Date.now(), histCursor: 0, histDone: false, lastError: '' });
   }
 
   const started = Date.now();
