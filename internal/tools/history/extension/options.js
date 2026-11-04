@@ -18,6 +18,7 @@ async function load() {
     lastSync: 0,
     lastError: '',
     lastResult: null,
+    syncProgress: null,
   });
   $('server').value = cfg.server || '';
   $('token').value = cfg.token || '';
@@ -25,6 +26,10 @@ async function load() {
   $('enabled').checked = cfg.enabled !== false;
 
   const lines = ['最近同步：' + fmt(cfg.lastSync)];
+  if (cfg.syncProgress) {
+    lines.push('正在同步：' + (cfg.syncProgress.phase || '') + 
+      (cfg.syncProgress.phase === 'bilibili' ? '第 ' + (cfg.syncProgress.pages || 0) + ' 页 / 已取 ' + (cfg.syncProgress.items || 0) + ' 条' : ''));
+  }
   if (cfg.lastResult) {
     const r = cfg.lastResult;
     lines.push(

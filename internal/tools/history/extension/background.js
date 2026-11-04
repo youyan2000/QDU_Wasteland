@@ -26,6 +26,23 @@ async function config() {
   return stored;
 }
 
+// 所有网络请求都带超时：MV3 的 fetch 默认没有超时，B站/站点卡住时会一直挂着，
+// 表现就是"同步十分钟没反应"。
+async function fetchJSON(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      throw new Error('请求超时（' + Math.round(timeoutMs / 1000) + 's）：' + url);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 function endpoint(server) {
   return server.replace(/\/+$/, '') + '/api/history/sync';
 }
@@ -107,7 +124,8 @@ async function collectBilibili(cfg, since) {
   if (staleState) {
     await api.storage.local.set({ biliVer: BILI_STATE_VERSION, biliCursor: null, biliDone: false });
   }
-  const maxPages = backfill ? 60 : 10;
+  const maxPages = backfill ? 30 : 6;
+  const deadline = Date.now() + 4 * 60 * 1000; // B站阶段最多 4 分钟
   let cursor = startCursor;
   let pages = 0;
   let reachedEnd = false;
@@ -120,12 +138,16 @@ async function collectBilibili(cfg, since) {
   seenCursors.add(cursorKey(cursor));
 
   while (pages < maxPages) {
+    if (Date.now() > deadline) {
+      stopReason = 'deadline';
+      break;
+    }
     const url =
       'https://api.bilibili.com/x/web-interface/history/cursor?ps=30' +
       '&max=' + encodeURIComponent(cursor.max || 0) +
       '&view_at=' + encodeURIComponent(cursor.view_at || 0) +
       '&business=' + encodeURIComponent(cursor.business || '');
-    const res = await fetch(url, { credentials: 'include' });
+    const res = await fetchJSON(url, { credentials: 'include' }, 15000);
     if (!res.ok) throw new Error('B站接口返回 ' + res.status);
     const json = await res.json();
     debug.code = json.code;
@@ -177,6 +199,7 @@ async function collectBilibili(cfg, since) {
     }
 
     pages += 1;
+    await api.storage.local.set({ syncProgress: { phase: 'bilibili', pages, items: out.length, at: Date.now() } });
 
     // 正常情况用接口返回的 cursor；没返回或不前进时，用最后一条的 view_at 兜底。
     let next = data.cursor;
@@ -254,7 +277,9 @@ async function sync(trigger) {
   const since = cfg.lastSync ? cfg.lastSync - 3600 * 1000 : Date.now() - 7 * 24 * 3600 * 1000;
   const now = Date.now();
 
+  await api.storage.local.set({ syncProgress: { phase: 'history', at: Date.now() } });
   const history = await collectHistory(cfg, since);
+  await api.storage.local.set({ syncProgress: { phase: 'bookmarks', items: history.length, at: Date.now() } });
   const favorites = await collectBookmarks(cfg);
 
   let bili = [];
@@ -278,11 +303,12 @@ async function sync(trigger) {
     tombstones: [],
   };
   if (!data.history.length && !data.favorites.length) {
-    await api.storage.local.set({ lastSync: now });
+    await api.storage.local.set({ lastSync: now, syncProgress: null, lastError: '' });
     return { ok: true, imported: 0 };
   }
 
-  const res = await fetch(endpoint(cfg.server), {
+  await api.storage.local.set({ syncProgress: { phase: 'upload', pages: biliMeta.pages || 0, items: data.history.length + data.favorites.length, at: Date.now() } });
+  const res = await fetchJSON(endpoint(cfg.server), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -292,7 +318,7 @@ async function sync(trigger) {
       batchId: 'ext-' + new Date(now).toISOString(),
       data,
     }),
-  });
+  }, 90000);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(body.error || '同步失败（HTTP ' + res.status + '）');
@@ -314,6 +340,7 @@ async function sync(trigger) {
       biliDebug: biliMeta.debug || null,
     },
   });
+  await api.storage.local.set({ syncProgress: null, lastError: '' });
   return { ok: true, imported: body.imported || 0, biliError };
 }
 
@@ -326,7 +353,7 @@ api.runtime.onStartup.addListener(() => {
 api.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'wasteland-sync') {
     sync('alarm').catch((error) => {
-      api.storage.local.set({ lastError: String((error && error.message) || error) });
+      api.storage.local.set({ lastError: String((error && error.message) || error), syncProgress: null });
     });
   }
 });
@@ -336,7 +363,11 @@ api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === 'sync-now') {
     sync('manual')
       .then((r) => sendResponse({ ok: true, result: r }))
-      .catch((e) => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+      .catch((e) => {
+        const msg = String((e && e.message) || e);
+        api.storage.local.set({ lastError: msg, syncProgress: null });
+        sendResponse({ ok: false, error: msg });
+      });
     return true;
   }
   return false;

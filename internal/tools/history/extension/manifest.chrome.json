@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Wasteland 浏览足迹同步",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "把浏览器历史与书签自动同步到 QDU Wasteland 的浏览足迹，只在你自己登录的账号下可见。",
   "permissions": ["history", "bookmarks", "alarms", "storage", "cookies"],
   "host_permissions": [
