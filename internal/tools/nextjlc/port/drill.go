@@ -36,7 +36,7 @@ const (
 
 // DrillCommand 对应 DrillCommand；坐标一律毫米。
 type DrillCommand struct {
-	IsSlot                        bool
+	IsSlot                           bool
 	X, Y, StartX, StartY, EndX, EndY float64
 }
 
@@ -69,6 +69,8 @@ var (
 	routeStartRe = regexp.MustCompile(`^G00(X([\d.-]+))?(Y([\d.-]+))?`)
 	routeToRe    = regexp.MustCompile(`^G01(X([\d.-]+))?(Y([\d.-]+))?`)
 	fileFormatRe = regexp.MustCompile(`FILE_FORMAT=(\d+):(\d+)`)
+	// 有的导出（EasyEDA、部分 Altium）刀表就是 "T1C0.800"，且出现在内容中间。
+	toolDefLoose = regexp.MustCompile(`(?m)^T\d+C[\d.]+`)
 )
 
 // IsDrillFile 对应 is_drill_file。
@@ -86,6 +88,30 @@ func IsDrillFile(filename string) bool {
 		}
 	}
 	return false
+}
+
+// LooksLikeExcellon 兜底识别：Altium 导出的钻孔常直接叫 board.TXT / PCB1.TXT，
+// 名字里没有 "hole"/"drill"，只按文件名会被当成 Gerber，导致整包缺钻孔。
+// 这里按内容判断：以 M48 开头，且带 Excellon 的典型标记。
+func LooksLikeExcellon(name string, data []byte) bool {
+	lower := strings.ToLower(name)
+	if !(strings.HasSuffix(lower, ".txt") || strings.HasSuffix(lower, ".drl") || strings.HasSuffix(lower, ".nc")) {
+		return false
+	}
+	head := strings.ToUpper(strings.TrimPrefix(string(headBytes(data, 4096)), "\ufeff"))
+	head = strings.TrimSpace(head)
+	if !strings.HasPrefix(head, "M48") {
+		return false
+	}
+	return strings.Contains(head, "METRIC") || strings.Contains(head, "INCH") ||
+		strings.Contains(head, "FMAT") || strings.Contains(head, ";TYPE=")
+}
+
+func headBytes(data []byte, n int) []byte {
+	if len(data) > n {
+		return data[:n]
+	}
+	return data
 }
 
 // IsThroughDrill 对应 is_through_drill：TX1-TX6 是盲埋孔，JLC 不支持。
@@ -112,12 +138,17 @@ const (
 )
 
 // DetectDrillEDA 对应 detect_drill_eda（注意顺序：kicad → AD 工具格式 → altium）。
+// 额外兜底：EasyEDA / 部分 Altium 版本的刀表写成 "T1C0.800"，没有 F00S00 段，
+// 只认 adToolRe 会把它们当 Unknown，最后钻孔全丢。
 func DetectDrillEDA(content string) DrillEdaType {
 	lower := strings.ToLower(content)
 	if strings.Contains(lower, "kicad") {
 		return DrillEDAKiCad
 	}
 	if adToolRe.MatchString(content) {
+		return DrillEDAAltium
+	}
+	if toolDefLoose.MatchString(content) {
 		return DrillEDAAltium
 	}
 	if strings.Contains(lower, "altium") {
@@ -234,6 +265,21 @@ func ParseADExcellon(content string) DrillFile {
 			currentHoleType = HoleNonPlated
 		}
 		if m := adToolRe.FindStringSubmatch(line); m != nil {
+			var toolNum uint32
+			_, _ = fmt.Sscanf(m[1], "%d", &toolNum)
+			var dia float64
+			_, _ = fmt.Sscanf(m[2], "%f", &dia)
+			if unit == UnitInch {
+				dia *= inchToMM
+			}
+			if _, ok := toolMap[toolNum]; !ok {
+				toolKeys = append(toolKeys, toolNum)
+			}
+			toolMap[toolNum] = struct {
+				diameter float64
+				holeType HoleType
+			}{dia, currentHoleType}
+		} else if m := kicadToolRe.FindStringSubmatch(line); m != nil {
 			var toolNum uint32
 			_, _ = fmt.Sscanf(m[1], "%d", &toolNum)
 			var dia float64

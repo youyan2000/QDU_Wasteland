@@ -157,8 +157,14 @@ func collectAndIdentify(r *http.Request) ([]uploaded, map[string][]byte, map[str
 	var files []uploaded
 	zipBase := ""
 	var total int64
-	for _, fhs := range r.MultipartForm.File {
-		for _, fh := range fhs {
+	// map 遍历顺序随机，这里按字段名排序，保证同样的请求得到同样的处理顺序。
+	fieldNames := make([]string, 0, len(r.MultipartForm.File))
+	for name := range r.MultipartForm.File {
+		fieldNames = append(fieldNames, name)
+	}
+	sort.Strings(fieldNames)
+	for _, field := range fieldNames {
+		for _, fh := range r.MultipartForm.File[field] {
 			src, err := fh.Open()
 			if err != nil {
 				return nil, nil, nil, "", fmt.Errorf("读取上传文件失败")
@@ -189,7 +195,9 @@ func collectAndIdentify(r *http.Request) ([]uploaded, map[string][]byte, map[str
 
 	raw := map[string][]byte{}
 	software := map[string]string{}
-	for _, f := range files {
+	for i := range files {
+		f := &files[i]
+		f.Drill = port.IsDrillFile(f.Name) || port.LooksLikeExcellon(f.Name, f.Data)
 		raw[f.Name] = f.Data
 		sw := port.IdentifySoftware(string(headOf(f.Data)))
 		if sw == "" {
@@ -282,7 +290,7 @@ func handleProcess(w http.ResponseWriter, r *http.Request) {
 
 	var gerbers, drills []uploaded
 	for _, f := range files {
-		if port.IsDrillFile(f.Name) {
+		if f.Drill {
 			drills = append(drills, f)
 		} else {
 			gerbers = append(gerbers, f)

@@ -23,6 +23,7 @@
   var inputs = [];      // 服务端识别出的文件清单（zip 会被展开）
   var display = [];     // 左侧列表实际展示的条目 {name, software}
   var inspecting = false;
+  var zipName = 'download.zip'; // 服务端生成的 <板名>-AD-L2.zip
 
   drop.onclick = function () { input.click(); };
   input.onchange = function () { addFiles(input.files); };
@@ -131,6 +132,7 @@
           return;
         }
         session = res.d.session;
+        if (res.d.zipName) zipName = res.d.zipName;
         inputs = res.d.inputs || [];
         display = inputs;
         renderInputs();
@@ -176,7 +178,7 @@
       return r.blob().then(function (blob) {
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'download.zip';
+        a.download = zipName;
         a.click();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
       });
