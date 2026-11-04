@@ -1,4 +1,4 @@
-# install-git-hooks.ps1 — 启用仓库自带的 git 钩子（提交前卫生检查）
+﻿# install-git-hooks.ps1 — 启用仓库自带的 git 钩子（提交前卫生检查）
 # 用法（仓库根目录）：powershell -ExecutionPolicy Bypass -File deploy/install-git-hooks.ps1
 
 $ErrorActionPreference = 'Stop'
