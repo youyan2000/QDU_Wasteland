@@ -60,3 +60,22 @@ func TestClamAVIntegration(t *testing.T) {
 		t.Logf("命中信息: %s", msg)
 	}
 }
+
+// 老式 OLE 文档（.doc/.xls）带 VBA 宏时必须拦截：zip 嗅探看不到它们。
+func TestOleMacroBlocked(t *testing.T) {
+	ole := []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}
+	withVBA := append(append([]byte{}, ole...), []byte("...._VBA_PROJECT_CUR....")...)
+	if ok, reason := checkDangerousFile("report.doc", withVBA); !ok {
+		t.Fatalf("带 VBA 的 .doc 应被拦截，实际放行: %s", reason)
+	}
+	// UTF-16LE 形式的 VBA 也要识别
+	utf16 := append(append([]byte{}, ole...), []byte{'V', 0, 'B', 0, 'A', 0}...)
+	if ok, _ := checkDangerousFile("sheet.xls", utf16); !ok {
+		t.Fatal("UTF-16 形式的 VBA 应被拦截")
+	}
+	// 不含宏的 OLE 文档放行
+	plain := append(append([]byte{}, ole...), []byte("....WordDocument....")...)
+	if ok, reason := checkDangerousFile("notes.doc", plain); ok {
+		t.Fatalf("无宏 OLE 文档不应被拦截: %s", reason)
+	}
+}
