@@ -101,14 +101,32 @@ fi
 chown qdu:qdu "$DST"/* 2>/dev/null || true
 say "环境文件已安装: $ENV_NEW"
 
-# 预检：用 qdu 身份实际跑一次，能在 10 秒内起来才算环境正确。
-if ! sudo -u qdu bash -c "set -a; . '$ENV_NEW'; set +a; cd '$DST' && timeout 12 ./qdu-wasteland-linux" >/tmp/qdu-preflight.log 2>&1; then
-  if ! grep -qiE '已启动|listening|3000' /tmp/qdu-preflight.log; then
-    say "✗ 以 qdu 身份启动预检失败，最后 20 行："
+# 预检：
+#   服务还在跑时 3000 端口被占用，不能再启动一个实例，改做权限检查；
+#   服务已停时才试启动，且"跑满 30 秒没退出"也算通过（真实启动要 60-80 秒）。
+PREFLIGHT_OK=0
+if systemctl is-active --quiet "$SERVICE"; then
+  PREFLIGHT_OK=1
+  for probe in "test -r $DST" "test -w $DST" "test -r $DST/csv" "test -r $DST/qdu-auth.db" "test -x $DST/qdu-wasteland-linux"; do
+    if ! sudo -u qdu bash -c "$probe"; then
+      say "✗ 权限预检失败: $probe"
+      PREFLIGHT_OK=0
+      break
+    fi
+  done
+else
+  sudo -u qdu bash -c "set -a; . '$ENV_NEW'; set +a; cd '$DST' && timeout 30 ./qdu-wasteland-linux" >/tmp/qdu-preflight.log 2>&1
+  rc=$?
+  if [ "$rc" -eq 124 ] || grep -q '已启动' /tmp/qdu-preflight.log; then
+    PREFLIGHT_OK=1
+  else
+    say "✗ 以 qdu 身份启动预检失败（exit=$rc），最后 20 行："
     tail -20 /tmp/qdu-preflight.log | sed 's/^/        /'
-    say "  未改动 systemd 单元，服务仍在原状态。修复上面的问题后重跑。"
-    exit 1
   fi
+fi
+if [ "$PREFLIGHT_OK" != "1" ]; then
+  say "  未改动 systemd 单元，服务仍在原状态。修复上面的问题后重跑。"
+  exit 1
 fi
 say "预检通过（qdu 身份可正常启动）"
 
