@@ -3,7 +3,7 @@
 #      会导致 cron 备份脚本、部署脚本静默失败。
 
 # Linux 上执行的脚本必须 LF
-*.sh          text eol=lf
+*.sh          text eol=lf`n.githooks/*   text eol=lf   # git 钩子必须 LF，CRLF 会报 bad interpreter
 *.service     text eol=lf
 *.conf        text eol=lf
 
