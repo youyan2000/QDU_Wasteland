@@ -116,16 +116,26 @@ async function collectBookmarks(cfg) {
 const BILI_STATE_VERSION = 3;
 
 async function collectBilibili(cfg, since) {
-  const saved = await api.storage.local.get({ biliCursor: null, biliDone: false, biliVer: 0 });
-  // 扩展升级后，旧的"已补全"状态可能来自有 bug 的版本：版本不匹配就重新补一次。
+  const saved = await api.storage.local.get({
+    biliCursor: null,
+    biliDone: false,
+    biliVer: 0,
+    forceBackfill: 0,
+  });
+  // 只有用户明确点「重新全量同步」才做长补全；「立即同步」永远走小步增量，
+  // 避免一次跑几十页把 Firefox 的后台事件页拖死（表现就是永远"正在同步"）。
+  const forced = Number(saved.forceBackfill || 0) > 0;
   const staleState = Number(saved.biliVer || 0) !== BILI_STATE_VERSION;
-  const backfill = staleState || !saved.biliDone;
-  const startCursor = staleState ? { max: 0, view_at: 0, business: '' } : saved.biliCursor || { max: 0, view_at: 0, business: '' };
-  if (staleState) {
-    await api.storage.local.set({ biliVer: BILI_STATE_VERSION, biliCursor: null, biliDone: false });
+  const backfill = forced || (staleState ? false : !saved.biliDone);
+  const startCursor = forced || staleState
+    ? { max: 0, view_at: 0, business: '' }
+    : saved.biliCursor || { max: 0, view_at: 0, business: '' };
+  if (staleState || forced) {
+    await api.storage.local.set({ biliVer: BILI_STATE_VERSION, biliCursor: null, biliDone: false, forceBackfill: 0 });
   }
-  const maxPages = backfill ? 30 : 6;
-  const deadline = Date.now() + 4 * 60 * 1000; // B站阶段最多 4 分钟
+  // 单次同步的预算：立即同步 6 页 / 90 秒；全量 30 页 / 4 分钟。
+  const maxPages = forced ? 30 : 6;
+  const deadline = Date.now() + (forced ? 4 * 60 * 1000 : 90 * 1000);
   let cursor = startCursor;
   let pages = 0;
   let reachedEnd = false;

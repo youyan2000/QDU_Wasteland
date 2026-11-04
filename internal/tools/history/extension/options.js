@@ -95,7 +95,8 @@ async function runSync(resetFirst) {
   status.textContent = resetFirst ? '正在全量同步…' : '正在同步…';
 
   if (resetFirst) {
-    await api.storage.local.set({ lastSync: 0, biliCursor: null, biliDone: false, lastError: '' });
+    // 全量同步才允许长补全（30 页 / 4 分钟）；立即同步只跑 6 页 / 90 秒。
+    await api.storage.local.set({ lastSync: 0, biliCursor: null, biliDone: false, forceBackfill: Date.now(), lastError: '' });
   }
 
   const started = Date.now();
