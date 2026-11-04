@@ -47,7 +47,108 @@ func NewStore(db *sql.DB, legacyOwner ...int64) (*Store, error) {
 		CREATE TABLE IF NOT EXISTS history_site_dedupe(user_id INTEGER NOT NULL,path TEXT NOT NULL,last_seen INTEGER NOT NULL,PRIMARY KEY(user_id,path));`); err != nil {
 		return nil, err
 	}
+	if err := dedupeBilibiliRows(db); err != nil {
+		return nil, fmt.Errorf("history: B站记录去重迁移失败: %w", err)
+	}
 	return &Store{db: db}, nil
+}
+
+// canonicalBiliID 用「业务类型 + 内容 ID + 观看秒」生成稳定 ID，不含 uid。
+// B站 历史接口在部分响应里不返回 uid（或返回 0），同一个视频因此会拿到两个不同的 ID，
+// 补历史时就把同一条观看记录写成两行。记录本身已经按 user_id 隔离，uid 对去重没有价值。
+func canonicalBiliID(h History) string {
+	business := h.Business
+	if business == "" {
+		business = "archive"
+	}
+	return fmt.Sprintf("bili:%s:%d:%d", business, h.ContentID, h.VisitedAt/1000)
+}
+
+// dedupeBilibiliRows 把历史遗留的重复 B站 记录合并成一行，并把 ID 迁到规范格式。
+// 幂等：没有重复时只做一次 SELECT，不改数据。
+func dedupeBilibiliRows(db *sql.DB) error {
+	// 用一个标记表保证整个库只跑一次：NewStore 可能在每个请求里被调用，
+	// 每次全表扫描 4k 行会明显拖慢。
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS history_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)`); err != nil {
+		return err
+	}
+	var done string
+	if err := db.QueryRow(`SELECT value FROM history_meta WHERE key='bili_dedupe_v1'`).Scan(&done); err == nil && done == "done" {
+		return nil
+	}
+	rows, err := db.Query(`SELECT rowid, id, body FROM history_records WHERE kind='bilibili'`)
+	if err != nil {
+		return err
+	}
+	type rec struct {
+		rowid int64
+		id    string
+		body  string
+		canon string
+	}
+	var all []rec
+	for rows.Next() {
+		var r rec
+		if err := rows.Scan(&r.rowid, &r.id, &r.body); err != nil {
+			rows.Close()
+			return err
+		}
+		var h History
+		if err := json.Unmarshal([]byte(r.body), &h); err == nil && h.ContentID != 0 && h.VisitedAt != 0 {
+			r.canon = canonicalBiliID(h)
+		}
+		all = append(all, r)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	keep := map[string]int64{}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	changed := 0
+	for _, r := range all {
+		if r.canon == "" {
+			continue // 旧数据缺 contentId，无法安全合并
+		}
+		if first, ok := keep[r.canon]; ok {
+			if _, err := tx.Exec(`DELETE FROM history_records WHERE rowid=?`, r.rowid); err != nil {
+				return err
+			}
+			_ = first
+			changed++
+			continue
+		}
+		keep[r.canon] = r.rowid
+		// 规范 ID 需要带 user_id 前缀（scopedID 的格式）。老 ID 形如 "<uid>:bili:..."，
+		// 直接按最后一个冒号分段重构不安全，这里只把 id 列替换成规范形式 + 原 user 前缀。
+		var userID int64
+		if err := tx.QueryRow(`SELECT user_id FROM history_records WHERE rowid=?`, r.rowid).Scan(&userID); err != nil {
+			return err
+		}
+		want := scopedID(userID, r.canon)
+		if r.id != want {
+			if _, err := tx.Exec(`UPDATE history_records SET id=? WHERE rowid=?`, want, r.rowid); err != nil {
+				// 目标 ID 已存在（另一条同内容记录）→ 删掉当前这条
+				if _, delErr := tx.Exec(`DELETE FROM history_records WHERE rowid=?`, r.rowid); delErr != nil {
+					return err
+				}
+			}
+			changed++
+		}
+	}
+	if _, err := tx.Exec(`INSERT INTO history_meta(key,value) VALUES('bili_dedupe_v1','done') ON CONFLICT(key) DO UPDATE SET value='done'`); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	_ = changed
+	return nil
 }
 
 func assignLegacyOwner(db *sql.DB, ownerID int64) error {
@@ -243,6 +344,9 @@ func upsertHistory(tx *sql.Tx, userID int64, h History) (inserted, backfilled bo
 	body, err := json.Marshal(h)
 	if err != nil {
 		return false, false, err
+	}
+	if kindOf(h.Source) == "bilibili" && h.ContentID != 0 && h.VisitedAt != 0 {
+		h.ID = canonicalBiliID(h)
 	}
 	day, ts := dayOf(h.VisitedAt), h.VisitedAt
 	dbID := scopedID(userID, h.ID)
